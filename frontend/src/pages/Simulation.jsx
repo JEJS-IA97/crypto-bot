@@ -39,10 +39,9 @@ function normalizeArray(data, propertyNames = []) {
 }
 
 function Simulation() {
-    const [accounts, setAccounts] = useState([]);
     const [account, setAccount] = useState(null);
     const [summary, setSummary] = useState(null);
-    const [balance, setBalance] = useState([]);
+    const [balance, setBalance] = useState(null);
     const [positions, setPositions] = useState([]);
     const [trades, setTrades] = useState([]);
     const [marketPrices, setMarketPrices] = useState([]);
@@ -77,14 +76,12 @@ function Simulation() {
         ]);
 
         setSummary(summaryData);
-
         setBalance(
-            normalizeArray(balanceData, [
-                "balances",
-                "balance",
-                "data",
-                "items",
-            ])
+            balanceData &&
+                typeof balanceData === "object" &&
+                !Array.isArray(balanceData)
+                ? balanceData
+                : null
         );
 
         setPositions(
@@ -141,7 +138,6 @@ function Simulation() {
 
             const selectedAccount = accountList[0];
 
-            setAccounts(accountList);
             setAccount(selectedAccount);
 
             await Promise.all([
@@ -216,13 +212,22 @@ function Simulation() {
         );
     }
 
-    const accountBalance = summary.balance || {};
+    const accountBalance = balance || summary.balance || {};
 
-    const availableBalance = accountBalance.available_usd || 0;
-    const totalBalance = accountBalance.total_balance_usd || 0;
-    const investedBalance = accountBalance.invested_usd || 0;
-    const realizedPnl = accountBalance.realized_pnl_usd || 0;
-    const unrealizedPnl = accountBalance.unrealized_pnl_usd || 0;
+    const availableBalance =
+        accountBalance.available_usd || 0;
+
+    const totalBalance =
+        accountBalance.total_balance_usd || 0;
+
+    const investedBalance =
+        accountBalance.invested_usd || 0;
+
+    const realizedPnl =
+        accountBalance.realized_pnl_usd || 0;
+
+    const unrealizedPnl =
+        accountBalance.unrealized_pnl_usd || 0;
 
     return (
         <main className="simulation-page">
@@ -235,8 +240,8 @@ function Simulation() {
                     <h1>Simulación</h1>
 
                     <p>
-                        Opera con dinero ficticio sin afectar fondos
-                        reales.
+                        Opera con dinero ficticio sin afectar
+                        fondos reales.
                     </p>
                 </div>
 
@@ -363,7 +368,10 @@ function Simulation() {
 
                     {positions.length === 0 ? (
                         <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">▣</span>
+                            <span className="empty-state-icon">
+                                ▣
+                            </span>
+
                             <span>
                                 No tienes posiciones abiertas.
                             </span>
@@ -375,55 +383,69 @@ function Simulation() {
                                     <tr>
                                         <th>Activo</th>
                                         <th>Cantidad</th>
-                                        <th>Precio promedio</th>
+                                        <th>
+                                            Precio promedio
+                                        </th>
                                         <th>Valor actual</th>
-                                        <th>PnL no realizado</th>
+                                        <th>
+                                            PnL no realizado
+                                        </th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
-                                    {positions.map((position) => (
-                                        <tr key={position.symbol}>
-                                            <td>
-                                                <strong>
-                                                    {position.symbol}
-                                                </strong>
-                                            </td>
-
-                                            <td>
-                                                {position.quantity}
-                                            </td>
-
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    position.average_entry_price
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    position.market_value_usd
-                                                )}
-                                            </td>
-
-                                            <td
-                                                className={
-                                                    Number(
-                                                        position.unrealized_pnl_usd
-                                                    ) >= 0
-                                                        ? "value-positive"
-                                                        : "value-negative"
+                                    {positions.map(
+                                        (position) => (
+                                            <tr
+                                                key={
+                                                    position.symbol
                                                 }
                                             >
-                                                $
-                                                {formatMoney(
-                                                    position.unrealized_pnl_usd
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                <td>
+                                                    <strong>
+                                                        {
+                                                            position.symbol
+                                                        }
+                                                    </strong>
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        position.quantity
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    $
+                                                    {formatMoney(
+                                                        position.average_entry_price
+                                                    )}
+                                                </td>
+
+                                                <td>
+                                                    $
+                                                    {formatMoney(
+                                                        position.market_value_usd
+                                                    )}
+                                                </td>
+
+                                                <td
+                                                    className={
+                                                        Number(
+                                                            position.unrealized_pnl_usd
+                                                        ) >= 0
+                                                            ? "value-positive"
+                                                            : "value-negative"
+                                                    }
+                                                >
+                                                    $
+                                                    {formatMoney(
+                                                        position.unrealized_pnl_usd
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -437,15 +459,18 @@ function Simulation() {
                                 ACCOUNT BALANCE
                             </span>
 
-                            <h2>Balances</h2>
+                            <h2>Balance de la cuenta</h2>
                         </div>
                     </div>
 
-                    {balance.length === 0 ? (
+                    {!balance ? (
                         <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">▣</span>
+                            <span className="empty-state-icon">
+                                ▣
+                            </span>
+
                             <span>
-                                No hay balances registrados.
+                                No hay información de balance.
                             </span>
                         </div>
                     ) : (
@@ -453,38 +478,117 @@ function Simulation() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Activo</th>
-                                        <th>Disponible</th>
-                                        <th>Bloqueado</th>
-                                        <th>Valor estimado</th>
+                                        <th>Concepto</th>
+                                        <th>USD</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
-                                    {balance.map((item) => (
-                                        <tr key={item.asset}>
-                                            <td>
-                                                <strong>
-                                                    {item.asset}
-                                                </strong>
-                                            </td>
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                Disponible
+                                            </strong>
+                                        </td>
 
-                                            <td>
-                                                {item.free}
-                                            </td>
+                                        <td>
+                                            $
+                                            {formatMoney(
+                                                balance.available_usd
+                                            )}
+                                        </td>
+                                    </tr>
 
-                                            <td>
-                                                {item.locked}
-                                            </td>
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                Invertido
+                                            </strong>
+                                        </td>
 
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    item.value_usd
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                        <td>
+                                            $
+                                            {formatMoney(
+                                                balance.invested_usd
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                Valor de mercado
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            $
+                                            {formatMoney(
+                                                balance.market_value_usd
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                PnL realizado
+                                            </strong>
+                                        </td>
+
+                                        <td
+                                            className={
+                                                Number(
+                                                    balance.realized_pnl_usd
+                                                ) >= 0
+                                                    ? "value-positive"
+                                                    : "value-negative"
+                                            }
+                                        >
+                                            $
+                                            {formatMoney(
+                                                balance.realized_pnl_usd
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                PnL no realizado
+                                            </strong>
+                                        </td>
+
+                                        <td
+                                            className={
+                                                Number(
+                                                    balance.unrealized_pnl_usd
+                                                ) >= 0
+                                                    ? "value-positive"
+                                                    : "value-negative"
+                                            }
+                                        >
+                                            $
+                                            {formatMoney(
+                                                balance.unrealized_pnl_usd
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                Balance total
+                                            </strong>
+                                        </td>
+
+                                        <td>
+                                            $
+                                            {formatMoney(
+                                                balance.total_balance_usd
+                                            )}
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -498,13 +602,18 @@ function Simulation() {
                                 TRADE HISTORY
                             </span>
 
-                            <h2>Historial de operaciones</h2>
+                            <h2>
+                                Historial de operaciones
+                            </h2>
                         </div>
                     </div>
 
                     {trades.length === 0 ? (
                         <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">▤</span>
+                            <span className="empty-state-icon">
+                                ▤
+                            </span>
+
                             <span>
                                 Todavía no hay operaciones.
                             </span>
@@ -535,13 +644,16 @@ function Simulation() {
 
                                             <td>
                                                 <strong>
-                                                    {trade.symbol}
+                                                    {
+                                                        trade.symbol
+                                                    }
                                                 </strong>
                                             </td>
 
                                             <td
                                                 className={
-                                                    trade.side === "BUY"
+                                                    trade.side ===
+                                                    "BUY"
                                                         ? "value-positive"
                                                         : "value-negative"
                                                 }
