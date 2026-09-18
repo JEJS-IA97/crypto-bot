@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,6 +18,21 @@ from app.schemas import (
     TradeHistoryResponse,
     TradeResponse,
 )
+from app.services.bot_engine import evaluate_market
+from app.services.exchange_balance_service import (
+    list_exchange_balances,
+    set_exchange_balance,
+)
+from app.services.exchange_market_service import (
+    fetch_exchange_quotes,
+)
+from app.services.execution_price_service import (
+    select_best_execution,
+)
+from app.services.market_sync_service import (
+    synchronize_market_prices,
+)
+from app.services.risk_service import RiskConfig
 from app.services.simulation_service import (
     create_simulation_account,
     execute_order,
@@ -27,36 +45,10 @@ from app.services.simulation_service import (
     reset_simulation_account,
     update_market_price,
 )
-
-from app.services.market_sync_service import synchronize_market_prices
-
-from app.services.exchange_market_service import (
-    fetch_exchange_quotes,
-    find_best_market,
-)
-
-from app.services.execution_price_service import (
-    select_best_execution,
-)
-
-from decimal import Decimal
-
 from app.services.trade_opportunity_service import (
     find_best_opportunity,
 )
 
-from app.services.bot_engine import evaluate_market
-from app.services.risk_service import RiskConfig
-
-from decimal import Decimal
-
-from pydantic import BaseModel
-
-from app.models import SimulationExchangeBalance
-from app.services.exchange_balance_service import (
-    list_exchange_balances,
-    set_exchange_balance,
-)
 
 router = APIRouter(
     prefix="/simulation",
@@ -129,7 +121,11 @@ def create_order(
     order: SimulationOrderRequest,
     db: Session = Depends(get_db),
 ) -> TradeResponse:
-    return execute_order(db, account_id, order)
+    return execute_order(
+        db,
+        account_id,
+        order,
+    )
 
 
 @router.get(
@@ -151,7 +147,10 @@ def reset_account(
     account_id: int,
     db: Session = Depends(get_db),
 ) -> SimulationResetResponse:
-    return reset_simulation_account(db, account_id)
+    return reset_simulation_account(
+        db,
+        account_id,
+    )
 
 
 @router.put(
@@ -162,7 +161,10 @@ def update_price(
     data: MarketPriceUpdateRequest,
     db: Session = Depends(get_db),
 ) -> MarketPriceResponse:
-    return update_market_price(db, data)
+    return update_market_price(
+        db,
+        data,
+    )
 
 
 @router.get(
@@ -185,13 +187,14 @@ async def synchronize_prices(
     return synchronize_market_prices(db)
 
 
-# @router.get("/market-prices/aggregate")
-# async def aggregate_market_prices(
-#    symbol: str = "BTCUSDT",
-#):
-#    quotes = fetch_exchange_quotes(symbol)
-#
-#    return select_best_execution(quotes)
+@router.get("/market-prices/aggregate")
+async def aggregate_market_prices(
+    symbol: str = "BTCUSDT",
+):
+    quotes = fetch_exchange_quotes(symbol)
+
+    return select_best_execution(quotes)
+
 
 @router.get("/market-prices/opportunity")
 async def market_opportunity(
@@ -221,8 +224,10 @@ async def market_opportunity(
 
 @router.get("/bot/evaluate")
 async def evaluate_bot(
+    account_id: int = 1,
     symbol: str = "BTCUSDT",
     capital_usd: Decimal = Decimal("5"),
+    db: Session = Depends(get_db),
 ):
     config = RiskConfig(
         max_trade_usd=Decimal("5"),
@@ -233,10 +238,13 @@ async def evaluate_bot(
     )
 
     return evaluate_market(
+        db=db,
+        account_id=account_id,
         symbol=symbol,
         capital_usd=capital_usd,
         risk_config=config,
     )
+
 
 class ExchangeBalanceUpdateRequest(BaseModel):
     exchange: str
@@ -256,6 +264,7 @@ async def account_exchange_balances(
         db=db,
         account_id=account_id,
     )
+
 
 @router.put(
     "/accounts/{account_id}/exchange-balances"

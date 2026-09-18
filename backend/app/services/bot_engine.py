@@ -1,10 +1,15 @@
 from decimal import Decimal
 
+from sqlalchemy.orm import Session
+
 from app.services.exchange_market_service import (
     fetch_exchange_quotes,
 )
 from app.services.execution_price_service import (
     select_best_execution,
+)
+from app.services.inventory_service import (
+    validate_arbitrage_inventory,
 )
 from app.services.risk_service import (
     RiskConfig,
@@ -16,6 +21,8 @@ from app.services.trade_opportunity_service import (
 
 
 def evaluate_market(
+    db: Session,
+    account_id: int,
     symbol: str,
     capital_usd: Decimal,
     risk_config: RiskConfig | None = None,
@@ -42,7 +49,9 @@ def evaluate_market(
     if best_opportunity is None:
         return {
             "decision": "NO_TRADE",
-            "reason": "No valid opportunity found.",
+            "reason": (
+                "No valid opportunity found."
+            ),
             "symbol": symbol,
             "capital_usd": capital_usd,
             "market": executions,
@@ -53,17 +62,47 @@ def evaluate_market(
         config,
     )
 
-    decision = (
-        "READY_TO_TRADE"
-        if risk_result["approved"]
-        else "NO_TRADE"
+    if not risk_result["approved"]:
+        return {
+            "decision": "NO_TRADE",
+            "reason": risk_result["reason"],
+            "symbol": symbol,
+            "capital_usd": capital_usd,
+            "opportunity": best_opportunity,
+            "risk": risk_result,
+            "market": executions,
+        }
+
+    inventory_result = (
+        validate_arbitrage_inventory(
+            db=db,
+            account_id=account_id,
+            opportunity=best_opportunity,
+        )
     )
 
+    if not inventory_result["approved"]:
+        return {
+            "decision": "NO_TRADE",
+            "reason": inventory_result["reason"],
+            "symbol": symbol,
+            "capital_usd": capital_usd,
+            "opportunity": best_opportunity,
+            "risk": risk_result,
+            "inventory": inventory_result,
+            "market": executions,
+        }
+
     return {
-        "decision": decision,
+        "decision": "READY_TO_TRADE",
+        "reason": (
+            "Opportunity passed risk and "
+            "inventory validation."
+        ),
         "symbol": symbol,
         "capital_usd": capital_usd,
         "opportunity": best_opportunity,
         "risk": risk_result,
+        "inventory": inventory_result,
         "market": executions,
     }

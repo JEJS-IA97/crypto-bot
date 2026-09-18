@@ -12,6 +12,33 @@ def _decimal(value) -> Decimal | None:
     return Decimal(str(value))
 
 
+def _extract_base_asset(
+    symbol: str,
+    quote_currency: str,
+) -> str:
+    normalized_symbol = symbol.upper()
+    normalized_quote = quote_currency.upper()
+
+    if not normalized_symbol.endswith(normalized_quote):
+        raise ValueError(
+            (
+                f"Symbol {symbol} does not match "
+                f"quote currency {quote_currency}."
+            )
+        )
+
+    base_asset = normalized_symbol[
+        : -len(normalized_quote)
+    ]
+
+    if not base_asset:
+        raise ValueError(
+            f"Unable to extract base asset from {symbol}."
+        )
+
+    return base_asset
+
+
 def calculate_opportunity(
     buy_execution: dict,
     sell_execution: dict,
@@ -44,6 +71,37 @@ def calculate_opportunity(
             "Capital must be greater than zero."
         )
 
+    buy_quote_currency = buy_execution[
+        "quote_currency"
+    ]
+
+    sell_quote_currency = sell_execution[
+        "quote_currency"
+    ]
+
+    if buy_quote_currency != sell_quote_currency:
+        raise ValueError(
+            "Buy and sell quote currencies must match."
+        )
+
+    buy_symbol = buy_execution["symbol"]
+    sell_symbol = sell_execution["symbol"]
+
+    buy_base_asset = _extract_base_asset(
+        buy_symbol,
+        buy_quote_currency,
+    )
+
+    sell_base_asset = _extract_base_asset(
+        sell_symbol,
+        sell_quote_currency,
+    )
+
+    if buy_base_asset != sell_base_asset:
+        raise ValueError(
+            "Buy and sell base assets must match."
+        )
+
     buy_quantity = capital_usd / buy_price
 
     ask_quantity = _decimal(
@@ -56,11 +114,17 @@ def calculate_opportunity(
 
     liquidity_limited = False
 
-    if ask_quantity is not None and ask_quantity < buy_quantity:
+    if (
+        ask_quantity is not None
+        and ask_quantity < buy_quantity
+    ):
         buy_quantity = ask_quantity
         liquidity_limited = True
 
-    if bid_quantity is not None and bid_quantity < buy_quantity:
+    if (
+        bid_quantity is not None
+        and bid_quantity < buy_quantity
+    ):
         buy_quantity = bid_quantity
         liquidity_limited = True
 
@@ -70,7 +134,7 @@ def calculate_opportunity(
             "reason": "Insufficient liquidity.",
             "buy_exchange": buy_execution["exchange"],
             "sell_exchange": sell_execution["exchange"],
-            "symbol": buy_execution["symbol"],
+            "symbol": buy_symbol,
         }
 
     buy_liquidity_usd = None
@@ -87,7 +151,9 @@ def calculate_opportunity(
             bid_quantity * sell_price
         )
 
-    capital_used = buy_quantity * buy_price
+    capital_used = (
+        buy_quantity * buy_price
+    )
 
     estimated_sell_value = (
         buy_quantity * sell_price
@@ -114,7 +180,12 @@ def calculate_opportunity(
         ),
         "buy_exchange": buy_execution["exchange"],
         "sell_exchange": sell_execution["exchange"],
-        "symbol": buy_execution["symbol"],
+        "buy_symbol": buy_symbol,
+        "sell_symbol": sell_symbol,
+        "symbol": buy_symbol,
+        "base_asset": buy_base_asset,
+        "buy_quote_currency": buy_quote_currency,
+        "sell_quote_currency": sell_quote_currency,
         "capital_usd": capital_usd,
         "quantity": buy_quantity,
         "buy_effective_price_usd": buy_price,
@@ -170,6 +241,12 @@ def find_best_opportunity(
             if (
                 buy_execution["exchange"]
                 == sell_execution["exchange"]
+            ):
+                continue
+
+            if (
+                buy_execution["quote_currency"]
+                != sell_execution["quote_currency"]
             ):
                 continue
 
