@@ -126,7 +126,7 @@ function TradingPanel({
                 symbol,
                 side,
                 quantity: String(numericQuantity),
-                price_usd: String(numericPrice),
+                price: String(numericPrice),
             });
 
             setMessage(

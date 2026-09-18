@@ -216,11 +216,13 @@ function Simulation() {
         );
     }
 
-    const availableBalance = summary.available_balance_usd || 0;
-    const totalBalance = summary.total_balance_usd || 0;
-    const investedBalance = summary.invested_balance_usd || 0;
-    const realizedPnl = summary.realized_pnl_usd || 0;
-    const unrealizedPnl = summary.unrealized_pnl_usd || 0;
+    const accountBalance = summary.balance || {};
+
+    const availableBalance = accountBalance.available_usd || 0;
+    const totalBalance = accountBalance.total_balance_usd || 0;
+    const investedBalance = accountBalance.invested_usd || 0;
+    const realizedPnl = accountBalance.realized_pnl_usd || 0;
+    const unrealizedPnl = accountBalance.unrealized_pnl_usd || 0;
 
     return (
         <main className="simulation-page">
@@ -395,14 +397,14 @@ function Simulation() {
                                             <td>
                                                 $
                                                 {formatMoney(
-                                                    position.average_price_usd
+                                                    position.average_entry_price
                                                 )}
                                             </td>
 
                                             <td>
                                                 $
                                                 {formatMoney(
-                                                    position.current_value_usd
+                                                    position.market_value_usd
                                                 )}
                                             </td>
 
@@ -527,7 +529,7 @@ function Simulation() {
                                         <tr key={trade.id}>
                                             <td>
                                                 {new Date(
-                                                    trade.created_at
+                                                    trade.executed_at
                                                 ).toLocaleString()}
                                             </td>
 
@@ -556,7 +558,7 @@ function Simulation() {
                                             <td>
                                                 $
                                                 {formatMoney(
-                                                    trade.price_usd
+                                                    trade.price
                                                 )}
                                             </td>
 

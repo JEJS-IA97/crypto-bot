@@ -26,9 +26,37 @@ from app.services.simulation_service import (
     get_trades,
     reset_simulation_account,
     update_market_price,
-    get_simulation_accounts,
 )
 
+from app.services.market_sync_service import synchronize_market_prices
+
+from app.services.exchange_market_service import (
+    fetch_exchange_quotes,
+    find_best_market,
+)
+
+from app.services.execution_price_service import (
+    select_best_execution,
+)
+
+from decimal import Decimal
+
+from app.services.trade_opportunity_service import (
+    find_best_opportunity,
+)
+
+from app.services.bot_engine import evaluate_market
+from app.services.risk_service import RiskConfig
+
+from decimal import Decimal
+
+from pydantic import BaseModel
+
+from app.models import SimulationExchangeBalance
+from app.services.exchange_balance_service import (
+    list_exchange_balances,
+    set_exchange_balance,
+)
 
 router = APIRouter(
     prefix="/simulation",
@@ -57,16 +85,6 @@ def create_account(
 ) -> SimulationAccountResponse:
     return create_simulation_account(db, data)
 
-
-@router.get(
-    "/accounts",
-    response_model=list[SimulationAccountResponse],
-)
-def accounts(
-    db: Session = Depends(get_db),
-) -> list[SimulationAccountResponse]:
-    return get_simulation_accounts(db)
-    
 
 @router.get(
     "/accounts/{account_id}/balance",
@@ -155,3 +173,103 @@ def market_prices(
     db: Session = Depends(get_db),
 ) -> list[MarketPriceResponse]:
     return get_market_prices(db)
+
+
+@router.post(
+    "/market-prices/synchronize",
+    response_model=list[MarketPriceResponse],
+)
+async def synchronize_prices(
+    db: Session = Depends(get_db),
+) -> list[MarketPriceResponse]:
+    return synchronize_market_prices(db)
+
+
+# @router.get("/market-prices/aggregate")
+# async def aggregate_market_prices(
+#    symbol: str = "BTCUSDT",
+#):
+#    quotes = fetch_exchange_quotes(symbol)
+#
+#    return select_best_execution(quotes)
+
+@router.get("/market-prices/opportunity")
+async def market_opportunity(
+    symbol: str = "BTCUSDT",
+    capital_usd: Decimal = Decimal("20"),
+    min_profit_usd: Decimal = Decimal("0.05"),
+    min_profit_percent: Decimal = Decimal("0.10"),
+):
+    quotes = fetch_exchange_quotes(symbol)
+
+    executions = select_best_execution(quotes)
+
+    opportunity = find_best_opportunity(
+        executions=executions,
+        capital_usd=capital_usd,
+        min_profit_usd=min_profit_usd,
+        min_profit_percent=min_profit_percent,
+    )
+
+    return {
+        "symbol": symbol,
+        "capital_usd": capital_usd,
+        "market": executions,
+        "opportunity": opportunity,
+    }
+
+
+@router.get("/bot/evaluate")
+async def evaluate_bot(
+    symbol: str = "BTCUSDT",
+    capital_usd: Decimal = Decimal("5"),
+):
+    config = RiskConfig(
+        max_trade_usd=Decimal("5"),
+        min_profit_usd=Decimal("0.05"),
+        min_profit_percent=Decimal("0.10"),
+        min_liquidity_usd=Decimal("10"),
+        max_position_usd=Decimal("20"),
+    )
+
+    return evaluate_market(
+        symbol=symbol,
+        capital_usd=capital_usd,
+        risk_config=config,
+    )
+
+class ExchangeBalanceUpdateRequest(BaseModel):
+    exchange: str
+    asset: str
+    available: Decimal
+    locked: Decimal = Decimal("0")
+
+
+@router.get(
+    "/accounts/{account_id}/exchange-balances"
+)
+async def account_exchange_balances(
+    account_id: int,
+    db: Session = Depends(get_db),
+):
+    return list_exchange_balances(
+        db=db,
+        account_id=account_id,
+    )
+
+@router.put(
+    "/accounts/{account_id}/exchange-balances"
+)
+async def update_exchange_balance(
+    account_id: int,
+    payload: ExchangeBalanceUpdateRequest,
+    db: Session = Depends(get_db),
+):
+    return set_exchange_balance(
+        db=db,
+        account_id=account_id,
+        exchange=payload.exchange,
+        asset=payload.asset,
+        available=payload.available,
+        locked=payload.locked,
+    )

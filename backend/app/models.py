@@ -2,7 +2,14 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Numeric, String
+from sqlalchemy import (
+    DateTime,
+    Enum as SqlEnum,
+    ForeignKey,
+    Numeric,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -37,6 +44,13 @@ class SimulationAccount(Base):
     )
 
     trades: Mapped[list["SimulationTrade"]] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
+    )
+
+    exchange_balances: Mapped[
+        list["SimulationExchangeBalance"]
+    ] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
     )
@@ -160,4 +174,57 @@ class SimulationMarketPrice(Base):
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+    )
+
+
+class SimulationExchangeBalance(Base):
+    __tablename__ = "simulation_exchange_balances"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "account_id",
+            "exchange",
+            "asset",
+            name="uq_simulation_exchange_asset",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("simulation_accounts.id"),
+        index=True,
+    )
+
+    exchange: Mapped[str] = mapped_column(
+        String(30),
+        index=True,
+    )
+
+    asset: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
+
+    available: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+        default=Decimal("0"),
+    )
+
+    locked: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+        default=Decimal("0"),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+    )
+
+    account: Mapped["SimulationAccount"] = relationship(
+        back_populates="exchange_balances",
     )
