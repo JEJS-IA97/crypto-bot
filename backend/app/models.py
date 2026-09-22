@@ -8,11 +8,11 @@ from sqlalchemy import (
     ForeignKey,
     Numeric,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
 
 class TradeSide(str, Enum):
     BUY = "BUY"
@@ -22,11 +22,16 @@ class TradeSide(str, Enum):
 class SimulationAccount(Base):
     __tablename__ = "simulation_accounts"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
     name: Mapped[str] = mapped_column(
         String(100),
         default="Default Simulation",
     )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
@@ -48,9 +53,7 @@ class SimulationAccount(Base):
         cascade="all, delete-orphan",
     )
 
-    exchange_balances: Mapped[
-        list["SimulationExchangeBalance"]
-    ] = relationship(
+    arbitrages: Mapped[list["SimulationArbitrage"]] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
     )
@@ -59,7 +62,11 @@ class SimulationAccount(Base):
 class SimulationBalance(Base):
     __tablename__ = "simulation_balances"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
     account_id: Mapped[int] = mapped_column(
         ForeignKey("simulation_accounts.id"),
         unique=True,
@@ -88,12 +95,19 @@ class SimulationBalance(Base):
 class SimulationPosition(Base):
     __tablename__ = "simulation_positions"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
     account_id: Mapped[int] = mapped_column(
         ForeignKey("simulation_accounts.id"),
     )
 
-    symbol: Mapped[str] = mapped_column(String(20), index=True)
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
 
     quantity: Mapped[Decimal] = mapped_column(
         Numeric(30, 12),
@@ -113,12 +127,19 @@ class SimulationPosition(Base):
 class SimulationTrade(Base):
     __tablename__ = "simulation_trades"
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
     account_id: Mapped[int] = mapped_column(
         ForeignKey("simulation_accounts.id"),
     )
 
-    symbol: Mapped[str] = mapped_column(String(20), index=True)
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
 
     side: Mapped[TradeSide] = mapped_column(
         SqlEnum(TradeSide),
@@ -155,39 +176,9 @@ class SimulationTrade(Base):
         back_populates="trades",
     )
 
-class SimulationMarketPrice(Base):
-    __tablename__ = "simulation_market_prices"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-
-    symbol: Mapped[str] = mapped_column(
-        String(20),
-        unique=True,
-        index=True,
-    )
-
-    price_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 12)
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
-    )
-
-
-class SimulationExchangeBalance(Base):
-    __tablename__ = "simulation_exchange_balances"
-
-    __table_args__ = (
-        UniqueConstraint(
-            "account_id",
-            "exchange",
-            "asset",
-            name="uq_simulation_exchange_asset",
-        ),
-    )
+class SimulationArbitrage(Base):
+    __tablename__ = "simulation_arbitrages"
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
@@ -199,32 +190,88 @@ class SimulationExchangeBalance(Base):
         index=True,
     )
 
-    exchange: Mapped[str] = mapped_column(
-        String(30),
-        index=True,
-    )
-
-    asset: Mapped[str] = mapped_column(
+    symbol: Mapped[str] = mapped_column(
         String(20),
         index=True,
     )
 
-    available: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-        default=Decimal("0"),
+    base_asset: Mapped[str] = mapped_column(
+        String(20),
     )
 
-    locked: Mapped[Decimal] = mapped_column(
+    quote_currency: Mapped[str] = mapped_column(
+        String(10),
+    )
+
+    buy_exchange: Mapped[str] = mapped_column(
+        String(30),
+    )
+
+    sell_exchange: Mapped[str] = mapped_column(
+        String(30),
+    )
+
+    quantity: Mapped[Decimal] = mapped_column(
         Numeric(30, 12),
-        default=Decimal("0"),
+    )
+
+    buy_price: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+    )
+
+    sell_price: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+    )
+
+    buy_total_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+    )
+
+    buy_fee_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+    )
+
+    sell_total_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+    )
+
+    sell_fee_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+    )
+
+    net_profit_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+    )
+
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+    )
+
+    account: Mapped["SimulationAccount"] = relationship(
+        back_populates="arbitrages",
+    )
+
+
+class SimulationMarketPrice(Base):
+    __tablename__ = "simulation_market_prices"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+    )
+
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        unique=True,
+        index=True,
+    )
+
+    price_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 12),
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
-    )
-
-    account: Mapped["SimulationAccount"] = relationship(
-        back_populates="exchange_balances",
     )

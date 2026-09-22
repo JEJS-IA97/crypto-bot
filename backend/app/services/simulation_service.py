@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models import (
     SimulationAccount,
+    SimulationArbitrage,
     SimulationBalance,
     SimulationMarketPrice,
     SimulationPosition,
@@ -23,7 +24,9 @@ from app.schemas import (
 MONEY_PLACES = Decimal("0.00000001")
 QUANTITY_PLACES = Decimal("0.000000000001")
 
-SIMULATION_FEE_RATE = Decimal(str(settings.simulation_fee_rate))
+SIMULATION_FEE_RATE = Decimal(
+    str(settings.simulation_fee_rate)
+)
 
 
 def money(value: Decimal) -> Decimal:
@@ -40,8 +43,14 @@ def quantity_value(value: Decimal) -> Decimal:
     )
 
 
-def get_account(db: Session, account_id: int) -> SimulationAccount:
-    account = db.get(SimulationAccount, account_id)
+def get_account(
+    db: Session,
+    account_id: int,
+) -> SimulationAccount:
+    account = db.get(
+        SimulationAccount,
+        account_id,
+    )
 
     if account is None:
         raise HTTPException(
@@ -58,7 +67,8 @@ def get_balance_record(
 ) -> SimulationBalance:
     balance = db.scalar(
         select(SimulationBalance).where(
-            SimulationBalance.account_id == account_id
+            SimulationBalance.account_id
+            == account_id
         )
     )
 
@@ -84,7 +94,9 @@ def create_simulation_account(
 
     balance = SimulationBalance(
         account_id=account.id,
-        available_usd=money(data.initial_balance_usd),
+        available_usd=money(
+            data.initial_balance_usd
+        ),
         invested_usd=Decimal("0"),
         realized_pnl_usd=Decimal("0"),
     )
@@ -100,12 +112,20 @@ def get_positions(
     db: Session,
     account_id: int,
 ) -> list[dict]:
-    get_account(db, account_id)
+    get_account(
+        db,
+        account_id,
+    )
 
     positions = db.scalars(
         select(SimulationPosition)
-        .where(SimulationPosition.account_id == account_id)
-        .order_by(SimulationPosition.symbol)
+        .where(
+            SimulationPosition.account_id
+            == account_id
+        )
+        .order_by(
+            SimulationPosition.symbol
+        )
     ).all()
 
     result = []
@@ -113,7 +133,8 @@ def get_positions(
     for position in positions:
         market_price = db.scalar(
             select(SimulationMarketPrice).where(
-                SimulationMarketPrice.symbol == position.symbol
+                SimulationMarketPrice.symbol
+                == position.symbol
             )
         )
 
@@ -123,24 +144,36 @@ def get_positions(
 
         if market_price is not None:
             current_price = market_price.price_usd
+
             market_value_usd = money(
-                position.quantity * current_price
+                position.quantity
+                * current_price
             )
+
             cost_value = money(
-                position.quantity * position.average_entry_price
+                position.quantity
+                * position.average_entry_price
             )
+
             unrealized_pnl_usd = money(
-                market_value_usd - cost_value
+                market_value_usd
+                - cost_value
             )
 
         result.append(
             {
                 "symbol": position.symbol,
-                "quantity": quantity_value(position.quantity),
-                "average_entry_price": position.average_entry_price,
+                "quantity": quantity_value(
+                    position.quantity
+                ),
+                "average_entry_price": (
+                    position.average_entry_price
+                ),
                 "current_price": current_price,
                 "market_value_usd": market_value_usd,
-                "unrealized_pnl_usd": unrealized_pnl_usd,
+                "unrealized_pnl_usd": (
+                    unrealized_pnl_usd
+                ),
             }
         )
 
@@ -152,46 +185,85 @@ def get_accounts(
 ) -> list[SimulationAccount]:
     return list(
         db.scalars(
-            select(SimulationAccount).order_by(
+            select(
+                SimulationAccount
+            ).order_by(
                 SimulationAccount.created_at
             )
         ).all()
     )
-    
+
 
 def get_balance(
     db: Session,
     account_id: int,
 ) -> dict:
-    account = get_account(db, account_id)
-    balance = get_balance_record(db, account_id)
-    positions = get_positions(db, account_id)
+    account = get_account(
+        db,
+        account_id,
+    )
+
+    balance = get_balance_record(
+        db,
+        account_id,
+    )
+
+    positions = get_positions(
+        db,
+        account_id,
+    )
 
     market_value_usd = Decimal("0")
     unrealized_pnl_usd = Decimal("0")
 
     for position in positions:
-        if position["market_value_usd"] is not None:
-            market_value_usd += position["market_value_usd"]
+        if position[
+            "market_value_usd"
+        ] is not None:
+            market_value_usd += position[
+                "market_value_usd"
+            ]
 
-        if position["unrealized_pnl_usd"] is not None:
-            unrealized_pnl_usd += position["unrealized_pnl_usd"]
+        if position[
+            "unrealized_pnl_usd"
+        ] is not None:
+            unrealized_pnl_usd += position[
+                "unrealized_pnl_usd"
+            ]
 
-    market_value_usd = money(market_value_usd)
-    unrealized_pnl_usd = money(unrealized_pnl_usd)
+    market_value_usd = money(
+        market_value_usd
+    )
+
+    unrealized_pnl_usd = money(
+        unrealized_pnl_usd
+    )
 
     total_balance_usd = money(
-        balance.available_usd + market_value_usd
+        balance.available_usd
+        + market_value_usd
     )
 
     return {
         "account_id": account.id,
-        "available_usd": money(balance.available_usd),
-        "invested_usd": money(balance.invested_usd),
-        "market_value_usd": market_value_usd,
-        "realized_pnl_usd": money(balance.realized_pnl_usd),
-        "unrealized_pnl_usd": unrealized_pnl_usd,
-        "total_balance_usd": total_balance_usd,
+        "available_usd": money(
+            balance.available_usd
+        ),
+        "invested_usd": money(
+            balance.invested_usd
+        ),
+        "market_value_usd": (
+            market_value_usd
+        ),
+        "realized_pnl_usd": money(
+            balance.realized_pnl_usd
+        ),
+        "unrealized_pnl_usd": (
+            unrealized_pnl_usd
+        ),
+        "total_balance_usd": (
+            total_balance_usd
+        ),
     }
 
 
@@ -199,13 +271,21 @@ def get_trades(
     db: Session,
     account_id: int,
 ) -> list[SimulationTrade]:
-    get_account(db, account_id)
+    get_account(
+        db,
+        account_id,
+    )
 
     return list(
         db.scalars(
             select(SimulationTrade)
-            .where(SimulationTrade.account_id == account_id)
-            .order_by(SimulationTrade.executed_at.desc())
+            .where(
+                SimulationTrade.account_id
+                == account_id
+            )
+            .order_by(
+                SimulationTrade.executed_at.desc()
+            )
         ).all()
     )
 
@@ -215,8 +295,11 @@ def get_market_prices(
 ) -> list[SimulationMarketPrice]:
     return list(
         db.scalars(
-            select(SimulationMarketPrice)
-            .order_by(SimulationMarketPrice.symbol)
+            select(
+                SimulationMarketPrice
+            ).order_by(
+                SimulationMarketPrice.symbol
+            )
         ).all()
     )
 
@@ -226,11 +309,16 @@ def update_market_price(
     data: MarketPriceUpdateRequest,
 ) -> SimulationMarketPrice:
     symbol = data.symbol.upper()
-    price = money(data.price_usd)
+    price = money(
+        data.price_usd
+    )
 
     market_price = db.scalar(
-        select(SimulationMarketPrice).where(
-            SimulationMarketPrice.symbol == symbol
+        select(
+            SimulationMarketPrice
+        ).where(
+            SimulationMarketPrice.symbol
+            == symbol
         )
     )
 
@@ -239,7 +327,9 @@ def update_market_price(
             symbol=symbol,
             price_usd=price,
         )
+
         db.add(market_price)
+
     else:
         market_price.price_usd = price
 
@@ -254,8 +344,11 @@ def get_market_price(
     symbol: str,
 ) -> SimulationMarketPrice | None:
     return db.scalar(
-        select(SimulationMarketPrice).where(
-            SimulationMarketPrice.symbol == symbol
+        select(
+            SimulationMarketPrice
+        ).where(
+            SimulationMarketPrice.symbol
+            == symbol
         )
     )
 
@@ -266,9 +359,13 @@ def get_position(
     symbol: str,
 ) -> SimulationPosition | None:
     return db.scalar(
-        select(SimulationPosition).where(
-            SimulationPosition.account_id == account_id,
-            SimulationPosition.symbol == symbol,
+        select(
+            SimulationPosition
+        ).where(
+            SimulationPosition.account_id
+            == account_id,
+            SimulationPosition.symbol
+            == symbol,
         )
     )
 
@@ -278,28 +375,62 @@ def execute_order(
     account_id: int,
     order: SimulationOrderRequest,
 ) -> SimulationTrade:
-    account = get_account(db, account_id)
-    balance = get_balance_record(db, account_id)
+    account = get_account(
+        db,
+        account_id,
+    )
+
+    balance = get_balance_record(
+        db,
+        account_id,
+    )
 
     symbol = order.symbol.upper()
     side = order.side
-    quantity = quantity_value(order.quantity)
-    price = money(order.price)
 
-    gross_total = money(quantity * price)
-    fee_usd = money(gross_total * SIMULATION_FEE_RATE)
-    total_cost = money(gross_total + fee_usd)
+    quantity = quantity_value(
+        order.quantity
+    )
 
-    position = get_position(db, account_id, symbol)
+    price = money(
+        order.price
+    )
+
+    gross_total = money(
+        quantity * price
+    )
+
+    fee_usd = money(
+        gross_total
+        * SIMULATION_FEE_RATE
+    )
+
+    total_cost = money(
+        gross_total + fee_usd
+    )
+
+    position = get_position(
+        db,
+        account_id,
+        symbol,
+    )
 
     if side == TradeSide.BUY:
-        if balance.available_usd < total_cost:
+        if (
+            balance.available_usd
+            < total_cost
+        ):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
                 detail=(
-                    "Insufficient available balance. "
-                    f"Required: {total_cost} USD. "
-                    f"Available: {balance.available_usd} USD."
+                    "Insufficient available "
+                    "balance. "
+                    f"Required: "
+                    f"{total_cost} USD. "
+                    f"Available: "
+                    f"{balance.available_usd} USD."
                 ),
             )
 
@@ -310,25 +441,50 @@ def execute_order(
                 quantity=quantity,
                 average_entry_price=price,
             )
-            db.add(position)
-        else:
-            previous_quantity = position.quantity
-            previous_cost = (
-                previous_quantity * position.average_entry_price
-            )
-            new_cost = quantity * price
-            new_quantity = previous_quantity + quantity
 
-            position.quantity = quantity_value(new_quantity)
+            db.add(position)
+
+        else:
+            previous_quantity = (
+                position.quantity
+            )
+
+            previous_cost = (
+                previous_quantity
+                * position.average_entry_price
+            )
+
+            new_cost = (
+                quantity * price
+            )
+
+            new_quantity = (
+                previous_quantity
+                + quantity
+            )
+
+            position.quantity = (
+                quantity_value(
+                    new_quantity
+                )
+            )
+
             position.average_entry_price = (
-                (previous_cost + new_cost) / new_quantity
+                (
+                    previous_cost
+                    + new_cost
+                )
+                / new_quantity
             )
 
         balance.available_usd = money(
-            balance.available_usd - total_cost
+            balance.available_usd
+            - total_cost
         )
+
         balance.invested_usd = money(
-            balance.invested_usd + gross_total
+            balance.invested_usd
+            + gross_total
         )
 
         realized_pnl_usd = Decimal("0")
@@ -336,41 +492,70 @@ def execute_order(
     else:
         if position is None:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"No open position for {symbol}.",
+                status_code=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
+                detail=(
+                    f"No open position "
+                    f"for {symbol}."
+                ),
             )
 
         if quantity > position.quantity:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
                 detail=(
-                    f"Insufficient position quantity. "
-                    f"Available: {position.quantity}. "
+                    "Insufficient position "
+                    "quantity. "
+                    f"Available: "
+                    f"{position.quantity}. "
                     f"Requested: {quantity}."
                 ),
             )
 
-        cost_basis = quantity * position.average_entry_price
-        realized_pnl_usd = money(gross_total - cost_basis - fee_usd)
+        cost_basis = (
+            quantity
+            * position.average_entry_price
+        )
+
+        realized_pnl_usd = money(
+            gross_total
+            - cost_basis
+            - fee_usd
+        )
 
         balance.available_usd = money(
-            balance.available_usd + gross_total - fee_usd
-        )
-        balance.invested_usd = money(
-            balance.invested_usd - cost_basis
-        )
-        balance.realized_pnl_usd = money(
-            balance.realized_pnl_usd + realized_pnl_usd
+            balance.available_usd
+            + gross_total
+            - fee_usd
         )
 
-        remaining_quantity = quantity_value(
-            position.quantity - quantity
+        balance.invested_usd = money(
+            balance.invested_usd
+            - cost_basis
+        )
+
+        balance.realized_pnl_usd = money(
+            balance.realized_pnl_usd
+            + realized_pnl_usd
+        )
+
+        remaining_quantity = (
+            quantity_value(
+                position.quantity
+                - quantity
+            )
         )
 
         if remaining_quantity <= Decimal("0"):
             db.delete(position)
+
         else:
-            position.quantity = remaining_quantity
+            position.quantity = (
+                remaining_quantity
+            )
 
     trade = SimulationTrade(
         account_id=account.id,
@@ -394,10 +579,24 @@ def get_summary(
     db: Session,
     account_id: int,
 ) -> dict:
-    balance = get_balance(db, account_id)
-    positions = get_positions(db, account_id)
-    trades = get_trades(db, account_id)
-    market_prices = get_market_prices(db)
+    balance = get_balance(
+        db,
+        account_id,
+    )
+
+    positions = get_positions(
+        db,
+        account_id,
+    )
+
+    trades = get_trades(
+        db,
+        account_id,
+    )
+
+    market_prices = get_market_prices(
+        db
+    )
 
     return {
         "account_id": account_id,
@@ -412,18 +611,34 @@ def reset_simulation_account(
     db: Session,
     account_id: int,
 ) -> dict:
-    account = get_account(db, account_id)
-    balance = get_balance_record(db, account_id)
+    account = get_account(
+        db,
+        account_id,
+    )
+
+    balance = get_balance_record(
+        db,
+        account_id,
+    )
 
     positions = db.scalars(
         select(SimulationPosition).where(
-            SimulationPosition.account_id == account_id
+            SimulationPosition.account_id
+            == account_id
         )
     ).all()
 
     trades = db.scalars(
         select(SimulationTrade).where(
-            SimulationTrade.account_id == account_id
+            SimulationTrade.account_id
+            == account_id
+        )
+    ).all()
+
+    arbitrages = db.scalars(
+        select(SimulationArbitrage).where(
+            SimulationArbitrage.account_id
+            == account_id
         )
     ).all()
 
@@ -433,9 +648,13 @@ def reset_simulation_account(
     for trade in trades:
         db.delete(trade)
 
+    for arbitrage in arbitrages:
+        db.delete(arbitrage)
+
     balance.available_usd = money(
         settings.simulation_initial_balance
     )
+
     balance.invested_usd = Decimal("0")
     balance.realized_pnl_usd = Decimal("0")
 
@@ -443,7 +662,9 @@ def reset_simulation_account(
 
     return {
         "account_id": account.id,
-        "message": "Simulation account reset successfully",
+        "message": (
+            "Simulation account reset successfully"
+        ),
     }
 
 
@@ -452,7 +673,9 @@ def get_simulation_accounts(
 ) -> list[SimulationAccount]:
     return list(
         db.scalars(
-            select(SimulationAccount).order_by(
+            select(
+                SimulationAccount
+            ).order_by(
                 SimulationAccount.created_at
             )
         ).all()
