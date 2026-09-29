@@ -117,6 +117,19 @@ class SimulationArbitrageResponse(BaseModel):
     )
 
 
+class BotCycleResponse(BaseModel):
+    id: int
+    account_id: int
+    executed_at: datetime
+    decision: str
+    reason: str
+    evaluated_symbols: list[dict]
+    trade_candidates: int
+    best_symbol: str | None = None
+    best_profit_usd: Decimal | None = None
+    best_profit_percent: Decimal | None = None
+
+
 class MarketPriceUpdateRequest(BaseModel):
     symbol: str = Field(
         min_length=3,

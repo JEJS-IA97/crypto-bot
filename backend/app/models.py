@@ -6,8 +6,10 @@ from sqlalchemy import (
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
+    Integer,
     Numeric,
     String,
+    Text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -274,6 +276,58 @@ class SimulationArbitrage(Base):
         "SimulationAccount"
     ] = relationship(
         back_populates="arbitrages",
+    )
+
+
+class SimulationBotCycle(Base):
+    __tablename__ = "simulation_bot_cycles"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("simulation_accounts.id"),
+        index=True,
+    )
+
+    executed_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+    decision: Mapped[str] = mapped_column(
+        String(30),
+    )
+
+    reason: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    evaluated_symbols_json: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    trade_candidates: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    best_symbol: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    best_profit_usd: Mapped[Decimal | None] = mapped_column(
+        Numeric(20, 8),
+        nullable=True,
+    )
+
+    best_profit_percent: Mapped[Decimal | None] = mapped_column(
+        Numeric(20, 8),
+        nullable=True,
     )
 
 

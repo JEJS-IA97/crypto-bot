@@ -1,11 +1,12 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas import (
     BalanceResponse,
+    BotCycleResponse,
     MarketPriceResponse,
     MarketPriceUpdateRequest,
     PositionResponse,
@@ -24,6 +25,10 @@ from app.services.arbitrage_service import (
 from app.services.bot_engine import (
     evaluate_market,
     execute_market,
+)
+from app.services.bot_runner_service import (
+    get_bot_cycles,
+    get_bot_status,
 )
 from app.services.exchange_market_service import (
     fetch_exchange_quotes,
@@ -51,21 +56,38 @@ from app.services.trade_opportunity_service import (
     find_best_opportunity,
 )
 
-from app.services.bot_runner_service import (
-    get_bot_status,
-)
-
 
 router = APIRouter(
     prefix="/simulation",
     tags=["Simulation"],
 )
 
+
 @router.get(
     "/bot/status"
 )
 def bot_status():
     return get_bot_status()
+
+
+@router.get(
+    "/bot/cycles",
+    response_model=list[BotCycleResponse],
+)
+def bot_cycles(
+    account_id: int = 1,
+    limit: int = Query(
+        default=50,
+        ge=1,
+        le=200,
+    ),
+    db: Session = Depends(get_db),
+) -> list[dict]:
+    return get_bot_cycles(
+        db=db,
+        account_id=account_id,
+        limit=limit,
+    )
 
 
 @router.get(

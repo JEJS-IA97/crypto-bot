@@ -40,8 +40,10 @@ def calculate_buy_execution(
             f"Unsupported quote currency: {quote_currency}"
         )
 
-    fee_usd = price_usd * fee_rate
-    effective_price_usd = price_usd + fee_usd
+    fee_per_unit_usd = price_usd * fee_rate
+    effective_price_usd = (
+        price_usd + fee_per_unit_usd
+    )
 
     return {
         "exchange": exchange,
@@ -51,7 +53,7 @@ def calculate_buy_execution(
         "market_price": ask_price,
         "price_usd": price_usd,
         "fee_rate": fee_rate,
-        "fee_usd": fee_usd,
+        "fee_per_unit_usd": fee_per_unit_usd,
         "effective_price_usd": effective_price_usd,
         "ask_quantity": quote.get("ask_quantity"),
     }
@@ -85,8 +87,10 @@ def calculate_sell_execution(
             f"Unsupported quote currency: {quote_currency}"
         )
 
-    fee_usd = price_usd * fee_rate
-    effective_price_usd = price_usd - fee_usd
+    fee_per_unit_usd = price_usd * fee_rate
+    effective_price_usd = (
+        price_usd - fee_per_unit_usd
+    )
 
     return {
         "exchange": exchange,
@@ -96,7 +100,7 @@ def calculate_sell_execution(
         "market_price": bid_price,
         "price_usd": price_usd,
         "fee_rate": fee_rate,
-        "fee_usd": fee_usd,
+        "fee_per_unit_usd": fee_per_unit_usd,
         "effective_price_usd": effective_price_usd,
         "bid_quantity": quote.get("bid_quantity"),
     }
