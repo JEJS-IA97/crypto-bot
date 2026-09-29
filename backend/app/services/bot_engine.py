@@ -148,7 +148,7 @@ def execute_market(
 ) -> dict:
     config = risk_config or RiskConfig()
 
-    result, opportunity, executions = (
+    first_result, first_opportunity, _ = (
         _prepare_market_evaluation(
             db=db,
             account_id=account_id,
@@ -158,20 +158,44 @@ def execute_market(
         )
     )
 
-    if opportunity is None:
-        return result
+    if first_opportunity is None:
+        return first_result
+
+    second_result, second_opportunity, second_executions = (
+        _prepare_market_evaluation(
+            db=db,
+            account_id=account_id,
+            symbol=symbol,
+            capital_usd=capital_usd,
+            risk_config=config,
+        )
+    )
+
+    if second_opportunity is None:
+        return {
+            "decision": "NO_TRADE",
+            "reason": (
+                "Opportunity disappeared during "
+                "execution revalidation."
+            ),
+            "symbol": symbol,
+            "capital_usd": capital_usd,
+            "first_evaluation": first_result,
+            "revalidation": second_result,
+        }
 
     arbitrage = execute_arbitrage(
         db=db,
         account_id=account_id,
-        opportunity=opportunity,
-        executions=executions,
+        opportunity=second_opportunity,
+        executions=second_executions,
     )
 
-    result["decision"] = "TRADED"
-    result["reason"] = (
-        "Arbitrage executed successfully."
+    second_result["decision"] = "TRADED"
+    second_result["reason"] = (
+        "Arbitrage passed execution revalidation "
+        "and was executed successfully."
     )
-    result["arbitrage"] = arbitrage
+    second_result["arbitrage"] = arbitrage
 
-    return result
+    return second_result

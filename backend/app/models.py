@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 
@@ -12,6 +12,14 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+def utc_now() -> datetime:
+    return datetime.now(
+        timezone.utc
+    ).replace(
+        tzinfo=None
+    )
 
 
 class TradeSide(str, Enum):
@@ -34,26 +42,34 @@ class SimulationAccount(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
     )
 
-    balance: Mapped["SimulationBalance | None"] = relationship(
+    balance: Mapped[
+        "SimulationBalance | None"
+    ] = relationship(
         back_populates="account",
         uselist=False,
         cascade="all, delete-orphan",
     )
 
-    positions: Mapped[list["SimulationPosition"]] = relationship(
+    positions: Mapped[
+        list["SimulationPosition"]
+    ] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
     )
 
-    trades: Mapped[list["SimulationTrade"]] = relationship(
+    trades: Mapped[
+        list["SimulationTrade"]
+    ] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
     )
 
-    arbitrages: Mapped[list["SimulationArbitrage"]] = relationship(
+    arbitrages: Mapped[
+        list["SimulationArbitrage"]
+    ] = relationship(
         back_populates="account",
         cascade="all, delete-orphan",
     )
@@ -87,7 +103,9 @@ class SimulationBalance(Base):
         default=Decimal("0.00"),
     )
 
-    account: Mapped["SimulationAccount"] = relationship(
+    account: Mapped[
+        "SimulationAccount"
+    ] = relationship(
         back_populates="balance",
     )
 
@@ -119,7 +137,9 @@ class SimulationPosition(Base):
         default=Decimal("0"),
     )
 
-    account: Mapped["SimulationAccount"] = relationship(
+    account: Mapped[
+        "SimulationAccount"
+    ] = relationship(
         back_populates="positions",
     )
 
@@ -169,10 +189,12 @@ class SimulationTrade(Base):
 
     executed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
     )
 
-    account: Mapped["SimulationAccount"] = relationship(
+    account: Mapped[
+        "SimulationAccount"
+    ] = relationship(
         back_populates="trades",
     )
 
@@ -245,10 +267,12 @@ class SimulationArbitrage(Base):
 
     executed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
     )
 
-    account: Mapped["SimulationAccount"] = relationship(
+    account: Mapped[
+        "SimulationAccount"
+    ] = relationship(
         back_populates="arbitrages",
     )
 
@@ -272,6 +296,6 @@ class SimulationMarketPrice(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=utc_now,
+        onupdate=utc_now,
     )

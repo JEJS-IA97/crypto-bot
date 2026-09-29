@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     simulation_bot_min_liquidity_usd: Decimal = Decimal("10")
     simulation_bot_max_position_usd: Decimal = Decimal("20")
 
+    simulation_bot_cooldown_seconds: int = 300
+    simulation_bot_max_trades_per_day: int = 3
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
