@@ -1,277 +1,150 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
 
-from sqlalchemy import (
-    DateTime,
-    Enum as SqlEnum,
-    ForeignKey,
-    Numeric,
-    String,
-)
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pydantic import BaseModel, ConfigDict, Field
 
-from app.database import Base
+from app.models import TradeSide
 
 
-class TradeSide(str, Enum):
-    BUY = "BUY"
-    SELL = "SELL"
-
-
-class SimulationAccount(Base):
-    __tablename__ = "simulation_accounts"
-
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
-    )
-
-    name: Mapped[str] = mapped_column(
-        String(100),
+class SimulationAccountCreate(BaseModel):
+    name: str = Field(
         default="Default Simulation",
+        min_length=1,
+        max_length=100,
     )
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-
-    balance: Mapped["SimulationBalance | None"] = relationship(
-        back_populates="account",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
-
-    positions: Mapped[list["SimulationPosition"]] = relationship(
-        back_populates="account",
-        cascade="all, delete-orphan",
-    )
-
-    trades: Mapped[list["SimulationTrade"]] = relationship(
-        back_populates="account",
-        cascade="all, delete-orphan",
-    )
-
-    arbitrages: Mapped[list["SimulationArbitrage"]] = relationship(
-        back_populates="account",
-        cascade="all, delete-orphan",
-    )
-
-
-class SimulationBalance(Base):
-    __tablename__ = "simulation_balances"
-
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
-    )
-
-    account_id: Mapped[int] = mapped_column(
-        ForeignKey("simulation_accounts.id"),
-        unique=True,
-    )
-
-    available_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
+    initial_balance_usd: Decimal = Field(
         default=Decimal("20.00"),
-    )
-
-    invested_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-        default=Decimal("0.00"),
-    )
-
-    realized_pnl_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-        default=Decimal("0.00"),
-    )
-
-    account: Mapped["SimulationAccount"] = relationship(
-        back_populates="balance",
+        gt=Decimal("0"),
     )
 
 
-class SimulationPosition(Base):
-    __tablename__ = "simulation_positions"
+class SimulationAccountResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
-    )
-
-    account_id: Mapped[int] = mapped_column(
-        ForeignKey("simulation_accounts.id"),
-    )
-
-    symbol: Mapped[str] = mapped_column(
-        String(20),
-        index=True,
-    )
-
-    quantity: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-        default=Decimal("0"),
-    )
-
-    average_entry_price: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-        default=Decimal("0"),
-    )
-
-    account: Mapped["SimulationAccount"] = relationship(
-        back_populates="positions",
+    model_config = ConfigDict(
+        from_attributes=True,
     )
 
 
-class SimulationTrade(Base):
-    __tablename__ = "simulation_trades"
+class BalanceResponse(BaseModel):
+    account_id: int
+    available_usd: Decimal
+    invested_usd: Decimal
+    market_value_usd: Decimal
+    realized_pnl_usd: Decimal
+    unrealized_pnl_usd: Decimal
+    total_balance_usd: Decimal
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
+
+class PositionResponse(BaseModel):
+    symbol: str
+    quantity: Decimal
+    average_entry_price: Decimal
+    current_price: Decimal | None = None
+    market_value_usd: Decimal | None = None
+    unrealized_pnl_usd: Decimal | None = None
+
+
+class SimulationOrderRequest(BaseModel):
+    symbol: str = Field(
+        min_length=3,
+        max_length=20,
+        pattern=r"^[A-Z0-9]+$",
     )
-
-    account_id: Mapped[int] = mapped_column(
-        ForeignKey("simulation_accounts.id"),
+    side: TradeSide
+    quantity: Decimal = Field(
+        gt=Decimal("0"),
     )
-
-    symbol: Mapped[str] = mapped_column(
-        String(20),
-        index=True,
-    )
-
-    side: Mapped[TradeSide] = mapped_column(
-        SqlEnum(TradeSide),
-    )
-
-    quantity: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-    )
-
-    price: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-    )
-
-    total_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    fee_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-        default=Decimal("0"),
-    )
-
-    realized_pnl_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-        default=Decimal("0"),
-    )
-
-    executed_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-
-    account: Mapped["SimulationAccount"] = relationship(
-        back_populates="trades",
+    price: Decimal = Field(
+        gt=Decimal("0"),
     )
 
 
-class SimulationArbitrage(Base):
-    __tablename__ = "simulation_arbitrages"
+class TradeResponse(BaseModel):
+    id: int
+    symbol: str
+    side: TradeSide
+    quantity: Decimal
+    price: Decimal
+    total_usd: Decimal
+    fee_usd: Decimal
+    realized_pnl_usd: Decimal
+    executed_at: datetime
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
-        index=True,
-    )
-
-    account_id: Mapped[int] = mapped_column(
-        ForeignKey("simulation_accounts.id"),
-        index=True,
-    )
-
-    symbol: Mapped[str] = mapped_column(
-        String(20),
-        index=True,
-    )
-
-    base_asset: Mapped[str] = mapped_column(
-        String(20),
-    )
-
-    quote_currency: Mapped[str] = mapped_column(
-        String(10),
-    )
-
-    buy_exchange: Mapped[str] = mapped_column(
-        String(30),
-    )
-
-    sell_exchange: Mapped[str] = mapped_column(
-        String(30),
-    )
-
-    quantity: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-    )
-
-    buy_price: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-    )
-
-    sell_price: Mapped[Decimal] = mapped_column(
-        Numeric(30, 12),
-    )
-
-    buy_total_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    buy_fee_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    sell_total_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    sell_fee_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    net_profit_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 8),
-    )
-
-    executed_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-    )
-
-    account: Mapped["SimulationAccount"] = relationship(
-        back_populates="arbitrages",
+    model_config = ConfigDict(
+        from_attributes=True,
     )
 
 
-class SimulationMarketPrice(Base):
-    __tablename__ = "simulation_market_prices"
+class TradeHistoryResponse(BaseModel):
+    id: int
+    symbol: str
+    side: TradeSide
+    quantity: Decimal
+    price: Decimal
+    total_usd: Decimal
+    fee_usd: Decimal
+    realized_pnl_usd: Decimal
+    executed_at: datetime
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True,
+    model_config = ConfigDict(
+        from_attributes=True,
     )
 
-    symbol: Mapped[str] = mapped_column(
-        String(20),
-        unique=True,
-        index=True,
+
+class SimulationArbitrageResponse(BaseModel):
+    id: int
+    account_id: int
+    symbol: str
+    base_asset: str
+    quote_currency: str
+    buy_exchange: str
+    sell_exchange: str
+    quantity: Decimal
+    buy_price: Decimal
+    sell_price: Decimal
+    buy_total_usd: Decimal
+    buy_fee_usd: Decimal
+    sell_total_usd: Decimal
+    sell_fee_usd: Decimal
+    net_profit_usd: Decimal
+    executed_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
     )
 
-    price_usd: Mapped[Decimal] = mapped_column(
-        Numeric(20, 12),
+
+class MarketPriceUpdateRequest(BaseModel):
+    symbol: str = Field(
+        min_length=3,
+        max_length=20,
+    )
+    price_usd: Decimal = Field(
+        gt=Decimal("0"),
     )
 
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+
+class MarketPriceResponse(BaseModel):
+    symbol: str
+    price_usd: Decimal
+    updated_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
     )
+
+
+class SimulationSummaryResponse(BaseModel):
+    account_id: int
+    balance: BalanceResponse
+    positions: list[PositionResponse]
+    recent_trades: list[TradeHistoryResponse]
+    market_prices: list[MarketPriceResponse]
+
+
+class SimulationResetResponse(BaseModel):
+    account_id: int
+    message: str

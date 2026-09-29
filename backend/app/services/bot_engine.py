@@ -1,260 +1,177 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
-from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import (
-    SimulationArbitrage,
-    SimulationBalance,
+from app.services.arbitrage_service import execute_arbitrage
+from app.services.exchange_market_service import (
+    fetch_exchange_quotes,
 )
-from app.services.simulation_service import get_account
+from app.services.execution_price_service import (
+    select_best_execution,
+)
+from app.services.inventory_service import (
+    validate_arbitrage_inventory,
+)
+from app.services.risk_service import (
+    RiskConfig,
+    validate_opportunity,
+)
+from app.services.trade_opportunity_service import (
+    find_best_opportunity,
+)
 
 
-MONEY_PLACES = Decimal("0.00000001")
-QUANTITY_PLACES = Decimal("0.000000000001")
-
-
-def money(value: Decimal) -> Decimal:
-    return Decimal(value).quantize(
-        MONEY_PLACES,
-        rounding=ROUND_HALF_UP,
-    )
-
-
-def quantity_value(value: Decimal) -> Decimal:
-    return Decimal(value).quantize(
-        QUANTITY_PLACES,
-        rounding=ROUND_HALF_UP,
-    )
-
-
-def get_balance_record(
+def _prepare_market_evaluation(
     db: Session,
     account_id: int,
-) -> SimulationBalance:
-    balance = db.scalar(
-        select(SimulationBalance).where(
-            SimulationBalance.account_id == account_id
-        )
-    )
-
-    if balance is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Simulation balance not found",
-        )
-
-    return balance
-
-
-def get_arbitrages(
-    db: Session,
-    account_id: int,
-) -> list[SimulationArbitrage]:
-    get_account(
-        db,
-        account_id,
-    )
-
-    return list(
-        db.scalars(
-            select(SimulationArbitrage)
-            .where(
-                SimulationArbitrage.account_id
-                == account_id
-            )
-            .order_by(
-                SimulationArbitrage.executed_at.desc()
-            )
-        ).all()
-    )
-
-
-def _find_execution(
-    executions: dict,
-    options_key: str,
-    exchange: str,
     symbol: str,
-) -> dict:
-    options = executions.get(
-        options_key,
-        [],
+    capital_usd: Decimal,
+    risk_config: RiskConfig,
+) -> tuple[dict, dict | None, dict]:
+    quotes = fetch_exchange_quotes(symbol)
+
+    executions = select_best_execution(
+        quotes
     )
 
-    for execution in options:
-        if (
-            execution.get("exchange") == exchange
-            and execution.get("symbol") == symbol
-        ):
-            return execution
+    opportunity_result = find_best_opportunity(
+        executions=executions,
+        capital_usd=capital_usd,
+        min_profit_usd=risk_config.min_profit_usd,
+        min_profit_percent=risk_config.min_profit_percent,
+    )
 
-    raise ValueError(
-        (
-            f"Execution snapshot not found for "
-            f"{exchange} {symbol}."
+    best_opportunity = opportunity_result.get(
+        "best_opportunity"
+    )
+
+    if best_opportunity is None:
+        return (
+            {
+                "decision": "NO_TRADE",
+                "reason": "No valid opportunity found.",
+                "symbol": symbol,
+                "capital_usd": capital_usd,
+                "market": executions,
+            },
+            None,
+            executions,
         )
+
+    risk_result = validate_opportunity(
+        best_opportunity,
+        risk_config,
+    )
+
+    if not risk_result["approved"]:
+        return (
+            {
+                "decision": "NO_TRADE",
+                "reason": risk_result["reason"],
+                "symbol": symbol,
+                "capital_usd": capital_usd,
+                "opportunity": best_opportunity,
+                "risk": risk_result,
+                "market": executions,
+            },
+            None,
+            executions,
+        )
+
+    inventory_result = validate_arbitrage_inventory(
+        db=db,
+        account_id=account_id,
+        opportunity=best_opportunity,
+    )
+
+    if not inventory_result["approved"]:
+        return (
+            {
+                "decision": "NO_TRADE",
+                "reason": inventory_result["reason"],
+                "symbol": symbol,
+                "capital_usd": capital_usd,
+                "opportunity": best_opportunity,
+                "risk": risk_result,
+                "inventory": inventory_result,
+                "market": executions,
+            },
+            None,
+            executions,
+        )
+
+    return (
+        {
+            "decision": "READY_TO_TRADE",
+            "reason": (
+                "Opportunity passed risk and "
+                "simulation balance validation."
+            ),
+            "symbol": symbol,
+            "capital_usd": capital_usd,
+            "opportunity": best_opportunity,
+            "risk": risk_result,
+            "inventory": inventory_result,
+            "market": executions,
+        },
+        best_opportunity,
+        executions,
     )
 
 
-def execute_arbitrage(
+def evaluate_market(
     db: Session,
     account_id: int,
-    opportunity: dict,
-    executions: dict,
-) -> SimulationArbitrage:
-    if opportunity.get("status") != "TRADE":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                "The opportunity is not approved "
-                "for execution."
-            ),
-        )
+    symbol: str,
+    capital_usd: Decimal,
+    risk_config: RiskConfig | None = None,
+) -> dict:
+    config = risk_config or RiskConfig()
 
-    buy_exchange = opportunity[
-        "buy_exchange"
-    ]
-
-    sell_exchange = opportunity[
-        "sell_exchange"
-    ]
-
-    buy_symbol = opportunity[
-        "buy_symbol"
-    ]
-
-    sell_symbol = opportunity[
-        "sell_symbol"
-    ]
-
-    if buy_exchange == sell_exchange:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                "Arbitrage requires different "
-                "buy and sell exchanges."
-            ),
-        )
-
-    buy_execution = _find_execution(
-        executions=executions,
-        options_key="buy_options",
-        exchange=buy_exchange,
-        symbol=buy_symbol,
+    result, _, _ = _prepare_market_evaluation(
+        db=db,
+        account_id=account_id,
+        symbol=symbol,
+        capital_usd=capital_usd,
+        risk_config=config,
     )
 
-    sell_execution = _find_execution(
-        executions=executions,
-        options_key="sell_options",
-        exchange=sell_exchange,
-        symbol=sell_symbol,
-    )
+    return result
 
-    quantity = quantity_value(
-        Decimal(str(opportunity["quantity"]))
-    )
 
-    buy_price = Decimal(
-        str(buy_execution["price_usd"])
-    )
+def execute_market(
+    db: Session,
+    account_id: int,
+    symbol: str,
+    capital_usd: Decimal,
+    risk_config: RiskConfig | None = None,
+) -> dict:
+    config = risk_config or RiskConfig()
 
-    sell_price = Decimal(
-        str(sell_execution["price_usd"])
-    )
-
-    buy_fee_rate = Decimal(
-        str(buy_execution["fee_rate"])
-    )
-
-    sell_fee_rate = Decimal(
-        str(sell_execution["fee_rate"])
-    )
-
-    buy_total_usd = money(
-        quantity * buy_price
-    )
-
-    buy_fee_usd = money(
-        buy_total_usd * buy_fee_rate
-    )
-
-    buy_cost_usd = money(
-        buy_total_usd + buy_fee_usd
-    )
-
-    sell_total_usd = money(
-        quantity * sell_price
-    )
-
-    sell_fee_usd = money(
-        sell_total_usd * sell_fee_rate
-    )
-
-    sell_proceeds_usd = money(
-        sell_total_usd - sell_fee_usd
-    )
-
-    net_profit_usd = money(
-        sell_proceeds_usd - buy_cost_usd
-    )
-
-    balance = get_balance_record(
-        db,
-        account_id,
-    )
-
-    if balance.available_usd < buy_cost_usd:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                "Insufficient simulation balance. "
-                f"Required: {buy_cost_usd} USD. "
-                f"Available: "
-                f"{balance.available_usd} USD."
-            ),
-        )
-
-    try:
-        balance.available_usd = money(
-            balance.available_usd
-            - buy_cost_usd
-            + sell_proceeds_usd
-        )
-
-        balance.realized_pnl_usd = money(
-            balance.realized_pnl_usd
-            + net_profit_usd
-        )
-
-        arbitrage = SimulationArbitrage(
+    result, opportunity, executions = (
+        _prepare_market_evaluation(
+            db=db,
             account_id=account_id,
-            symbol=opportunity["symbol"],
-            base_asset=opportunity[
-                "base_asset"
-            ],
-            quote_currency=opportunity[
-                "buy_quote_currency"
-            ],
-            buy_exchange=buy_exchange,
-            sell_exchange=sell_exchange,
-            quantity=quantity,
-            buy_price=buy_price,
-            sell_price=sell_price,
-            buy_total_usd=buy_total_usd,
-            buy_fee_usd=buy_fee_usd,
-            sell_total_usd=sell_total_usd,
-            sell_fee_usd=sell_fee_usd,
-            net_profit_usd=net_profit_usd,
+            symbol=symbol,
+            capital_usd=capital_usd,
+            risk_config=config,
         )
+    )
 
-        db.add(arbitrage)
+    if opportunity is None:
+        return result
 
-        db.commit()
-        db.refresh(arbitrage)
+    arbitrage = execute_arbitrage(
+        db=db,
+        account_id=account_id,
+        opportunity=opportunity,
+        executions=executions,
+    )
 
-        return arbitrage
+    result["decision"] = "TRADED"
+    result["reason"] = (
+        "Arbitrage executed successfully."
+    )
+    result["arbitrage"] = arbitrage
 
-    except Exception:
-        db.rollback()
-        raise
+    return result

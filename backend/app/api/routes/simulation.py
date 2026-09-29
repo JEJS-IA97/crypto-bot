@@ -51,11 +51,21 @@ from app.services.trade_opportunity_service import (
     find_best_opportunity,
 )
 
+from app.services.bot_runner_service import (
+    get_bot_status,
+)
+
 
 router = APIRouter(
     prefix="/simulation",
     tags=["Simulation"],
 )
+
+@router.get(
+    "/bot/status"
+)
+def bot_status():
+    return get_bot_status()
 
 
 @router.get(
