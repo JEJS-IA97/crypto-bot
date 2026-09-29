@@ -1,17 +1,14 @@
 import asyncio
-import json
 from datetime import datetime, timezone
 from decimal import Decimal
+from threading import Lock
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal
-from app.models import (
-    SimulationArbitrage,
-    SimulationBotCycle,
-)
+from app.models import SimulationArbitrage
 from app.services.bot_engine import (
     evaluate_market,
     execute_market,
@@ -34,12 +31,21 @@ class BotRuntimeState:
         ] = []
 
         self.last_trade_candidates: int = 0
+
         self.last_best_symbol: str | None = None
-        self.last_best_profit_usd: Decimal | None = None
-        self.last_best_profit_percent: Decimal | None = None
+
+        self.last_best_profit_usd: (
+            Decimal | None
+        ) = None
+
+        self.last_best_profit_percent: (
+            Decimal | None
+        ) = None
 
 
 runtime_state = BotRuntimeState()
+
+execution_lock = Lock()
 
 
 def utc_now_naive() -> datetime:
@@ -147,7 +153,9 @@ def get_trade_limits(
     if cooldown_active:
         return {
             "allowed": False,
-            "reason": "Bot cooldown is active.",
+            "reason": (
+                "Bot cooldown is active."
+            ),
             "trades_today": trades_today,
             "max_trades_per_day": (
                 settings.simulation_bot_max_trades_per_day
@@ -260,24 +268,46 @@ def _persist_cycle(
     db: Session,
     result: dict,
 ) -> None:
+    # Esta función permanece delegada al historial
+    # existente en el runner actual.
+    #
+    # La persistencia se realiza dentro del ciclo
+    # mediante el modelo SimulationBotCycle.
+    #
+    # Se importa localmente para evitar acoplamiento
+    # adicional durante la carga inicial.
+    import json
+
+    from app.models import SimulationBotCycle
+
     evaluated_symbols = result.get(
         "evaluated_symbols",
         [],
     )
 
+    best_profit_usd = result.get(
+        "best_profit_usd"
+    )
+
+    best_profit_percent = result.get(
+        "best_profit_percent"
+    )
+
     cycle = SimulationBotCycle(
-        account_id=1,
-        decision=str(
+        account_id=(
             result.get(
-                "decision",
-                "UNKNOWN",
+                "account_id",
+                settings.simulation_bot_account_id,
             )
         ),
-        reason=str(
-            result.get(
-                "reason",
-                "",
-            )
+        executed_at=utc_now_naive(),
+        decision=result.get(
+            "decision",
+            "ERROR",
+        ),
+        reason=result.get(
+            "reason",
+            "",
         ),
         evaluated_symbols_json=json.dumps(
             evaluated_symbols,
@@ -293,111 +323,22 @@ def _persist_cycle(
             "best_symbol"
         ),
         best_profit_usd=(
-            Decimal(
-                str(
-                    result["best_profit_usd"]
-                )
-            )
-            if result.get(
-                "best_profit_usd"
-            ) is not None
+            Decimal(str(best_profit_usd))
+            if best_profit_usd is not None
             else None
         ),
         best_profit_percent=(
-            Decimal(
-                str(
-                    result["best_profit_percent"]
-                )
-            )
-            if result.get(
-                "best_profit_percent"
-            ) is not None
+            Decimal(str(best_profit_percent))
+            if best_profit_percent is not None
             else None
         ),
     )
 
-    if result.get("account_id") is not None:
-        cycle.account_id = int(
-            result["account_id"]
-        )
-    elif result.get("execution") is not None:
-        cycle.account_id = int(
-            result["execution"].get(
-                "account_id",
-                cycle.account_id,
-            )
-        )
-    else:
-        cycle.account_id = int(
-            settings.simulation_bot_account_id
-        )
-
     db.add(cycle)
-
-    try:
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
+    db.commit()
 
 
-def get_bot_cycles(
-    db: Session,
-    account_id: int,
-    limit: int = 50,
-) -> list[dict]:
-    rows = db.scalars(
-        select(SimulationBotCycle)
-        .where(
-            SimulationBotCycle.account_id
-            == account_id
-        )
-        .order_by(
-            SimulationBotCycle.executed_at.desc()
-        )
-        .limit(limit)
-    ).all()
-
-    result = []
-
-    for row in rows:
-        try:
-            evaluated_symbols = json.loads(
-                row.evaluated_symbols_json
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
-            evaluated_symbols = []
-
-        result.append(
-            {
-                "id": row.id,
-                "account_id": row.account_id,
-                "executed_at": row.executed_at,
-                "decision": row.decision,
-                "reason": row.reason,
-                "evaluated_symbols": (
-                    evaluated_symbols
-                ),
-                "trade_candidates": (
-                    row.trade_candidates
-                ),
-                "best_symbol": row.best_symbol,
-                "best_profit_usd": (
-                    row.best_profit_usd
-                ),
-                "best_profit_percent": (
-                    row.best_profit_percent
-                ),
-            }
-        )
-
-    return result
-
-
-def execute_bot_cycle() -> dict:
+def _execute_bot_cycle() -> dict:
     db: Session = SessionLocal()
 
     try:
@@ -421,16 +362,21 @@ def execute_bot_cycle() -> dict:
             )
 
             runtime_state.last_symbol = None
+
             runtime_state.last_decision = (
                 "NO_TRADE"
             )
+
             runtime_state.last_reason = (
                 limit_result["reason"]
             )
+
             runtime_state.last_error = None
 
             runtime_state.last_evaluated_symbols = []
+
             runtime_state.last_trade_candidates = 0
+
             runtime_state.last_best_symbol = None
             runtime_state.last_best_profit_usd = None
             runtime_state.last_best_profit_percent = None
@@ -459,7 +405,9 @@ def execute_bot_cycle() -> dict:
 
         risk_config = build_risk_config()
 
-        symbol_summaries: list[dict] = []
+        symbol_summaries: list[
+            dict
+        ] = []
 
         trade_candidates: list[
             tuple[str, Decimal]
@@ -611,12 +559,15 @@ def execute_bot_cycle() -> dict:
                 if best_scan is not None
                 else None
             )
+
             runtime_state.last_decision = (
                 "NO_TRADE"
             )
+
             runtime_state.last_reason = (
                 result["reason"]
             )
+
             runtime_state.last_error = None
 
             _persist_cycle(
@@ -655,19 +606,23 @@ def execute_bot_cycle() -> dict:
         runtime_state.last_run_at = (
             datetime.now(timezone.utc)
         )
+
         runtime_state.last_symbol = (
             selected_symbol
         )
+
         runtime_state.last_decision = (
             execution_result.get(
                 "decision"
             )
         )
+
         runtime_state.last_reason = (
             execution_result.get(
                 "reason"
             )
         )
+
         runtime_state.last_error = None
 
         result = {
@@ -706,9 +661,11 @@ def execute_bot_cycle() -> dict:
         runtime_state.last_run_at = (
             datetime.now(timezone.utc)
         )
+
         runtime_state.last_decision = (
             "ERROR"
         )
+
         runtime_state.last_reason = None
         runtime_state.last_error = str(exc)
 
@@ -743,6 +700,7 @@ def execute_bot_cycle() -> dict:
                 db=db,
                 result=error_result,
             )
+
         except Exception:
             pass
 
@@ -750,6 +708,19 @@ def execute_bot_cycle() -> dict:
 
     finally:
         db.close()
+
+
+def execute_bot_cycle() -> dict:
+    """
+    Serializa la ejecución completa del ciclo.
+
+    Esto evita que dos llamadas concurrentes al motor
+    puedan evaluar y ejecutar simultáneamente sobre
+    el mismo balance dentro del mismo proceso.
+    """
+
+    with execution_lock:
+        return _execute_bot_cycle()
 
 
 async def run_bot_loop(
@@ -866,9 +837,11 @@ def get_bot_status() -> dict:
             "trades_today",
             0,
         ),
-        "cooldown_remaining_seconds": limits.get(
-            "cooldown_remaining_seconds",
-            0,
+        "cooldown_remaining_seconds": (
+            limits.get(
+                "cooldown_remaining_seconds",
+                0,
+            )
         ),
         "execution_allowed": limits.get(
             "allowed",
@@ -908,3 +881,68 @@ def get_bot_status() -> dict:
             runtime_state.last_best_profit_percent
         ),
     }
+
+
+def get_bot_cycles(
+    db: Session,
+    account_id: int,
+    limit: int = 50,
+) -> list[dict]:
+    import json
+
+    from app.models import SimulationBotCycle
+
+    cycles = list(
+        db.scalars(
+            select(SimulationBotCycle)
+            .where(
+                SimulationBotCycle.account_id
+                == account_id
+            )
+            .order_by(
+                SimulationBotCycle.executed_at.desc()
+            )
+            .limit(limit)
+        ).all()
+    )
+
+    result = []
+
+    for cycle in cycles:
+        try:
+            evaluated_symbols = json.loads(
+                cycle.evaluated_symbols_json
+            )
+        except (
+            TypeError,
+            ValueError,
+            json.JSONDecodeError,
+        ):
+            evaluated_symbols = []
+
+        result.append(
+            {
+                "id": cycle.id,
+                "account_id": cycle.account_id,
+                "executed_at": cycle.executed_at,
+                "decision": cycle.decision,
+                "reason": cycle.reason,
+                "evaluated_symbols": (
+                    evaluated_symbols
+                ),
+                "trade_candidates": (
+                    cycle.trade_candidates
+                ),
+                "best_symbol": (
+                    cycle.best_symbol
+                ),
+                "best_profit_usd": (
+                    cycle.best_profit_usd
+                ),
+                "best_profit_percent": (
+                    cycle.best_profit_percent
+                ),
+            }
+        )
+
+    return result
