@@ -8,28 +8,82 @@ BINANCE_BOOK_TICKER_URL = (
     "https://data-api.binance.vision/api/v3/ticker/bookTicker"
 )
 
-BYBIT_TICKER_URL = "https://api.bybit.com/v5/market/tickers"
+BYBIT_TICKER_URL = (
+    "https://api.bybit.com/v5/market/tickers"
+)
 
-KRAKEN_TICKER_URL = "https://api.kraken.com/0/public/Ticker"
+KRAKEN_TICKER_URL = (
+    "https://api.kraken.com/0/public/Ticker"
+)
 
 COINBASE_TICKER_URL = (
-    "https://api.exchange.coinbase.com/products/{product_id}/ticker"
+    "https://api.exchange.coinbase.com/"
+    "products/{product_id}/ticker"
 )
 
 
-EXCHANGE_SYMBOLS = {
-    "binance": "BTCUSDT",
-    "bybit": "BTCUSDT",
-    "kraken": "XBTUSDT",
-    "coinbase": "BTC-USD",
+SUPPORTED_QUOTES = {
+    "USDT",
 }
 
 
-def _decimal(value: Any) -> Decimal | None:
+def _decimal(
+    value: Any,
+) -> Decimal | None:
     if value is None or value == "":
         return None
 
     return Decimal(str(value))
+
+
+def _split_symbol(
+    symbol: str,
+) -> tuple[str, str]:
+    normalized = symbol.upper()
+
+    for quote in sorted(
+        SUPPORTED_QUOTES,
+        key=len,
+        reverse=True,
+    ):
+        if normalized.endswith(quote):
+            base = normalized[
+                :-len(quote)
+            ]
+
+            if not base:
+                break
+
+            return base, quote
+
+    raise ValueError(
+        f"Unsupported symbol: {symbol}"
+    )
+
+
+def _coinbase_product_id(
+    symbol: str,
+) -> str:
+    base, quote = _split_symbol(symbol)
+
+    if quote != "USDT":
+        raise ValueError(
+            f"Coinbase mapping not available "
+            f"for {symbol}"
+        )
+
+    return f"{base}-USD"
+
+
+def _kraken_symbol(
+    symbol: str,
+) -> str:
+    base, quote = _split_symbol(symbol)
+
+    if base == "BTC":
+        base = "XBT"
+
+    return f"{base}{quote}"
 
 
 def _build_quote(
@@ -59,9 +113,13 @@ def _build_quote(
 def fetch_binance_quote(
     symbol: str = "BTCUSDT",
 ) -> dict:
+    symbol = symbol.upper()
+
     response = httpx.get(
         BINANCE_BOOK_TICKER_URL,
-        params={"symbol": symbol},
+        params={
+            "symbol": symbol,
+        },
         timeout=10.0,
     )
 
@@ -84,6 +142,8 @@ def fetch_binance_quote(
 def fetch_bybit_quote(
     symbol: str = "BTCUSDT",
 ) -> dict:
+    symbol = symbol.upper()
+
     response = httpx.get(
         BYBIT_TICKER_URL,
         params={
@@ -97,12 +157,20 @@ def fetch_bybit_quote(
 
     data = response.json()
 
-    result = data.get("result", {})
-    ticker_list = result.get("list", [])
+    result = data.get(
+        "result",
+        {},
+    )
+
+    ticker_list = result.get(
+        "list",
+        [],
+    )
 
     if not ticker_list:
         raise RuntimeError(
-            f"Bybit returned no ticker for {symbol}"
+            f"Bybit returned no ticker "
+            f"for {symbol}"
         )
 
     ticker = ticker_list[0]
@@ -111,22 +179,39 @@ def fetch_bybit_quote(
         exchange="bybit",
         symbol=symbol,
         quote_currency="USDT",
-        bid_price=ticker.get("bid1Price"),
-        bid_quantity=ticker.get("bid1Size"),
-        ask_price=ticker.get("ask1Price"),
-        ask_quantity=ticker.get("ask1Size"),
-        last_price=ticker.get("lastPrice"),
-        volume_24h=ticker.get("volume24h"),
+        bid_price=ticker.get(
+            "bid1Price"
+        ),
+        bid_quantity=ticker.get(
+            "bid1Size"
+        ),
+        ask_price=ticker.get(
+            "ask1Price"
+        ),
+        ask_quantity=ticker.get(
+            "ask1Size"
+        ),
+        last_price=ticker.get(
+            "lastPrice"
+        ),
+        volume_24h=ticker.get(
+            "volume24h"
+        ),
     )
 
 
 def fetch_kraken_quote(
-    symbol: str = "XBTUSDT",
+    symbol: str = "BTCUSDT",
 ) -> dict:
+    normalized_symbol = symbol.upper()
+    kraken_symbol = _kraken_symbol(
+        normalized_symbol
+    )
+
     response = httpx.get(
         KRAKEN_TICKER_URL,
         params={
-            "pair": symbol,
+            "pair": kraken_symbol,
             "assetVersion": "1",
         },
         timeout=10.0,
@@ -136,25 +221,34 @@ def fetch_kraken_quote(
 
     data = response.json()
 
-    errors = data.get("error", [])
+    errors = data.get(
+        "error",
+        [],
+    )
 
     if errors:
         raise RuntimeError(
             f"Kraken returned errors: {errors}"
         )
 
-    result = data.get("result", {})
+    result = data.get(
+        "result",
+        {},
+    )
 
     if not result:
         raise RuntimeError(
-            f"Kraken returned no ticker for {symbol}"
+            f"Kraken returned no ticker "
+            f"for {normalized_symbol}"
         )
 
-    ticker = next(iter(result.values()))
+    ticker = next(
+        iter(result.values())
+    )
 
     return _build_quote(
         exchange="kraken",
-        symbol="BTCUSDT",
+        symbol=normalized_symbol,
         quote_currency="USDT",
         bid_price=ticker["b"][0],
         bid_quantity=ticker["b"][1],
@@ -166,10 +260,16 @@ def fetch_kraken_quote(
 
 
 def fetch_coinbase_quote(
-    product_id: str = "BTC-USD",
+    symbol: str = "BTCUSDT",
 ) -> dict:
+    normalized_symbol = symbol.upper()
+
+    product_id = _coinbase_product_id(
+        normalized_symbol
+    )
+
     url = COINBASE_TICKER_URL.format(
-        product_id=product_id,
+        product_id=product_id
     )
 
     response = httpx.get(
@@ -183,7 +283,7 @@ def fetch_coinbase_quote(
 
     return _build_quote(
         exchange="coinbase",
-        symbol="BTCUSD",
+        symbol=normalized_symbol,
         quote_currency="USD",
         bid_price=data.get("bid"),
         bid_quantity=None,
@@ -197,24 +297,34 @@ def fetch_coinbase_quote(
 def fetch_exchange_quotes(
     symbol: str = "BTCUSDT",
 ) -> list[dict]:
+    normalized_symbol = symbol.upper()
+
     quotes = []
 
     exchange_calls = [
         (
             "binance",
-            lambda: fetch_binance_quote(symbol),
+            lambda: fetch_binance_quote(
+                normalized_symbol
+            ),
         ),
         (
             "bybit",
-            lambda: fetch_bybit_quote(symbol),
+            lambda: fetch_bybit_quote(
+                normalized_symbol
+            ),
         ),
         (
             "kraken",
-            lambda: fetch_kraken_quote("XBTUSDT"),
+            lambda: fetch_kraken_quote(
+                normalized_symbol
+            ),
         ),
         (
             "coinbase",
-            lambda: fetch_coinbase_quote("BTC-USD"),
+            lambda: fetch_coinbase_quote(
+                normalized_symbol
+            ),
         ),
     ]
 
@@ -223,11 +333,17 @@ def fetch_exchange_quotes(
             quote = fetcher()
             quote["status"] = "ok"
             quotes.append(quote)
-        except (httpx.HTTPError, RuntimeError, KeyError) as exc:
+
+        except (
+            httpx.HTTPError,
+            RuntimeError,
+            KeyError,
+            ValueError,
+        ) as exc:
             quotes.append(
                 {
                     "exchange": exchange,
-                    "symbol": symbol,
+                    "symbol": normalized_symbol,
                     "status": "error",
                     "error": str(exc),
                 }
@@ -240,18 +356,15 @@ def _price_in_usd(
     price: Decimal,
     quote_currency: str,
 ) -> Decimal:
-    """
-    Para la simulación inicial tratamos USDT ≈ USD.
-
-    Posteriormente podemos añadir una fuente USD/USDT
-    para eliminar esta aproximación.
-    """
-
-    if quote_currency in {"USD", "USDT"}:
+    if quote_currency in {
+        "USD",
+        "USDT",
+    }:
         return price
 
     raise ValueError(
-        f"Unsupported quote currency: {quote_currency}"
+        f"Unsupported quote currency: "
+        f"{quote_currency}"
     )
 
 
@@ -266,7 +379,8 @@ def find_best_market(
 
     if not valid_quotes:
         raise RuntimeError(
-            "No exchange returned a valid market quote."
+            "No exchange returned a valid "
+            "market quote."
         )
 
     buy_candidates = [

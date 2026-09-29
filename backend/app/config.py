@@ -16,7 +16,11 @@ class Settings(BaseSettings):
     simulation_bot_interval_seconds: int = 60
 
     simulation_bot_account_id: int = 1
-    simulation_bot_symbol: str = "BTCUSDT"
+
+    simulation_bot_symbols: str = (
+        "BTCUSDT,ETHUSDT,SOLUSDT"
+    )
+
     simulation_bot_capital_usd: Decimal = Decimal("5")
 
     simulation_bot_max_trade_usd: Decimal = Decimal("5")
