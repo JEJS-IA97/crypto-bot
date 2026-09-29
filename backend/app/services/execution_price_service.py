@@ -56,6 +56,7 @@ def calculate_buy_execution(
         "fee_per_unit_usd": fee_per_unit_usd,
         "effective_price_usd": effective_price_usd,
         "ask_quantity": quote.get("ask_quantity"),
+        "fetched_at": quote.get("fetched_at"),
     }
 
 
@@ -103,6 +104,7 @@ def calculate_sell_execution(
         "fee_per_unit_usd": fee_per_unit_usd,
         "effective_price_usd": effective_price_usd,
         "bid_quantity": quote.get("bid_quantity"),
+        "fetched_at": quote.get("fetched_at"),
     }
 
 

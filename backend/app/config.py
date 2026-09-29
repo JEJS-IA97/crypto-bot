@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     simulation_bot_min_liquidity_usd: Decimal = Decimal("10")
     simulation_bot_max_position_usd: Decimal = Decimal("20")
 
+    simulation_bot_max_quote_age_seconds: int = 5
+    simulation_bot_max_slippage_percent: Decimal = Decimal("0.20")
+
     simulation_bot_cooldown_seconds: int = 300
     simulation_bot_max_trades_per_day: int = 3
 

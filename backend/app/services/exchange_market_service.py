@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -34,6 +35,12 @@ def _decimal(
         return None
 
     return Decimal(str(value))
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(
+        timezone.utc
+    ).isoformat()
 
 
 def _split_symbol(
@@ -107,6 +114,7 @@ def _build_quote(
         "ask_quantity": _decimal(ask_quantity),
         "last_price": _decimal(last_price),
         "volume_24h": _decimal(volume_24h),
+        "fetched_at": _utc_now_iso(),
     }
 
 
