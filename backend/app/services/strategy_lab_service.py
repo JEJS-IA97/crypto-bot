@@ -1,14 +1,21 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Iterable
 
-from app.services.execution_price_service import select_best_execution
-from app.services.trade_opportunity_service import find_best_opportunity
+from app.services.execution_price_service import (
+    calculate_buy_execution,
+    calculate_sell_execution,
+    select_best_execution,
+)
+from app.services.trade_opportunity_service import (
+    calculate_opportunity,
+    find_best_opportunity,
+)
 
 
 @dataclass(frozen=True)
@@ -187,31 +194,71 @@ def _future_snapshot_after_latency(
     return None
 
 
-def _proxy_result_at_snapshot(
+def _find_execution_at_exchange(
+    snapshot: Snapshot,
+    exchange: str,
+    side: str,
+) -> dict[str, Any] | None:
+    quotes = normalize_snapshot_quotes(snapshot)
+
+    for quote in quotes:
+        if quote.get("exchange") != exchange:
+            continue
+
+        if side == "BUY" and quote.get("ask_price") is not None:
+            return calculate_buy_execution(quote)
+
+        if side == "SELL" and quote.get("bid_price") is not None:
+            return calculate_sell_execution(quote)
+
+    return None
+
+
+def _locked_future_profit(
     snapshot: Snapshot,
     config: StrategyConfig,
+    opportunity: dict[str, Any],
 ) -> Decimal | None:
-    evaluation = evaluate_snapshot(snapshot, config)
-    if evaluation is None:
+    buy_exchange = str(opportunity["buy_exchange"])
+    sell_exchange = str(opportunity["sell_exchange"])
+
+    future_buy = _find_execution_at_exchange(
+        snapshot=snapshot,
+        exchange=buy_exchange,
+        side="BUY",
+    )
+    future_sell = _find_execution_at_exchange(
+        snapshot=snapshot,
+        exchange=sell_exchange,
+        side="SELL",
+    )
+
+    if future_buy is None or future_sell is None:
         return None
 
-    opportunity = evaluation["opportunity"]
-    profit = Decimal(str(opportunity["estimated_profit_usd"]))
-    penalty = (
-        config.taker_slippage_percent / Decimal("100")
-    )
+    if future_buy["quote_currency"] != future_sell["quote_currency"]:
+        return None
 
-    buy_price = Decimal(str(opportunity["buy_effective_price_usd"]))
-    sell_price = Decimal(str(opportunity["sell_effective_price_usd"]))
     quantity = Decimal(str(opportunity["quantity"]))
-
-    slippage_cost = (
-        (buy_price + sell_price)
-        * penalty
-        * quantity
+    capital_used = quantity * Decimal(
+        str(future_buy["effective_price_usd"])
+    )
+    future_sell_value = quantity * Decimal(
+        str(future_sell["effective_price_usd"])
     )
 
-    return profit - slippage_cost
+    if capital_used <= 0:
+        return None
+
+    gross_proxy_profit = future_sell_value - capital_used
+
+    penalty = config.taker_slippage_percent / Decimal("100")
+    slippage_cost = (
+        Decimal(str(future_buy["effective_price_usd"]))
+        + Decimal(str(future_sell["effective_price_usd"]))
+    ) * penalty * quantity
+
+    return gross_proxy_profit - slippage_cost
 
 
 def backtest(
@@ -224,21 +271,28 @@ def backtest(
     equity = Decimal("0")
     peak = Decimal("0")
     max_drawdown = Decimal("0")
+
     candidates = 0
     executable_candidates = 0
     profitable_samples = 0
     survived_samples = 0
+
     proxy_profits: list[Decimal] = []
     last_trade_at: dict[str, datetime] = {}
 
-    for index, snapshot in enumerate(snapshots):
+    ordered = sorted(snapshots, key=lambda item: item.timestamp)
+
+    for index, snapshot in enumerate(ordered):
         evaluation = evaluate_snapshot(snapshot, config)
         if evaluation is None:
             continue
 
         candidates += 1
         opportunity = evaluation["opportunity"]
-        estimated_profit = Decimal(str(opportunity["estimated_profit_usd"]))
+
+        estimated_profit = Decimal(
+            str(opportunity["estimated_profit_usd"])
+        )
         if estimated_profit <= 0:
             continue
 
@@ -246,32 +300,46 @@ def backtest(
 
         previous_trade = last_trade_at.get(snapshot.symbol)
         if previous_trade is not None:
-            elapsed = (snapshot.timestamp - previous_trade).total_seconds()
+            elapsed = (
+                snapshot.timestamp - previous_trade
+            ).total_seconds()
             if elapsed < config.cooldown_seconds:
                 continue
 
         profitable_samples += 1
+
         future_snapshot = _future_snapshot_after_latency(
-            snapshots,
+            ordered,
             index,
             config.assumed_latency_seconds,
         )
         if future_snapshot is None:
             continue
 
-        future_profit = _proxy_result_at_snapshot(
-            future_snapshot,
-            config,
+        # Critical realism rule:
+        # the future result must use the SAME buy/sell exchanges selected
+        # at signal time. We must not re-select the best exchanges after
+        # latency, otherwise the backtest introduces look-ahead bias.
+        future_profit = _locked_future_profit(
+            snapshot=future_snapshot,
+            config=config,
+            opportunity=opportunity,
         )
-        if future_profit is None or future_profit <= 0:
+        if future_profit is None:
             continue
 
-        survived_samples += 1
         last_trade_at[snapshot.symbol] = snapshot.timestamp
         proxy_profits.append(future_profit)
+
         equity += future_profit
         peak = max(peak, equity)
-        max_drawdown = max(max_drawdown, peak - equity)
+        max_drawdown = max(
+            max_drawdown,
+            peak - equity,
+        )
+
+        if future_profit > 0:
+            survived_samples += 1
 
     total_proxy = sum(proxy_profits, Decimal("0"))
     average_proxy = (
@@ -279,23 +347,25 @@ def backtest(
         if proxy_profits
         else Decimal("0")
     )
+
     win_rate = (
         Decimal(str(survived_samples))
-        / Decimal(str(profitable_samples))
+        / Decimal(str(len(proxy_profits)))
         * Decimal("100")
-        if profitable_samples
+        if proxy_profits
         else Decimal("0")
     )
+
     trades_per_snapshot = (
         Decimal(str(len(proxy_profits)))
-        / Decimal(str(len(snapshots)))
-        if snapshots
+        / Decimal(str(len(ordered)))
+        if ordered
         else Decimal("0")
     )
 
     return BacktestResult(
         config=config,
-        snapshots=len(snapshots),
+        snapshots=len(ordered),
         candidates=candidates,
         executable_candidates=executable_candidates,
         profitable_samples=profitable_samples,
@@ -329,9 +399,6 @@ def split_time_series(
     if total == 1:
         return ordered, [], []
 
-    # For very small datasets, preserve chronological order while ensuring
-    # validation and test are not accidentally empty when at least three
-    # observations exist. Ratio-perfect splits are impossible at this size.
     train_end = max(1, int(total * train_ratio))
     train_end = min(train_end, total - 2) if total >= 3 else 1
 
