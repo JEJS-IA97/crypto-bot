@@ -1,6 +1,7 @@
 import threading
 import time
 import unittest
+from decimal import Decimal
 from unittest.mock import patch
 
 from app.services.bot_engine import execute_market
@@ -37,12 +38,15 @@ class ExecutionLockTest(unittest.TestCase):
             opportunity = {
                 "status": "TRADE",
                 "symbol": symbol,
+                "buy_effective_price_usd": Decimal("100"),
+                "sell_effective_price_usd": Decimal("101"),
             }
 
             return (
                 {
                     "decision": "READY_TO_TRADE",
                     "symbol": symbol,
+                    "opportunity": opportunity,
                 },
                 opportunity,
                 {},
@@ -64,7 +68,7 @@ class ExecutionLockTest(unittest.TestCase):
                     db=None,
                     account_id=1,
                     symbol="BTCUSDT",
-                    capital_usd=5,
+                    capital_usd=Decimal("5"),
                 )
             except Exception as exc:
                 errors.append(exc)
