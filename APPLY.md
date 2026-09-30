@@ -1,21 +1,21 @@
 # Apply this stage
 
-From the repository root:
+Start from the current `master` commit that contains the OKX execution foundation. Do not remove or modify the existing OKX files.
+
+Copy these files into the repository root, preserving paths:
+
+- `backend/app/services/strategy_lab_service.py`
+- `backend/collect_market_snapshots.py`
+- `backend/train_strategy.py`
+- `backend/tests/test_strategy_lab.py`
+- `backend/README-strategy-lab.md`
+
+Then from `backend` run:
 
 ```powershell
-git checkout master
-git pull origin master
-git checkout -b feature/okx-demo-execution
-```
-
-Extract this bundle into the repository root, preserving paths. It contains complete replacement files for `backend/app/config.py` and `backend/.env.example`, plus the new OKX/execution files.
-
-From `backend` run:
-
-```powershell
-python -m unittest tests/test_okx_demo_client.py
+python -m unittest tests/test_strategy_lab.py
 python -m unittest discover -s tests -p "test_*.py"
 python -m compileall app tests
 ```
 
-Do not put API keys or secrets into Git or into this bundle.
+The collector uses only public market data. Do not add API keys to this stage.
