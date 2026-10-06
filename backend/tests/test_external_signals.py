@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import create_engine
@@ -120,6 +120,53 @@ class TtlAndPriceDistanceTests(unittest.TestCase):
             _signal(price_limit=100.5)  # type: ignore[arg-type]
         with self.assertRaises(TypeError):
             _signal(quantity=0.05)  # type: ignore[arg-type]
+
+    def test_issued_at_with_timezone_is_normalized(self) -> None:
+        # RFC3339 con offset (+00:00): no debe reventar la comparación.
+        fresh = _signal(
+            issued_at=(NOW - timedelta(seconds=10)).replace(
+                tzinfo=timezone.utc
+            )
+        )
+        result = self._validate(fresh)
+        self.assertTrue(result.accepted, result.reason)
+
+        stale = _signal(
+            issued_at=(NOW - timedelta(seconds=301)).replace(
+                tzinfo=timezone.utc
+            )
+        )
+        result = self._validate(stale)
+        self.assertFalse(result.accepted)
+        self.assertEqual(result.reason, "signal_expired")
+
+        future = _signal(
+            issued_at=(NOW + timedelta(seconds=60)).replace(
+                tzinfo=timezone.utc
+            )
+        )
+        result = self._validate(future)
+        self.assertFalse(result.accepted)
+        self.assertEqual(result.reason, "signal_timestamp_invalid")
+
+    def test_issued_at_with_non_utc_offset_is_normalized(self) -> None:
+        # El mismo instante (NOW-10s UTC) expresado en +05:00 sigue fresco.
+        local = (NOW - timedelta(seconds=10)) + timedelta(hours=5)
+        offset = _signal(
+            issued_at=local.replace(tzinfo=timezone(timedelta(hours=5)))
+        )
+        result = self._validate(offset)
+        self.assertTrue(result.accepted, result.reason)
+
+        stale_local = (NOW - timedelta(seconds=301)) + timedelta(hours=5)
+        stale = _signal(
+            issued_at=stale_local.replace(
+                tzinfo=timezone(timedelta(hours=5))
+            )
+        )
+        result = self._validate(stale)
+        self.assertFalse(result.accepted)
+        self.assertEqual(result.reason, "signal_expired")
 
 
 class DuplicateAndSymbolTests(unittest.TestCase):

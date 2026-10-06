@@ -7,7 +7,7 @@ unmet condition rejects the signal with a machine-readable reason.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -34,6 +34,13 @@ REASON_INVALID_QUANTITY = "invalid_quantity"
 def _require_optional_decimal(name: str, value: object) -> None:
     if value is not None and not isinstance(value, Decimal):
         raise TypeError(f"{name} must be Decimal")
+
+
+def _naive_utc(value: datetime) -> datetime:
+    """Convierte a la convención naive-UTC de `utc_now()` (RF-8)."""
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 @dataclass(frozen=True)
@@ -132,6 +139,7 @@ def validate_external_signal(
     """
     if not isinstance(now, datetime):
         raise TypeError("now must be a datetime")
+    now = _naive_utc(now)
     if not isinstance(current_price, Decimal):
         raise TypeError("current_price must be Decimal")
     if current_price <= 0:
@@ -152,6 +160,8 @@ def validate_external_signal(
     issued_at = signal.issued_at
     if issued_at is None:
         issued_at = now
+    else:
+        issued_at = _naive_utc(issued_at)
     if issued_at > now:
         return SignalValidation(False, REASON_BAD_TIMESTAMP, symbol)
     if (now - issued_at).total_seconds() > ttl:

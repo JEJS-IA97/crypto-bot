@@ -4,7 +4,7 @@ import tempfile
 import threading
 import time
 import unittest
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
@@ -440,6 +440,33 @@ class BotApiRoutesTests(BotApiTestBase):
         start = self.client.post("/api/bot/start")
         self.assertEqual(start.status_code, 200)
         self.assertTrue(start.json()["running"])
+
+    def test_external_signal_with_timezone_stamp(self) -> None:
+        # issued_at RFC3339 con offset: rechazo normal, nunca 500.
+        with patch.object(
+            BinanceMarketDataClient,
+            "get_klines",
+            return_value=CANDLES,
+        ), patch.object(
+            BinanceMarketDataClient,
+            "get_exchange_info",
+            return_value=RULES,
+        ):
+            response = self.client.post(
+                "/api/signals/external",
+                json={
+                    "symbol": "BTCUSDT",
+                    "side": "BUY",
+                    "source": "copy",
+                    "issued_at": (
+                        datetime.now(timezone.utc)
+                        - timedelta(seconds=600)
+                    ).isoformat(),
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["estado"], "rechazada")
+        self.assertEqual(response.json()["motivo"], "signal_expired")
 
     def test_token_required_in_live(self) -> None:
         with patch.object(settings, "api_token", "sekret"):
