@@ -69,6 +69,21 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(settings.smtp_pass, "app-password")
         self.assertEqual(settings.report_to, "owner@example.com")
 
+    def test_keepalive_settings(self) -> None:
+        """Spec 002 RF-1: sin KEEPALIVE_URL el servicio no se vigila."""
+        settings = _settings_without_env()
+        self.assertEqual(settings.keepalive_url, "")
+        with patch.dict(
+            os.environ,
+            {"KEEPALIVE_URL": "https://crypto-bot.onrender.com"},
+            clear=True,
+        ):
+            settings = Settings(_env_file=None)
+        self.assertEqual(
+            settings.keepalive_url,
+            "https://crypto-bot.onrender.com",
+        )
+
 
 class ForeignKeyTests(unittest.TestCase):
     def test_foreign_keys_on(self) -> None:

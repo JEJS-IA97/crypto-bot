@@ -32,14 +32,14 @@ Metodología TDD: test primero → rojo → implementar → verde → suite comp
     no se aplican a PG.
   - Tests: `tests/test_database_postgres.py`
 
-- [ ] **T5** — Keepalive antispin-down
+- [x] **T5** — Keepalive antispin-down
   - RF: RF-1
   - Hecho cuando: `app/services/keepalive_service.py` (should_keepalive / run_ping /
     keepalive_loop a 540 s) y `main.py` lanza/param la tarea según `KEEPALIVE_URL`;
     tests con `httpx` mockeado (sin red) incluyendo url vacía, error de red y shutdown.
   - Tests: `tests/test_keepalive_service.py`
 
-- [ ] **T6** — CORS configurable + token y API URL en el panel
+- [x] **T6** — CORS configurable + token y API URL en el panel
   - RF: RF-6, RF-8
   - Hecho cuando: `CORS_ORIGINS` (CSV) alimenta el middleware de `main.py` (test de
     preflight con origin configurado), el cliente frontend usa `VITE_API_URL` (default
@@ -47,7 +47,7 @@ Metodología TDD: test primero → rojo → implementar → verde → suite comp
     permite introducir el token.
   - Tests: `tests/test_cors.py` + tests vitest del cliente frontend
 
-- [ ] **T7** — Despliegue: render.yaml y workflows de GitHub
+- [x] **T7** — Despliegue: render.yaml y workflows de GitHub
   - RF: RF-1, RF-3, RF-4, RF-8
   - Hecho cuando: existen `render.yaml` (blueprint free, env vars, `sync: false` en
     secretos), `.github/workflows/daily-report.yml` (cron `0 8 * * *` + dispatch, Secrets,
@@ -56,7 +56,7 @@ Metodología TDD: test primero → rojo → implementar → verde → suite comp
     `ALLOW_LIVE_TRADING`/`echo secrets`.
   - Tests: `tests/test_workflows.py`
 
-- [ ] **T8** — Documentación de puesta en marcha y validación final
+- [x] **T8** — Documentación de puesta en marcha y validación final
   - RF: todos
   - Hecho cuando: `backend/README.md` documenta los5 pasos humanos (Neon, Render con env
     vars, Gmail 2FA + contraseña de aplicación, Pages + CORS, primer correo) y la recorrida

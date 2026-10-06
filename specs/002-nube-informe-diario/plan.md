@@ -85,8 +85,9 @@ y parada coordinada en el shutdown. CORS: `allow_origins=settings.cors_origins` 
 - `pages.yml`: `actions/configure-pages`, `actions/upload-pages-artifact` sobre `frontend/dist`,
   `actions/deploy-pages`, build con `npm ci && npm run build`.
 - Seguridad: ninguno contiene `ALLOW_LIVE_TRADING` ni `echo ${{ secrets`.
-- `render.yaml`: `freeInstance`, `startCommand` con `uvicorn app.main:app`, env
-  `SIMULATION_BOT_ENABLED=true`, `DATABASE_URL`/`API_TOKEN` con `sync: false`.
+- `render.yaml`: `plan: free`, `rootDir: backend`, `healthCheckPath: /health`,
+  `startCommand` con `uvicorn app.main:app`, env `SIMULATION_BOT_ENABLED=true`,
+  `DATABASE_URL`/`API_TOKEN`/`CORS_ORIGINS`/`KEEPALIVE_URL` con `sync: false`.
 
 ### `tests/test_database_postgres.py` (sin servidor PG)
 - `CreateTable` compilado con `postgresql.dialect()` para cada tabla de `Base.metadata`

@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     report_to: str = ""
 
+    # Keepalive antispin-down de Render free (spec 002, RF-1). Vacío = off.
+    keepalive_url: str = ""
+
+    # Orígenes CORS permitidos, CSV (spec 002, RF-8). En despliegue incluir
+    # la URL de GitHub Pages; en local, el dev server de Vite.
+    cors_origins: str = (
+        "http://localhost:5173,http://127.0.0.1:5173,"
+        "http://localhost:4173"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

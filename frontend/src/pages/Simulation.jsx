@@ -14,6 +14,7 @@ import TradingPanel from "../components/TradingPanel";
 import MetricsPanel from "../components/MetricsPanel";
 import KillSwitch from "../components/KillSwitch";
 import ExternalSignalForm from "../components/ExternalSignalForm";
+import TokenField from "../components/TokenField";
 
 function formatMoney(value) {
     return Number(value || 0).toLocaleString("en-US", {
@@ -348,6 +349,7 @@ function Simulation() {
             <section className="control-panels-grid">
                 <KillSwitch />
                 <ExternalSignalForm />
+                <TokenField />
             </section>
 
             <section className="bottom-panels-grid">

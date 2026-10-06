@@ -1,9 +1,9 @@
 # crypto-bot — backend
 
 Bot de trading de cripto en Binance Spot con capital mínimo (20 USD), construido
-con metodología SDD. La especificación activa vive en `../specs/001-bot-binance-spot/`
-(`spec.md`, `plan.md`, `tasks.md`); las reglas del proyecto en `../AGENTS.md` y
-`../docs/constitution.md`.
+con metodología SDD. Las especificaciones viven en `../specs/`: `001-bot-binance-spot/`
+(completa) y `002-nube-informe-diario/` (ejecución gratis en la nube + informe diario);
+las reglas del proyecto en `../AGENTS.md` y `../docs/constitution.md`.
 
 ## Requisitos
 
@@ -30,6 +30,7 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 | Descargar velas (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbol BTCUSDT --interval 1h` |
 | Backtest + grid sobre velas | `.\.venv\Scripts\python.exe train_strategy.py --klines-dir klines --plan ..\specs\001-bot-binance-spot\plan.md` |
 | Testnet (manual, T20) | `.\.venv\Scripts\python.exe check_binance_testnet.py` |
+| Informe diario manual | `.\.venv\Scripts\python.exe send_daily_report.py [--date YYYY-MM-DD]` |
 
 ## Estructura
 
@@ -69,6 +70,45 @@ No refactorizar ni ampliar: `arbitrage_service`, `trade_opportunity_service`,
 `check_okx_demo.py` y `collect_market_snapshots.py`). El baseline SHA-256 está en
 `../specs/001-bot-binance-spot/frozen_zone.json` y lo verifica
 `tests/test_frozen_zone.py`, que además ejecuta la sub-suite congelada.
+
+## Nube gratis (spec 002)
+
+El bot corre 24/7 sin coste (detalle en `../specs/002-nube-informe-diario/`):
+
+| Pieza | Dónde | Por qué |
+| --- | --- | --- |
+| API + bucle del bot | **Render free** (`render.yaml`) | auto-arranque + keepalive cada 9 min (RF-1) |
+| Base de datos | **Neon free** (Postgres) | SQLite no sobrevive a los reinicios de Render free (RF-2) |
+| Informe diario 08:00 UTC | **GitHub Actions → Gmail SMTP** | Render free bloquea el SMTP saliente desde 2025-09-26 (RF-3) |
+| Panel | **GitHub Pages** | estático y gratis; habla con Render vía CORS + token (RF-8) |
+
+### Puesta en marcha (5 pasos)
+
+1. **Neon (Postgres gratis):** crea un proyecto y copia el *pooled connection string*.
+2. **Render:** *New + Blueprint* con este repo (usa `render.yaml`, plan free, root
+   `backend`). Env vars del blueprint:
+   - `DATABASE_URL` = URL de Neon,
+   - `API_TOKEN` = token fuerte (p. ej. `openssl rand -hex 32`),
+   - `KEEPALIVE_URL` = URL pública del servicio (`https://<nombre>.onrender.com`),
+   - `CORS_ORIGINS` = URL de Pages (se confirma en el paso 4).
+   `SIMULATION_BOT_ENABLED=true` ya viene en el blueprint.
+3. **Gmail:** activa la verificación en 2 pasos y genera una **contraseña de
+ aplicación** (Google → Contraseñas de apps). Secrets de GitHub: `SMTP_USER`
+   (tu Gmail), `SMTP_PASS` (la contraseña de aplicación), `REPORT_TO` (destinatario
+   del informe). Nunca van en el código ni en `.env` del repo (RF-4).
+4. **GitHub Pages:** repo **público** → *Settings → Pages → Source: GitHub Actions*;
+   crea la variable de repo `VITE_API_URL` con la URL de Render y, con la URL de
+   Pages resultante (`https://jejs-ia97.github.io/crypto-bot/`), actualiza
+   `CORS_ORIGINS` en Render.
+5. **Primer correo y kill switch:** *Actions → Informe diario → Run workflow* (o
+   espera al cron de las 08:00 UTC); abre el panel, pega el `API_TOKEN` en
+   «Token de control» y usa Detener/Arrancar (RF-6). En local:
+   `python send_daily_report.py` con tu `.env`.
+
+Notas: el límite gratis de Render son 750 h/mes (un servicio siempre despierto usa
+~744 h); si Render suspende el servicio, el informe diario **sigue saliendo** desde
+Actions, que lee Neon directamente (RF-5). En local todo sigue en SQLite (`.env`),
+sin tocar la nube (RNF-5).
 
 ## Testnet
 
