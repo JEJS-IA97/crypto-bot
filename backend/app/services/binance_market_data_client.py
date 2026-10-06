@@ -14,9 +14,8 @@ from typing import Any
 
 import httpx
 
+from app.config import settings
 from app.domain.signal_engine import Candle
-
-DEFAULT_BASE_URL = "https://api.binance.com"
 
 
 class MarketDataUnavailable(RuntimeError):
@@ -41,13 +40,15 @@ class BinanceMarketDataClient:
 
     def __init__(
         self,
-        base_url: str = DEFAULT_BASE_URL,
+        base_url: str | None = None,
         timeout_seconds: float = 10.0,
         klines_freshness_seconds: float = 30.0,
         rules_freshness_seconds: float = 300.0,
         clock: Callable[[], float] = monotonic,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = (
+            base_url or settings.binance_market_data_base_url
+        ).rstrip("/")
         self.timeout_seconds = timeout_seconds
         self.klines_freshness_seconds = klines_freshness_seconds
         self.rules_freshness_seconds = rules_freshness_seconds

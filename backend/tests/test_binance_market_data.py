@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import httpx
 
+from app.config import settings
 from app.domain.signal_engine import Candle
 from app.services.binance_market_data_client import (
     BinanceMarketDataClient,
@@ -40,6 +41,33 @@ class BinanceMarketDataClientTest(unittest.TestCase):
     def setUp(self) -> None:
         self.now = 1000.0
         self.client = BinanceMarketDataClient(clock=lambda: self.now)
+
+    def test_default_base_url_is_api_binance_com(self) -> None:
+        self.assertEqual(self.client.base_url, "https://api.binance.com")
+
+    def test_default_base_url_comes_from_settings(self) -> None:
+        # Host configurable (p. ej. data-api.binance.vision en la nube).
+        with patch.object(
+            settings,
+            "binance_market_data_base_url",
+            "https://data-api.binance.vision",
+        ):
+            client = BinanceMarketDataClient(clock=lambda: self.now)
+        self.assertEqual(
+            client.base_url, "https://data-api.binance.vision"
+        )
+
+    def test_explicit_base_url_beats_settings(self) -> None:
+        with patch.object(
+            settings,
+            "binance_market_data_base_url",
+            "https://data-api.binance.vision",
+        ):
+            client = BinanceMarketDataClient(
+                base_url="https://api.binance.com",
+                clock=lambda: self.now,
+            )
+        self.assertEqual(client.base_url, "https://api.binance.com")
 
     @patch("app.services.binance_market_data_client.httpx.request")
     def test_klines_ok(self, request_mock) -> None:

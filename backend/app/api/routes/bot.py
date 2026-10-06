@@ -27,7 +27,7 @@ from app.services.phase_service import (
     live_trading_blockers,
     request_phase_change,
 )
-from app.services.risk_guard_service import get_runtime
+from app.services.risk_guard_service import get_runtime, reset_breaker
 
 router = APIRouter(
     prefix="/api/bot",
@@ -56,12 +56,20 @@ def start_bot(
     auth: None = Depends(require_control_token),
 ) -> dict[str, Any]:
     runtime = get_runtime(db)
+    reset = runtime.breaker_active
+    if reset:
+        # RF-22: reinicio manual — arrancar cierra el breaker abierto.
+        reset_breaker(db)
     runtime.running = True
     db.commit()
     controller.notify()
     return {
         "running": True,
-        "mensaje": "Bot arrancado.",
+        "mensaje": (
+            "Bot arrancado; circuit breaker reiniciado."
+            if reset
+            else "Bot arrancado."
+        ),
     }
 
 

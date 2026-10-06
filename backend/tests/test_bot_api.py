@@ -287,6 +287,47 @@ class BotApiRoutesTests(BotApiTestBase):
         self.assertEqual(blocked["motivo"], "criteria_not_met")
         self.assertTrue(blocked["falta"])
 
+    def test_start_resets_breaker(self) -> None:
+        # RF-22: reinicio manual — «Arrancar» cierra el breaker abierto.
+        db = self.factory()
+        runtime = get_runtime(db)
+        runtime.running = False
+        runtime.breaker_active = True
+        runtime.consecutive_failures = 5
+        runtime.breaker_reason = "5 consecutive cycle failures"
+        db.commit()
+        db.close()
+
+        response = self.client.post("/api/bot/start")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["running"])
+
+        status = self.client.get("/api/bot/status").json()
+        self.assertTrue(status["running"])
+        self.assertFalse(status["breaker_active"])
+        self.assertEqual(status["consecutive_failures"], 0)
+        self.assertIsNone(status["breaker_reason"])
+
+    def test_start_without_breaker_keeps_state(self) -> None:
+        # Empezar sin breaker no altera el estado de riesgo.
+        db = self.factory()
+        runtime = get_runtime(db)
+        runtime.running = False
+        runtime.breaker_active = False
+        runtime.consecutive_failures = 0
+        runtime.breaker_reason = None
+        db.commit()
+        db.close()
+
+        response = self.client.post("/api/bot/start")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["running"])
+
+        status = self.client.get("/api/bot/status").json()
+        self.assertTrue(status["running"])
+        self.assertFalse(status["breaker_active"])
+        self.assertEqual(status["consecutive_failures"], 0)
+
     def test_start_stop_and_signal(self) -> None:
         with patch.object(
             BinanceMarketDataClient,

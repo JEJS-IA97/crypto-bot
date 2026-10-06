@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     binance_api_secret: str = ""
     binance_testnet_base_url: str = "https://testnet.binance.vision"
     binance_recv_window_ms: int = 5000
+    # Host de datos públicos (klines/exchangeInfo). En la nube puede ser
+    # data-api.binance.vision si api.binance.com bloquea la IP del proveedor.
+    binance_market_data_base_url: str = "https://api.binance.com"
 
     okx_demo_api_key: str = ""
     okx_demo_api_secret: str = ""
