@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,11 +12,24 @@ from app.services import bot_loop
 from app.services.keepalive_service import keepalive_loop, should_keepalive
 
 
+def _as_origin(value: str) -> str:
+    """Normaliza a origen CORS (scheme://host[:port]).
+
+    El navegador sólo envía `Origin: scheme://host` (nunca la ruta), así
+    que una entrada con path (`https://x/crypto-bot/`) se reduce a su
+    origen real (RF-8).
+    """
+    parts = urlsplit(value)
+    if not parts.scheme or not parts.netloc:
+        return value
+    return f"{parts.scheme}://{parts.netloc}"
+
+
 def _cors_kwargs(origins_csv: str) -> dict[str, object]:
     """Opciones de CORSMiddleware a partir del CSV `CORS_ORIGINS` (RF-8)."""
     return {
         "allow_origins": [
-            origin.strip()
+            _as_origin(origin.strip())
             for origin in origins_csv.split(",")
             if origin.strip()
         ],

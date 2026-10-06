@@ -38,6 +38,17 @@ class CorsSettingsTests(unittest.TestCase):
         self.assertEqual(kwargs["allow_methods"], ["*"])
         self.assertEqual(kwargs["allow_headers"], ["*"])
 
+    def test_cors_kwargs_strips_path_to_origin(self) -> None:
+        # El navegador sólo manda scheme://host: una entrada con ruta
+        # ("/crypto-bot/") se normaliza al origen real (RF-8).
+        kwargs = main_module._cors_kwargs(
+            "https://jejs-ia97.github.io/crypto-bot/,http://localhost:5173/"
+        )
+        self.assertEqual(
+            kwargs["allow_origins"],
+            ["https://jejs-ia97.github.io", "http://localhost:5173"],
+        )
+
     def test_cors_origins_default(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             settings = Settings(_env_file=None)
@@ -88,6 +99,21 @@ class CorsHeaderTests(unittest.TestCase):
         )
         self.assertIsNone(
             response.headers.get("access-control-allow-origin")
+        )
+
+    def test_stored_value_with_path_matches_browser_origin(self) -> None:
+        # Valor guardado con la ruta de Pages: el Origin real del
+        # navegador (sin ruta) sigue siendo permitido.
+        _apply_origins("https://jejs-ia97.github.io/crypto-bot/")
+        client = TestClient(main_module.app)
+        response = client.get(
+            "/health",
+            headers={"Origin": PAGES_ORIGIN},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"),
+            PAGES_ORIGIN,
         )
 
     def test_preflight_allows_authorization_header(self) -> None:

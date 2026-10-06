@@ -90,16 +90,17 @@ El bot corre 24/7 sin coste (detalle en `../specs/002-nube-informe-diario/`):
    - `DATABASE_URL` = URL de Neon,
    - `API_TOKEN` = token fuerte (p. ej. `openssl rand -hex 32`),
    - `KEEPALIVE_URL` = URL pública del servicio (`https://<nombre>.onrender.com`),
-   - `CORS_ORIGINS` = URL de Pages (se confirma en el paso 4).
+   - `CORS_ORIGINS` = origen de Pages, **sin ruta**: `https://<usuario>.github.io`
+     (el navegador nunca envía la ruta en `Origin`; se confirma en el paso 4).
    `SIMULATION_BOT_ENABLED=true` ya viene en el blueprint.
 3. **Gmail:** activa la verificación en 2 pasos y genera una **contraseña de
  aplicación** (Google → Contraseñas de apps). Secrets de GitHub: `SMTP_USER`
    (tu Gmail), `SMTP_PASS` (la contraseña de aplicación), `REPORT_TO` (destinatario
    del informe). Nunca van en el código ni en `.env` del repo (RF-4).
 4. **GitHub Pages:** repo **público** → *Settings → Pages → Source: GitHub Actions*;
-   crea la variable de repo `VITE_API_URL` con la URL de Render y, con la URL de
-   Pages resultante (`https://jejs-ia97.github.io/crypto-bot/`), actualiza
-   `CORS_ORIGINS` en Render.
+   crea la variable de repo `VITE_API_URL` con la URL de Render y, con el **origen**
+   de Pages (`https://jejs-ia97.github.io`, sin `/crypto-bot`), actualiza
+   `CORS_ORIGINS` en Render (los valores con ruta se normalizan solos).
 5. **Primer correo y kill switch:** *Actions → Informe diario → Run workflow* (o
    espera al cron de las 08:00 UTC); abre el panel, pega el `API_TOKEN` en
    «Token de control» y usa Detener/Arrancar (RF-6). En local:
