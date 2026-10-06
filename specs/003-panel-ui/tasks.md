@@ -54,7 +54,7 @@ Flujo: cada tarea en rama `ui-redesign` → verde → checkbox → reporte → P
 - [x] **T9** — Preview local + aprobación (D-3).
   - Hecho cuando: usuario prueba con `npm run dev` y aprueba el diseño.
 
-- [ ] **T10** — Merge y deploy.
+- [x] **T10** — Merge y deploy.
   - Hecho cuando: `ui-redesign` → `master` tras aprobación; Pages redesplegado
     y panel en prod verificado (CORS + gráfica).
 
