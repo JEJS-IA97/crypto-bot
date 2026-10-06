@@ -11,7 +11,7 @@ tras la investigación de hosting: **todo gratis y con backend en Render**.
 | 1 | ¿Dónde corre el bot 24/7? | **Render free** (web service único). Se descartan: Actions-como-bot (v1), Render pago (~7 $/mes), Oracle VM, PC+túnel. |
 | 2 | ¿Dónde persiste la BD? | **SQLite no sirve** (filesystem efímero en Render free). El propietario propuso Mongo Atlas; aclarado que **Mongo no existe en el código** (solo `MONGO_URI=` vacío en `.env.example`) y migrar = reescribir todo → se elige **Postgres gratis (Neon)**, compatible SQLAlchemy con migración media. |
 | 3 | ¿Cómo sale el informe diario si Render free **bloquea el SMTP saliente** (puertos 25/465/587 desde 2025-09-26)? | **Gmail SMTP desde GitHub Actions**: un workflow diario conecta a Neon y ejecuta el CLI de informe (Actions sí permite 587). Mantiene la elección original de Gmail + contraseña de aplicación. |
-| 4 | ¿Frecuencia y destino del correo? | **Diario** a `jose.e.jimenez.1411@gmail.com`, a las **08:00 UTC**. |
+| 4 | ¿Frecuencia y destino del correo? | **Diario** a `jose.e.jimenez.s.97@gmail.com`, a las **08:00 UTC**. |
 | 5 | ¿Dónde vive el panel (frontend)? | **GitHub Pages** (repo debe ser público). Habla con la API de Render (CORS configurable) y lleva campo para el token de control. |
 
 ## B. Hallazgos técnicos y cómo se resuelven

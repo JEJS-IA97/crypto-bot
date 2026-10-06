@@ -88,6 +88,11 @@ class BotApiTestBase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
+        # Aísla el token ambiental del .env: RF-20 se testea aparte.
+        token_patcher = patch.object(settings, "api_token", "")
+        token_patcher.start()
+        self.addCleanup(token_patcher.stop)
+
         db = self.factory()
         self.account = create_simulation_account(
             db,

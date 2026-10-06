@@ -105,9 +105,16 @@ class ForeignKeyTests(unittest.TestCase):
         with self.assertRaises(IntegrityError), engine.begin() as conn:
             conn.exec_driver_sql("INSERT INTO child (id, parent_id) VALUES (1, 999)")
 
-    def test_app_engine_has_foreign_keys(self) -> None:
-        with app_engine.connect() as conn:
-            self.assertEqual(conn.exec_driver_sql("PRAGMA foreign_keys").scalar(), 1)
+    def test_app_engine_dialect_and_foreign_keys(self) -> None:
+        """RF-2: el engine sigue a DATABASE_URL; FK=PRAGMA solo en SQLite."""
+        if app_engine.dialect.name == "sqlite":
+            with app_engine.connect() as conn:
+                self.assertEqual(
+                    conn.exec_driver_sql("PRAGMA foreign_keys").scalar(),
+                    1,
+                )
+        else:
+            self.assertEqual(app_engine.dialect.name, "postgresql")
 
 
 if __name__ == "__main__":
