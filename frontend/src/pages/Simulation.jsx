@@ -11,7 +11,9 @@ import {
 } from "../api/simulation";
 
 import TradingPanel from "../components/TradingPanel";
-import MarketPanel from "../components/MarketPanel";
+import MetricsPanel from "../components/MetricsPanel";
+import KillSwitch from "../components/KillSwitch";
+import ExternalSignalForm from "../components/ExternalSignalForm";
 
 function formatMoney(value) {
     return Number(value || 0).toLocaleString("en-US", {
@@ -172,14 +174,6 @@ function Simulation() {
         }
 
         await loadAccountData(account.id);
-    };
-
-    const handleMarketPriceUpdated = async () => {
-        await loadMarketPrices();
-
-        if (account) {
-            await loadAccountData(account.id);
-        }
     };
 
     if (loading) {
@@ -348,10 +342,12 @@ function Simulation() {
                     onOrderExecuted={handleOrderExecuted}
                 />
 
-                <MarketPanel
-                    marketPrices={marketPrices}
-                    onMarketPriceUpdated={handleMarketPriceUpdated}
-                />
+                <MetricsPanel />
+            </section>
+
+            <section className="control-panels-grid">
+                <KillSwitch />
+                <ExternalSignalForm />
             </section>
 
             <section className="bottom-panels-grid">

@@ -788,3 +788,133 @@
         gap: 14px;
     }
 }
+/* Metrics panel (RF-17 / RF-18) */
+.summary-yellow::before {
+    background: #f59e0b;
+}
+
+.summary-red::before {
+    background: #ef4444;
+}
+
+.metrics-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    color: var(--simulation-muted);
+    font-size: 0.78rem;
+}
+
+.metrics-reason {
+    color: #f87171;
+    font-weight: 700;
+}
+
+.panel-caption.state-active {
+    color: var(--simulation-green);
+}
+
+.panel-caption.state-stopped {
+    color: var(--simulation-muted);
+}
+
+.panel-caption.state-blocked {
+    color: #ef4444;
+}
+
+.metrics-section {
+    margin-top: 26px;
+}
+
+.metrics-section h3 {
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+}
+
+.rejected-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.rejected-list li {
+    padding: 8px 12px;
+    border: 1px solid var(--simulation-border);
+    border-left: 3px solid #ef4444;
+    border-radius: 6px;
+    background: var(--simulation-surface-soft);
+    font-size: 0.78rem;
+}
+
+.rejected-list code {
+    color: #f87171;
+}
+
+.metrics-panel details {
+    font-size: 0.72rem;
+}
+
+.metrics-panel details pre {
+    max-width: 260px;
+    max-height: 140px;
+    overflow: auto;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--simulation-surface-input);
+    color: var(--simulation-muted);
+}
+
+/* Kill switch + señal externa (RF-3 / RF-8 / RF-19) */
+.control-panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.kill-note {
+    margin: 14px 0;
+    color: var(--simulation-muted);
+    font-size: 0.8rem;
+}
+
+.kill-reason {
+    margin-top: 12px;
+    font-size: 0.78rem;
+}
+
+.kill-switch .execute-button {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.field-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--simulation-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.signal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.signal-form .form-message {
+    margin: 0;
+}
+
+@media (max-width: 1050px) {
+    .control-panels-grid {
+        grid-template-columns: 1fr;
+    }
+}

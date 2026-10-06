@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
 
 from sqlalchemy import (
+    Boolean,
+    Date,
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
@@ -346,6 +348,370 @@ class SimulationMarketPrice(Base):
 
     price_usd: Mapped[Decimal] = mapped_column(
         Numeric(20, 12),
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        onupdate=utc_now,
+    )
+
+
+class DecisionOrigin(str, Enum):
+    TECHNICAL = "TECHNICAL"
+    EXTERNAL = "EXTERNAL"
+
+
+class DecisionStatus(str, Enum):
+    PENDING = "PENDING"
+    REJECTED = "REJECTED"
+    OPENED = "OPENED"
+    CLOSED = "CLOSED"
+    ERROR = "ERROR"
+
+
+class PositionStatus(str, Enum):
+    OPEN = "OPEN"
+    STOPPED = "STOPPED"
+    TAKE_PROFIT = "TAKE_PROFIT"
+    CLOSED = "CLOSED"
+    ERROR = "ERROR"
+
+
+class BotPhaseName(str, Enum):
+    SIMULATION = "SIMULATION"
+    TESTNET = "TESTNET"
+    LIVE = "LIVE"
+
+
+class SignalDecision(Base):
+    """Una fila por decisión (técnica o externa), con snapshot y resultado."""
+
+    __tablename__ = "signal_decisions"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    client_order_id: Mapped[str] = mapped_column(
+        String(36),
+        unique=True,
+        index=True,
+    )
+
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
+
+    side: Mapped[TradeSide] = mapped_column(
+        SqlEnum(TradeSide),
+    )
+
+    origin: Mapped[DecisionOrigin] = mapped_column(
+        SqlEnum(DecisionOrigin),
+    )
+
+    source: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    config_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    market_snapshot_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    status: Mapped[DecisionStatus] = mapped_column(
+        SqlEnum(DecisionStatus),
+        default=DecisionStatus.PENDING,
+        index=True,
+    )
+
+    rejection_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    quantity: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    price: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    stop_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    take_profit_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    filled_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    closed_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    fees_usd: Mapped[Decimal | None] = mapped_column(
+        Numeric(20, 8),
+        nullable=True,
+    )
+
+    pnl_usd: Mapped[Decimal | None] = mapped_column(
+        Numeric(20, 8),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        onupdate=utc_now,
+    )
+
+
+class PositionV2(Base):
+    """Posición de la fase 1: una por par, con stop/tp asociados (RF-12/RF-13)."""
+
+    __tablename__ = "position_v2s"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    account_id: Mapped[int] = mapped_column(
+        ForeignKey("simulation_accounts.id"),
+        index=True,
+    )
+
+    decision_id: Mapped[int] = mapped_column(
+        ForeignKey("signal_decisions.id"),
+        unique=True,
+    )
+
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
+
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+        default=Decimal("0"),
+    )
+
+    average_entry_price: Mapped[Decimal] = mapped_column(
+        Numeric(30, 12),
+        default=Decimal("0"),
+    )
+
+    stop_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    take_profit_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(30, 12),
+        nullable=True,
+    )
+
+    stop_order_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    tp_order_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    status: Mapped[PositionStatus] = mapped_column(
+        SqlEnum(PositionStatus),
+        default=PositionStatus.OPEN,
+    )
+
+    entry_fee_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+        default=Decimal("0"),
+    )
+
+    opened_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+    )
+
+    closed_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+
+class TradeIncident(Base):
+    """Incidencia registrada para el panel (RF-13 alerta, RF-24 slippage)."""
+
+    __tablename__ = "trade_incidents"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    kind: Mapped[str] = mapped_column(
+        String(40),
+        index=True,
+    )
+
+    symbol: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        index=True,
+    )
+
+    decision_id: Mapped[int | None] = mapped_column(
+        ForeignKey("signal_decisions.id"),
+        nullable=True,
+        index=True,
+    )
+
+    position_id: Mapped[int | None] = mapped_column(
+        ForeignKey("position_v2s.id"),
+        nullable=True,
+        index=True,
+    )
+
+    details: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+
+class DailyRiskState(Base):
+    """Contador diario de riesgo: pérdida, aperturas y bloqueo (RF-4/RF-5)."""
+
+    __tablename__ = "daily_risk_states"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    day: Mapped[date] = mapped_column(
+        Date,
+        unique=True,
+        index=True,
+    )
+
+    start_equity_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+        default=Decimal("0"),
+    )
+
+    realized_pnl_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+        default=Decimal("0"),
+    )
+
+    opens_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    blocked: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+    )
+
+    block_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+
+class BotPhase(Base):
+    """Fase activa del bot: SIMULATION → TESTNET → LIVE (RF-16)."""
+
+    __tablename__ = "bot_phases"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+    )
+
+    phase: Mapped[BotPhaseName] = mapped_column(
+        SqlEnum(BotPhaseName),
+        default=BotPhaseName.SIMULATION,
+    )
+
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+    )
+
+    evidence_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    changed_by: Mapped[str] = mapped_column(
+        String(50),
+        default="system",
+    )
+
+
+class BotRuntime(Base):
+    """Única fila: kill switch y circuit breaker (RF-3/RF-22)."""
+
+    __tablename__ = "bot_runtimes"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+    )
+
+    running: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+    )
+
+    breaker_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+    )
+
+    consecutive_failures: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    breaker_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     updated_at: Mapped[datetime] = mapped_column(

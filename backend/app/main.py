@@ -4,10 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, simulation
+from app.api.routes import bot, health, signals, simulation
 from app.config import settings
 from app.database import Base, engine
-from app.services.bot_runner_service import run_bot_loop
+from app.services import bot_loop
 
 
 @asynccontextmanager
@@ -21,13 +21,14 @@ async def lifespan(app: FastAPI):
 
     if settings.simulation_bot_enabled:
         bot_task = asyncio.create_task(
-            run_bot_loop(stop_event)
+            bot_loop.run(stop_event=stop_event)
         )
 
     yield
 
     if bot_task is not None:
         stop_event.set()
+        bot_loop.controller.notify()
         await bot_task
 
 
@@ -53,6 +54,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+app.include_router(
+    bot.router
+)
+
+app.include_router(
+    signals.router
+)
 
 app.include_router(
     health.router

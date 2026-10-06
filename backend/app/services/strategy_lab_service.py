@@ -2,20 +2,30 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Iterable
 
+from app.domain.signal_engine import (
+    Candle,
+    SignalAction,
+    StrategyConfig as SignalConfig,
+    evaluate,
+)
 from app.services.execution_price_service import (
     calculate_buy_execution,
     calculate_sell_execution,
     select_best_execution,
 )
 from app.services.trade_opportunity_service import (
-    calculate_opportunity,
     find_best_opportunity,
 )
+
+FEE_RATE_DEFAULT = Decimal("0.001")
+_MONEY_QUANTUM = Decimal("0.00000001")
+_PCT_QUANTUM = Decimal("0.01")
+_HUNDRED = Decimal("100")
 
 
 @dataclass(frozen=True)
@@ -33,18 +43,6 @@ class Snapshot:
     timestamp: datetime
     symbol: str
     quotes: list[dict[str, Any]]
-
-
-@dataclass(frozen=True)
-class TradeSample:
-    timestamp: datetime
-    symbol: str
-    buy_exchange: str
-    sell_exchange: str
-    estimated_profit_usd: Decimal
-    estimated_profit_percent: Decimal
-    realized_proxy_profit_usd: Decimal
-    survived_latency: bool
 
 
 @dataclass(frozen=True)
@@ -71,55 +69,6 @@ class BacktestResult:
             if isinstance(value, Decimal):
                 result[key] = str(value)
         return result
-
-
-def load_jsonl(path: str | Path) -> list[Snapshot]:
-    file_path = Path(path)
-    snapshots: list[Snapshot] = []
-
-    with file_path.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, start=1):
-            raw = line.strip()
-            if not raw:
-                continue
-
-            try:
-                payload = json.loads(raw)
-                timestamp = datetime.fromisoformat(str(payload["timestamp"]))
-                snapshots.append(
-                    Snapshot(
-                        timestamp=timestamp,
-                        symbol=str(payload["symbol"]).upper(),
-                        quotes=list(payload.get("quotes", [])),
-                    )
-                )
-            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-                raise ValueError(
-                    f"Invalid snapshot on line {line_number}: {exc}"
-                ) from exc
-
-    snapshots.sort(key=lambda item: item.timestamp)
-    return snapshots
-
-
-def write_snapshot_jsonl(
-    path: str | Path,
-    snapshots: Iterable[Snapshot],
-) -> None:
-    file_path = Path(path)
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with file_path.open("w", encoding="utf-8") as handle:
-        for snapshot in snapshots:
-            payload = {
-                "timestamp": snapshot.timestamp.isoformat(),
-                "symbol": snapshot.symbol,
-                "quotes": snapshot.quotes,
-            }
-            handle.write(
-                json.dumps(payload, default=str, separators=(",", ":"))
-                + "\n"
-            )
 
 
 def normalize_snapshot_quotes(snapshot: Snapshot) -> list[dict[str, Any]]:
@@ -436,5 +385,358 @@ def grid_search(
     )
 
 
-def result_to_json(result: BacktestResult) -> str:
-    return json.dumps(result.to_dict(), indent=2)
+# ---------------------------------------------------------------------------
+# Backtest sobre klines históricos (spec 001, RF-15)
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class KlineBacktestConfig:
+    fee_rate: Decimal = FEE_RATE_DEFAULT
+    slippage_pct: Decimal = Decimal("0")
+    capital_usd: Decimal = Decimal("20")
+
+    def __post_init__(self) -> None:
+        for name in ("fee_rate", "slippage_pct", "capital_usd"):
+            value = getattr(self, name)
+            if not isinstance(value, Decimal):
+                raise TypeError(f"{name} must be a Decimal")
+        if self.fee_rate < 0:
+            raise ValueError("fee_rate must be >= 0")
+        if self.slippage_pct < 0:
+            raise ValueError("slippage_pct must be >= 0")
+        if self.capital_usd <= 0:
+            raise ValueError("capital_usd must be > 0")
+
+
+@dataclass(frozen=True)
+class KlineTrade:
+    entry_time: datetime
+    exit_time: datetime
+    entry_price: Decimal
+    exit_price: Decimal
+    quantity: Decimal
+    fees_usd: Decimal
+    pnl_usd: Decimal
+
+
+@dataclass(frozen=True)
+class KlineBacktestResult:
+    strategy: dict[str, Any]
+    candles: int
+    trades: int
+    winning_trades: int
+    net_pnl_usd: Decimal
+    return_pct: Decimal
+    max_drawdown_usd: Decimal
+    max_drawdown_pct: Decimal
+    win_rate_pct: Decimal
+    fees_usd: Decimal
+
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in asdict(self).items():
+            if key == "strategy":
+                result[key] = {
+                    sub_key: (
+                        str(sub_value)
+                        if isinstance(sub_value, Decimal)
+                        else sub_value
+                    )
+                    for sub_key, sub_value in value.items()
+                }
+            elif isinstance(value, Decimal):
+                result[key] = str(value)
+            else:
+                result[key] = value
+        return result
+
+
+def load_klines_jsonl(path: str | Path) -> list[Candle]:
+    """Carga klines en el JSONL producido por ``collect_klines.py`` (T14)."""
+    file_path = Path(path)
+    candles: list[Candle] = []
+
+    with file_path.open("r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            raw = line.strip()
+            if not raw:
+                continue
+
+            try:
+                payload = json.loads(raw)
+                open_time = datetime.fromtimestamp(
+                    int(payload["open_time"]) / 1000,
+                    tz=timezone.utc,
+                ).replace(tzinfo=None)
+                candles.append(
+                    Candle(
+                        open_time=open_time,
+                        open=Decimal(str(payload["open"])),
+                        high=Decimal(str(payload["high"])),
+                        low=Decimal(str(payload["low"])),
+                        close=Decimal(str(payload["close"])),
+                        volume=Decimal(str(payload["volume"])),
+                    )
+                )
+            except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
+                raise ValueError(
+                    f"Invalid kline on line {line_number}: {exc}"
+                ) from exc
+
+    candles.sort(key=lambda item: item.open_time)
+    return candles
+
+
+def split_candles(
+    candles: list[Candle],
+    train_ratio: float = 0.70,
+    validation_ratio: float = 0.15,
+) -> tuple[list[Candle], list[Candle], list[Candle]]:
+    """Split cronológico (sin look-ahead) train / validation / test."""
+    if not 0 < train_ratio < 1:
+        raise ValueError("train_ratio must be between 0 and 1.")
+    if not 0 < validation_ratio < 1:
+        raise ValueError("validation_ratio must be between 0 and 1.")
+    if train_ratio + validation_ratio >= 1:
+        raise ValueError("train_ratio + validation_ratio must be below 1.")
+
+    ordered = sorted(candles, key=lambda item: item.open_time)
+    total = len(ordered)
+
+    if total == 0:
+        return [], [], []
+
+    if total == 1:
+        return ordered, [], []
+
+    train_end = max(1, int(total * train_ratio))
+    train_end = min(train_end, total - 2) if total >= 3 else 1
+
+    if total >= 3:
+        validation_size = max(1, int(total * validation_ratio))
+        validation_end = min(
+            total - 1,
+            train_end + validation_size,
+        )
+        if validation_end <= train_end:
+            validation_end = train_end + 1
+    else:
+        validation_end = total
+
+    return (
+        ordered[:train_end],
+        ordered[train_end:validation_end],
+        ordered[validation_end:],
+    )
+
+
+def backtest_candles(
+    candles: list[Candle],
+    strategy: SignalConfig,
+    config: KlineBacktestConfig | None = None,
+) -> KlineBacktestResult:
+    """Backtest de la estrategia de señales sobre klines históricos.
+
+    Se decide con las velas hasta el cierre anterior (``ordered[:index]``)
+    y se ejecuta en la apertura de la vela actual: sin look-ahead.
+    Sólo largos (venta = cierre de la posición; sin posición la señal se
+    ignora) y costes reales: comisión ``fee_rate`` por lado y deslizamiento
+    ``slippage_pct`` configurable en la entrada y en la salida.
+    """
+    if not candles:
+        raise ValueError("No klines supplied for backtest.")
+    if config is None:
+        config = KlineBacktestConfig()
+
+    ordered = sorted(candles, key=lambda item: item.open_time)
+    slip = config.slippage_pct / _HUNDRED
+    fee_rate = config.fee_rate
+    capital = config.capital_usd
+
+    trades: list[KlineTrade] = []
+    open_position: dict[str, Any] | None = None
+    equity = capital
+    peak = capital
+    max_drawdown_usd = Decimal("0")
+    max_drawdown_pct = Decimal("0")
+
+    def _close_position(
+        position: dict[str, Any],
+        exit_time: datetime,
+        exit_reference: Decimal,
+    ) -> None:
+        nonlocal open_position, equity, peak
+        nonlocal max_drawdown_usd, max_drawdown_pct
+
+        exit_fill = exit_reference * (Decimal("1") - slip)
+        proceeds = position["quantity"] * exit_fill
+        exit_fee = proceeds * fee_rate
+        pnl = (
+            proceeds
+            - exit_fee
+            - position["entry_cost"]
+            - position["entry_fee"]
+        )
+        trades.append(
+            KlineTrade(
+                entry_time=position["entry_time"],
+                exit_time=exit_time,
+                entry_price=position["entry_fill"],
+                exit_price=exit_fill,
+                quantity=position["quantity"],
+                fees_usd=position["entry_fee"] + exit_fee,
+                pnl_usd=pnl,
+            )
+        )
+
+        equity += pnl
+        peak = max(peak, equity)
+        drawdown_usd = peak - equity
+        if drawdown_usd > max_drawdown_usd:
+            max_drawdown_usd = drawdown_usd
+            max_drawdown_pct = (
+                drawdown_usd * _HUNDRED / peak if peak > 0 else Decimal("0")
+            )
+
+        open_position = None
+
+    for index in range(1, len(ordered)):
+        candle = ordered[index]
+        signal = evaluate(ordered[:index], strategy)
+
+        if signal.action == SignalAction.BUY and open_position is None:
+            entry_fill = candle.open * (Decimal("1") + slip)
+            quantity = capital / entry_fill
+            entry_cost = quantity * entry_fill
+            open_position = {
+                "entry_time": candle.open_time,
+                "entry_fill": entry_fill,
+                "quantity": quantity,
+                "entry_cost": entry_cost,
+                "entry_fee": entry_cost * fee_rate,
+            }
+        elif signal.action == SignalAction.SELL and open_position is not None:
+            _close_position(open_position, candle.open_time, candle.open)
+
+    if open_position is not None:
+        _close_position(open_position, ordered[-1].open_time, ordered[-1].close)
+
+    winning = sum(1 for trade in trades if trade.pnl_usd > 0)
+    net_pnl = sum((trade.pnl_usd for trade in trades), Decimal("0"))
+    fees = sum((trade.fees_usd for trade in trades), Decimal("0"))
+
+    return KlineBacktestResult(
+        strategy=asdict(strategy),
+        candles=len(ordered),
+        trades=len(trades),
+        winning_trades=winning,
+        net_pnl_usd=net_pnl.quantize(_MONEY_QUANTUM),
+        return_pct=(net_pnl * _HUNDRED / capital).quantize(_PCT_QUANTUM),
+        max_drawdown_usd=max_drawdown_usd.quantize(_MONEY_QUANTUM),
+        max_drawdown_pct=max_drawdown_pct.quantize(_PCT_QUANTUM),
+        win_rate_pct=(
+            Decimal(str(winning)) / Decimal(str(len(trades))) * _HUNDRED
+            if trades
+            else Decimal("0")
+        ).quantize(_PCT_QUANTUM),
+        fees_usd=fees.quantize(_MONEY_QUANTUM),
+    )
+
+
+def grid_search_candles(
+    candles: list[Candle],
+    strategies: Iterable[SignalConfig],
+    config: KlineBacktestConfig | None = None,
+) -> list[KlineBacktestResult]:
+    results = [
+        backtest_candles(candles, strategy, config)
+        for strategy in strategies
+    ]
+    return sorted(
+        results,
+        key=lambda result: (
+            result.net_pnl_usd,
+            result.win_rate_pct,
+            -result.max_drawdown_pct,
+        ),
+        reverse=True,
+    )
+
+
+def final_parameters_section(
+    strategy: SignalConfig,
+    kline_config: KlineBacktestConfig,
+    metrics: dict[str, Any] | None = None,
+    notes: Iterable[str] | None = None,
+    generated_at: datetime | None = None,
+) -> str:
+    stamp = (generated_at or datetime.now(timezone.utc)).strftime(
+        "%Y-%m-%d %H:%M UTC"
+    )
+    lines = [
+        "## Parámetros finales (duda abierta #1)",
+        "",
+        f"> Generado por `train_strategy.py` el {stamp} sobre"
+        " `data/klines/*.jsonl`.",
+        "> Backtest con comisión y slippage por lado, split cronológico"
+        " train/valid/test sin look-ahead (RF-15).",
+        "",
+        "| Parámetro | Valor |",
+        "| --- | --- |",
+    ]
+    for key, value in asdict(strategy).items():
+        lines.append(f"| {key} | {value} |")
+    lines.append(f"| fee_rate | {kline_config.fee_rate} |")
+    lines.append(f"| slippage_pct | {kline_config.slippage_pct} |")
+    lines.append(f"| capital_usd | {kline_config.capital_usd} |")
+
+    if metrics:
+        lines += [
+            "",
+            "| Métrica | Valor |",
+            "| --- | --- |",
+        ]
+        for key, value in metrics.items():
+            lines.append(f"| {key} | {value} |")
+
+    for note in notes or []:
+        lines.append(f"- {note}")
+
+    return "\n".join(lines) + "\n"
+
+
+def write_final_parameters(
+    plan_path: str | Path,
+    *,
+    strategy: SignalConfig,
+    kline_config: KlineBacktestConfig,
+    metrics: dict[str, Any] | None = None,
+    notes: Iterable[str] | None = None,
+    generated_at: datetime | None = None,
+) -> None:
+    """Escribe (o reemplaza) la sección de parámetros finales en el plan."""
+    path = Path(plan_path)
+    section = final_parameters_section(
+        strategy=strategy,
+        kline_config=kline_config,
+        metrics=metrics,
+        notes=notes,
+        generated_at=generated_at,
+    )
+
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    marker = "## Parámetros finales"
+    start = text.find(marker)
+
+    if start == -1:
+        new_text = text.rstrip("\n") + "\n\n" + section
+    else:
+        rest = text[start:]
+        next_heading = rest.find("\n## ", 1)
+        if next_heading == -1:
+            new_text = text[:start] + section
+        else:
+            new_text = text[:start] + section + rest[next_heading + 1 :]
+
+    path.write_text(new_text, encoding="utf-8")

@@ -1,16 +1,24 @@
-# React + Vite
+# crypto-bot — frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Panel de control del bot (React 19 + Vite). Comunicación con el backend FastAPI
+(`backend/`, por defecto en `http://localhost:8000`).
 
-Currently, two official plugins are available:
+## Comandos (desde `frontend/`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Acción | Comando |
+| --- | --- |
+| Dev server | `npm run dev` |
+| Tests (vitest + Testing Library) | `npm test` |
+| Lint | `npm run lint` |
+| Build de producción | `npm run build` |
 
-## React Compiler
+## Estructura
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `src/pages/` — `Simulation.jsx` (panel principal: estado, métricas, control y señales)
+- `src/components/` — `MetricsPanel` (estado y métricas, RF-17/RF-18),
+  `KillSwitch` (arrancar/detener, RF-3/RF-19), `ExternalSignalForm`
+  (señal externa, RF-8/RF-19), `TradingPanel`, …
+- `src/api/` — clientes HTTP (`bot.js`, `signals.js`, `simulation.js`, `client.js`)
+- `src/test/setup.js` — arranque de vitest (jsdom + jest-dom)
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Mensajes de UI y textos en español; los motivos de reacción en inglés vienen del backend.

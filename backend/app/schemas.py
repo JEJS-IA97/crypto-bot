@@ -1,9 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import TradeSide
+from app.models import BotPhaseName, TradeSide
 
 
 class SimulationAccountCreate(BaseModel):
@@ -161,3 +162,37 @@ class SimulationSummaryResponse(BaseModel):
 class SimulationResetResponse(BaseModel):
     account_id: int
     message: str
+
+
+class ExternalSignalRequest(BaseModel):
+    """Payload de señal externa/copy (RF-8): entrada validada con Pydantic."""
+
+    symbol: str = Field(
+        min_length=1,
+        max_length=20,
+    )
+    side: str = Field(
+        min_length=1,
+        max_length=10,
+    )
+    price_limit: Decimal | None = None
+    quantity: Decimal | None = None
+    quantity_quote: Decimal | None = None
+    source: str = Field(
+        default="panel",
+        min_length=1,
+        max_length=100,
+    )
+    ttl_seconds: int | None = Field(
+        default=None,
+        ge=1,
+        le=86400,
+    )
+    issued_at: datetime | None = None
+
+
+class PhaseChangeRequest(BaseModel):
+    """Cambio manual de fase con evidencia (RF-16)."""
+
+    phase: BotPhaseName
+    evidence: dict[str, Any] | None = None

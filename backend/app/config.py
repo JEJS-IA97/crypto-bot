@@ -33,6 +33,21 @@ class Settings(BaseSettings):
     simulation_bot_cooldown_seconds: int = 300
     simulation_bot_max_trades_per_day: int = 3
 
+    # Phase 1: Binance Spot single-exchange trading (spec 001, RF-1/RF-2/RF-8/RF-13).
+    allow_live_trading: bool = False
+    configured_capital_usd: Decimal = Decimal("20")
+    api_token: str = ""
+
+    trading_symbols: str = (
+        "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT"
+    )
+    trading_interval_seconds: int = 60
+
+    stop_loss_pct: Decimal = Decimal("2.0")
+    take_profit_pct: Decimal = Decimal("4.0")
+    max_signal_price_distance_pct: Decimal = Decimal("1.0")
+    signal_ttl_seconds: int = 300
+
     binance_api_key: str = ""
     binance_api_secret: str = ""
     binance_testnet_base_url: str = "https://testnet.binance.vision"
@@ -43,6 +58,13 @@ class Settings(BaseSettings):
     okx_demo_api_passphrase: str = ""
     okx_demo_base_url: str = "https://openapi.okx.com"
     okx_demo_timeout_seconds: float = 10.0
+
+    # Informe diario por correo (spec 002, RF-7). Vacío = fail-closed (RF-4).
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    report_to: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

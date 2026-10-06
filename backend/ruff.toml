@@ -1,0 +1,12 @@
+# Configuración de lint (comando AGENTS.md: `python -m ruff check .`).
+# Reglas mínimas: errores reales de Python (imports/sintaxis/definiciones).
+# Reglas de estilo amplias (B008, FURB, I001...) exigirían reformatear la
+# zona congelada (RF-21), que no se puede tocar: quedan fuera a propósito.
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
+
+[lint.per-file-ignores]
+# Zona congelada / área en reposo (RF-21): se conservan tal cual.
+"check_okx_demo.py" = ["F401"]
+"tests/test_arbitrage_execution.py" = ["E402"]

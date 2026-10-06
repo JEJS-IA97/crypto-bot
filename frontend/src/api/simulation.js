@@ -70,12 +70,3 @@ export const getMarketPrices = async () => {
 
     return response.data;
 };
-
-export const updateMarketPrice = async (marketPrice) => {
-    const response = await api.put(
-        "/simulation/market-prices",
-        marketPrice
-    );
-
-    return response.data;
-};

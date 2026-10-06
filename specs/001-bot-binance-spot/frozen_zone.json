@@ -1,0 +1,21 @@
+{
+  "note": "SHA-256 de la zona congelada (RF-21) al inicio de la fase 1. NO regenerar: cualquier cambio debe exigir spec nueva.",
+  "files": {
+    "app/services/arbitrage_service.py": "b57dd26e3a673c58fe02a296f1b0726df99f900ef0c5b626149c20e9b57db336",
+    "app/services/trade_opportunity_service.py": "acc539b410bd9b4bb19ed469cd10b01ae4843411cd7b2306a7c6fd9411b98f6e",
+    "app/services/execution_price_service.py": "d788977909c285cc7d3095c05522927985f2c9e0cde2b8bd74ef063b19f3c74f",
+    "app/services/bot_engine.py": "715f91608e3d1132ea1442e240399d2d9df654c8cf34ebb84ea2d734020e4c51",
+    "app/services/bot_runner_service.py": "678670bf7f64a0fddda93cf82d8f4aa49b5c73b9d42841effc63bca013e39124",
+    "app/services/exchange_market_service.py": "b0015c4a804413e5a2ae51ebcf54222659b9f261636b73210af0c494adcce9c8",
+    "app/services/okx_demo_client.py": "6e7e4478af41d258105f71c488dfb79e86214a31e20741d75543cbbd081b805f",
+    "app/services/market_sync_service.py": "785050e7f0e0ac07df16d7fb34dda1e0b0d1d8857de42e47e4fbb2091adc1b99"
+  },
+  "tests": {
+    "tests/test_arbitrage_execution.py": "5e5e5c30489b855cfa060eceff7c00d0db500f653b140f9ba4d2e357dd2fd831",
+    "tests/test_quote_execution_controls.py": "08bebb4558ebe250c49032e16f9db4182214fa1fb43cf1445c6e0f9f0276debb",
+    "tests/test_revalidation_metrics.py": "a0e10fb5c7da1e22806dc97fe377b3a97e9304b807009528957c58c55f88f4f2",
+    "tests/test_execution_lock.py": "98ee3ffe04bc9f4c74eeea1f13c7051bc90b85fa1f375afb15da3c015628fe27",
+    "tests/test_okx_demo_client.py": "2354f82b7d7e391eb43bc16580f078d68fee3d05ea09f63f4f534e841ca80f75",
+    "tests/test_collect_market_snapshots.py": "634e80a3813b8d7c41065150a37e926e659ba57399da74ae7c068dc5c4e0f6c7"
+  }
+}
