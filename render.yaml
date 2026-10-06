@@ -3,7 +3,7 @@ services:
     name: crypto-bot
     runtime: python
     plan: free
-    branch: main
+    branch: master
     rootDir: backend
     healthCheckPath: /health
     buildCommand: pip install -r requirements.txt

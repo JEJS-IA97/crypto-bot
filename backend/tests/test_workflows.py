@@ -55,7 +55,7 @@ class PagesWorkflowTests(unittest.TestCase):
 
     def test_triggers_push_and_manual(self) -> None:
         self.assertIn("workflow_dispatch", self.text)
-        self.assertIn("branches:", self.text)
+        self.assertIn("branches: [master]", self.text)
         self.assertIn("frontend/**", self.text)
 
     def test_builds_frontend_with_api_url(self) -> None:
@@ -87,6 +87,7 @@ class RenderBlueprintTests(unittest.TestCase):
         self.assertIn("plan: free", self.text)
         self.assertIn("runtime: python", self.text)
         self.assertIn("rootDir: backend", self.text)
+        self.assertIn("branch: master", self.text)
 
     def test_build_and_start_commands(self) -> None:
         self.assertIn("pip install -r requirements.txt", self.text)
