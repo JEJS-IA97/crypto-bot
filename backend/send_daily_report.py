@@ -6,7 +6,9 @@ Lo ejecuta el workflow `daily-report.yml` de GitHub Actions a las 08:00 UTC
     python send_daily_report.py [--date YYYY-MM-DD]
 
 Crea el esquema si falta (idempotente), construye el informe con
-`report_service` y lo envía con `email_service`. La configuración de
+`report_service` (texto plano + HTML con el diseño del panel, spec 004) y
+lo envía con `email_service` como `multipart/alternative`. La configuración
+de
 correo sale de las variables de entorno (RF-7): sin `REPORT_TO`,
 `SMTP_USER` o `SMTP_PASS` termina con `SystemExit` y mensaje claro
 (fail-closed, RF-4) sin imprimir ningún valor. `DATABASE_URL` apunta a
@@ -26,7 +28,10 @@ from app.config import settings
 from app.database import Base
 from app.models import utc_now
 from app.services.email_service import send_email
-from app.services.report_service import build_daily_report
+from app.services.report_service import (
+    build_daily_report,
+    build_daily_report_html,
+)
 
 REPORT_HOUR_UTC = 8
 
@@ -77,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     db = database.SessionLocal()
     try:
         body = build_daily_report(db, now=moment)
+        html = build_daily_report_html(db, now=moment)
     finally:
         db.close()
 
@@ -86,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{moment.strftime('%Y-%m-%d')} (UTC)"
         ),
         body=body,
+        html=html,
         to=settings.report_to,
         host=settings.smtp_host,
         port=settings.smtp_port,

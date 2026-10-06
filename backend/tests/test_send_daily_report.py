@@ -108,6 +108,17 @@ class CliSendTests(unittest.TestCase):
         self.assertIn("bot_phases", tables)
         self.assertIn("signal_decisions", tables)
 
+    def test_sends_html_alternative_with_frontend_design(self) -> None:
+        with patch.object(send_daily_report, "send_email") as send:
+            code = send_daily_report.main([])
+
+        self.assertEqual(code, 0)
+        html = send.call_args.kwargs["html"]
+        self.assertTrue(html.startswith("<!DOCTYPE html>"))
+        self.assertIn("#1d1e21", html)
+        self.assertIn("#27e7cf", html)
+        self.assertIn("sin datos", html)
+
     def test_date_argument_targets_given_day_at_report_hour(self) -> None:
         with (
             patch.object(send_daily_report, "send_email") as send,

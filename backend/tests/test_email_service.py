@@ -49,6 +49,21 @@ class SendEmailTests(unittest.TestCase):
         self.assertIn("a@example.com", message["To"])
         self.assertIn("b@example.com", message["To"])
 
+    def test_html_alternative_attached_when_given(self) -> None:
+        result = _send(html="<!DOCTYPE html><html><body>Hola</body></html>")
+        message = result["message"]
+        self.assertTrue(message.is_multipart())
+        plain = message.get_body(preferencelist=("plain",))
+        html_part = message.get_body(preferencelist=("html",))
+        self.assertIsNotNone(plain)
+        self.assertIn("Fase: SIMULATION", plain.get_content())
+        self.assertIsNotNone(html_part)
+        self.assertIn("<!DOCTYPE html>", html_part.get_content())
+
+    def test_without_html_stays_plain_text(self) -> None:
+        result = _send()
+        self.assertFalse(result["message"].is_multipart())
+
     def test_missing_recipient_is_rejected(self) -> None:
         with patch("app.services.email_service.smtplib.SMTP") as smtp_cls:
             with self.assertRaises(ValueError) as ctx:

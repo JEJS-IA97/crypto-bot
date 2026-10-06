@@ -17,7 +17,7 @@ from app.models import (
 )
 from app.schemas import SimulationAccountCreate
 from app.services.decision_store import mark_rejected, record_decision
-from app.services.report_service import build_daily_report
+from app.services.report_service import build_daily_report, build_daily_report_html
 from app.services.risk_guard_service import get_runtime
 from app.services.simulation_service import create_simulation_account
 
@@ -165,6 +165,86 @@ class ReportTests(unittest.TestCase):
 
         report = build_daily_report(self.db)
         self.assertIn("Fase: TESTNET", report)
+
+
+class ReportHtmlTests(unittest.TestCase):
+    """Spec 004: informe HTML con el diseño del panel (design.json)."""
+
+    def setUp(self) -> None:
+        self.session_factory = _session_factory()
+        self.db = self.session_factory()
+
+    def tearDown(self) -> None:
+        self.db.close()
+
+    def test_html_structure_and_frontend_palette(self) -> None:
+        html = build_daily_report_html(self.db)
+        self.assertTrue(html.startswith("<!DOCTYPE html>"))
+        for token in (
+            "#1d1e21",
+            "#202124",
+            "#27e7cf",
+            "#929292",
+            "#303236",
+            "#f2f2f2",
+        ):
+            self.assertIn(token, html)
+        self.assertIn("Informe diario", html)
+        self.assertIn("SIMULATION", html)
+        self.assertIn("Breaker", html)
+
+    def test_html_shows_sin_datos_on_empty_database(self) -> None:
+        html = build_daily_report_html(self.db)
+        self.assertIn("sin datos", html)
+        self.assertIn("inactivo", html)
+
+    def test_html_shows_same_values_as_text_report(self) -> None:
+        account = create_simulation_account(
+            self.db,
+            SimulationAccountCreate(
+                name="report-html",
+                initial_balance_usd=Decimal("20"),
+            ),
+        )
+        self.assertEqual(account.id, ACCOUNT_ID)
+        self.db.add(
+            DailyRiskState(
+                day=utc_now().date(),
+                start_equity_usd=Decimal("20"),
+                realized_pnl_usd=Decimal("-0.5"),
+                opens_count=5,
+                blocked=True,
+                block_reason="pérdida diaria ≥5%",
+            )
+        )
+        self.db.commit()
+
+        text = build_daily_report(self.db)
+        html = build_daily_report_html(self.db)
+
+        for fragment in (
+            "20.00000000",
+            "0.50000000",
+            "pérdida diaria ≥5%",
+            "5/10",
+        ):
+            self.assertIn(fragment, text)
+            self.assertIn(fragment, html)
+
+    def test_html_escapes_dynamic_values_from_database(self) -> None:
+        runtime = get_runtime(self.db)
+        runtime.breaker_active = True
+        runtime.breaker_reason = "<script>alert('x')</script>"
+        self.db.commit()
+
+        html = build_daily_report_html(self.db)
+        self.assertNotIn("<script>alert", html)
+        self.assertIn("&lt;script&gt;", html)
+
+    def test_text_report_contract_unchanged(self) -> None:
+        report = build_daily_report(self.db)
+        self.assertIn("Fase: SIMULATION", report)
+        self.assertIn("Balance: sin datos", report)
 
 
 if __name__ == "__main__":

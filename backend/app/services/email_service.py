@@ -1,4 +1,5 @@
-"""Envío del informe diario por Gmail SMTP (spec 002, RF-3, RF-4, RF-7).
+"""Envío del informe diario por Gmail SMTP (spec 002 RF-3/RF-4/RF-7;
+spec 004 RF-1: parte HTML en `multipart/alternative`).
 
 Solo stdlib: `smtplib` + `email.message.EmailMessage` con STARTTLS (puerto
 587 por defecto). El envío es fail-closed: sin destinatario, usuario o
@@ -28,8 +29,10 @@ def send_email(
     port: int,
     user: str,
     password: str,
+    html: str | None = None,
 ) -> None:
-    """Envía un correo de texto plano; lanza `ValueError` si falta la
+    """Envía un correo (texto plano; con `html` añade la parte HTML como
+    `multipart/alternative`, spec 004 RF-1). Lanza `ValueError` si falta la
     configuración mínima y `EmailSendError` si falla la conexión o login."""
     if not to.strip():
         raise ValueError(
@@ -49,6 +52,8 @@ def send_email(
     message["From"] = user
     message["To"] = to
     message.set_content(body)
+    if html:
+        message.add_alternative(html, subtype="html")
 
     try:
         with smtplib.SMTP(host, port, timeout=SMTP_TIMEOUT_SECONDS) as smtp:
