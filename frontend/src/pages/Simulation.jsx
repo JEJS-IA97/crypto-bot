@@ -1,181 +1,31 @@
-import { useCallback, useEffect, useState } from "react";
-
-import {
-    createAccount,
-    getAccounts,
-    getBalance,
-    getMarketPrices,
-    getPositions,
-    getSummary,
-    getTrades,
-} from "../api/simulation";
+import { useState } from "react";
 
 import TradingPanel from "../components/TradingPanel";
 import MetricsPanel from "../components/MetricsPanel";
-import KillSwitch from "../components/KillSwitch";
-import ExternalSignalForm from "../components/ExternalSignalForm";
-import TokenField from "../components/TokenField";
+import EquityChart from "../components/EquityChart";
+import AccountSummary from "../components/AccountSummary";
+import OpenPositions from "../components/OpenPositions";
+import TradeHistory from "../components/TradeHistory";
+import NavRail from "../components/NavRail";
+import SectionTabs from "../components/SectionTabs";
+import Sidebar from "../components/Sidebar";
 
-function formatMoney(value) {
-    return Number(value || 0).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 8,
-    });
-}
-
-function normalizeArray(data, propertyNames = []) {
-    if (Array.isArray(data)) {
-        return data;
-    }
-
-    if (!data || typeof data !== "object") {
-        return [];
-    }
-
-    for (const propertyName of propertyNames) {
-        if (Array.isArray(data[propertyName])) {
-            return data[propertyName];
-        }
-    }
-
-    return [];
-}
+import useSimulationData from "./useSimulationData";
 
 function Simulation() {
-    const [account, setAccount] = useState(null);
-    const [summary, setSummary] = useState(null);
-    const [balance, setBalance] = useState(null);
-    const [positions, setPositions] = useState([]);
-    const [trades, setTrades] = useState([]);
-    const [marketPrices, setMarketPrices] = useState([]);
+    const {
+        account,
+        summary,
+        balance,
+        positions,
+        trades,
+        marketPrices,
+        loading,
+        error,
+        reload,
+    } = useSimulationData();
 
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-
-    const loadMarketPrices = useCallback(async () => {
-        const data = await getMarketPrices();
-
-        setMarketPrices(
-            normalizeArray(data, [
-                "prices",
-                "market_prices",
-                "data",
-                "items",
-            ])
-        );
-    }, []);
-
-    const loadAccountData = useCallback(async (accountId) => {
-        const [
-            summaryData,
-            balanceData,
-            positionsData,
-            tradesData,
-        ] = await Promise.all([
-            getSummary(accountId),
-            getBalance(accountId),
-            getPositions(accountId),
-            getTrades(accountId),
-        ]);
-
-        setSummary(summaryData);
-        setBalance(
-            balanceData &&
-                typeof balanceData === "object" &&
-                !Array.isArray(balanceData)
-                ? balanceData
-                : null
-        );
-
-        setPositions(
-            normalizeArray(positionsData, [
-                "positions",
-                "data",
-                "items",
-            ])
-        );
-
-        setTrades(
-            normalizeArray(tradesData, [
-                "trades",
-                "transactions",
-                "data",
-                "items",
-            ])
-        );
-    }, []);
-
-    const loadSimulation = useCallback(async () => {
-        try {
-            setLoading(true);
-            setError("");
-
-            let accountList = await getAccounts();
-
-            accountList = normalizeArray(accountList, [
-                "accounts",
-                "data",
-                "items",
-            ]);
-
-            if (accountList.length === 0) {
-                await createAccount({
-                    name: "Default Simulation",
-                    initial_balance_usd: "20.00",
-                });
-
-                accountList = await getAccounts();
-
-                accountList = normalizeArray(accountList, [
-                    "accounts",
-                    "data",
-                    "items",
-                ]);
-            }
-
-            if (accountList.length === 0) {
-                throw new Error(
-                    "No se pudo crear o recuperar la cuenta de simulación."
-                );
-            }
-
-            const selectedAccount = accountList[0];
-
-            setAccount(selectedAccount);
-
-            await Promise.all([
-                loadAccountData(selectedAccount.id),
-                loadMarketPrices(),
-            ]);
-        } catch (requestError) {
-            console.error(
-                "Error cargando la simulación:",
-                requestError
-            );
-
-            const detail = requestError.response?.data?.detail;
-
-            setError(
-                detail ||
-                    requestError.message ||
-                    "No se pudo cargar la simulación."
-            );
-        } finally {
-            setLoading(false);
-        }
-    }, [loadAccountData, loadMarketPrices]);
-
-    useEffect(() => {
-        loadSimulation();
-    }, [loadSimulation]);
-
-    const handleOrderExecuted = async () => {
-        if (!account) {
-            return;
-        }
-
-        await loadAccountData(account.id);
-    };
+    const [tab, setTab] = useState("operar");
 
     if (loading) {
         return (
@@ -208,492 +58,115 @@ function Simulation() {
     }
 
     const accountBalance = balance || summary.balance || {};
-
-    const availableBalance =
-        accountBalance.available_usd || 0;
-
-    const totalBalance =
-        accountBalance.total_balance_usd || 0;
-
-    const investedBalance =
-        accountBalance.invested_usd || 0;
-
-    const realizedPnl =
-        accountBalance.realized_pnl_usd || 0;
-
-    const unrealizedPnl =
-        accountBalance.unrealized_pnl_usd || 0;
+    const availableBalance = accountBalance.available_usd || 0;
 
     return (
-        <main className="simulation-page">
-            <div className="page-header">
-                <div className="page-heading">
-                    <span className="eyebrow">
-                        PAPER TRADING
-                    </span>
+        <div className="app-shell">
+            <NavRail active={tab} onSelect={setTab} />
 
-                    <h1>Simulación</h1>
+            <main className="workspace" id="workspace">
+                <header className="workspace-header">
+                    <div className="page-heading">
+                        <span className="eyebrow">
+                            PAPER TRADING
+                        </span>
 
-                    <p>
-                        Opera con dinero ficticio sin afectar
-                        fondos reales.
-                    </p>
-                </div>
+                        <h1>Simulación</h1>
 
-                <div className="simulation-badge">
-                    <span className="status-dot" />
-                    SIMULACIÓN ACTIVA
-                </div>
-            </div>
+                        <p>
+                            Opera con dinero ficticio sin afectar
+                            fondos reales.
+                        </p>
+                    </div>
 
-            <section className="account-summary">
-                <div className="account-info">
-                    <span className="eyebrow">
-                        CUENTA ACTIVA
-                    </span>
+                    <div className="simulation-badge">
+                        <span className="status-dot" />
+                        SIMULACIÓN ACTIVA
+                    </div>
+                </header>
 
-                    <h2>{account.name}</h2>
-
-                    <span className="account-id">
-                        ID: {account.id}
-                    </span>
-                </div>
-
-                <div className="summary-grid">
-                    <article className="summary-card summary-blue">
-                        <span>Balance total</span>
-
-                        <strong>
-                            ${formatMoney(totalBalance)}
-                        </strong>
-
-                        <small>
-                            Valor actual de la cuenta
-                        </small>
-                    </article>
-
-                    <article className="summary-card summary-green">
-                        <span>Disponible</span>
-
-                        <strong>
-                            ${formatMoney(availableBalance)}
-                        </strong>
-
-                        <small>
-                            Capital disponible para operar
-                        </small>
-                    </article>
-
-                    <article className="summary-card summary-purple">
-                        <span>Invertido</span>
-
-                        <strong>
-                            ${formatMoney(investedBalance)}
-                        </strong>
-
-                        <small>
-                            Coste de posiciones abiertas
-                        </small>
-                    </article>
-
-                    <article className="summary-card summary-cyan">
-                        <span>PnL realizado</span>
-
-                        <strong
-                            className={
-                                Number(realizedPnl) >= 0
-                                    ? "value-positive"
-                                    : "value-negative"
-                            }
-                        >
-                            ${formatMoney(realizedPnl)}
-                        </strong>
-
-                        <small>
-                            Resultado de operaciones cerradas
-                        </small>
-                    </article>
-
-                    <article className="summary-card summary-orange">
-                        <span>PnL no realizado</span>
-
-                        <strong
-                            className={
-                                Number(unrealizedPnl) >= 0
-                                    ? "value-positive"
-                                    : "value-negative"
-                            }
-                        >
-                            ${formatMoney(unrealizedPnl)}
-                        </strong>
-
-                        <small>
-                            Resultado de posiciones abiertas
-                        </small>
-                    </article>
-                </div>
-            </section>
-
-            <section className="top-panels-grid">
-                <TradingPanel
-                    accountId={account.id}
-                    marketPrices={marketPrices}
-                    positions={positions}
-                    availableBalance={availableBalance}
-                    onOrderExecuted={handleOrderExecuted}
+                <AccountSummary
+                    account={account}
+                    balance={accountBalance}
                 />
 
-                <MetricsPanel />
-            </section>
+                <SectionTabs value={tab} onChange={setTab} />
 
-            <section className="control-panels-grid">
-                <KillSwitch />
-                <ExternalSignalForm />
-                <TokenField />
-            </section>
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-operar"
+                    aria-labelledby="tab-operar"
+                    hidden={tab !== "operar"}
+                    tabIndex={0}
+                >
+                    <div className="operar-grid">
+                        <section className="data-section equity-section">
+                            <div className="section-header">
+                                <div>
+                                    <span className="eyebrow">
+                                        EQUITY
+                                    </span>
 
-            <section className="bottom-panels-grid">
-                <section className="data-section">
-                    <div className="section-header">
-                        <div>
-                            <span className="eyebrow">
-                                OPEN POSITIONS
-                            </span>
+                                    <h2>Curva de equity</h2>
+                                </div>
+                            </div>
 
-                            <h2>Posiciones abiertas</h2>
-                        </div>
+                            <EquityChart
+                                trades={trades}
+                                availableBalance={
+                                    accountBalance.available_usd
+                                }
+                                currentTotal={
+                                    accountBalance.total_balance_usd
+                                }
+                            />
+                        </section>
+
+                        <TradingPanel
+                            accountId={account.id}
+                            marketPrices={marketPrices}
+                            positions={positions}
+                            availableBalance={availableBalance}
+                            onOrderExecuted={reload}
+                        />
                     </div>
+                </div>
 
-                    {positions.length === 0 ? (
-                        <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">
-                                ▣
-                            </span>
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-estado"
+                    aria-labelledby="tab-estado"
+                    hidden={tab !== "estado"}
+                    tabIndex={0}
+                >
+                    <MetricsPanel />
+                </div>
 
-                            <span>
-                                No tienes posiciones abiertas.
-                            </span>
-                        </div>
-                    ) : (
-                        <div className="data-table-wrapper">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Activo</th>
-                                        <th>Cantidad</th>
-                                        <th>
-                                            Precio promedio
-                                        </th>
-                                        <th>Valor actual</th>
-                                        <th>
-                                            PnL no realizado
-                                        </th>
-                                    </tr>
-                                </thead>
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-historial"
+                    aria-labelledby="tab-historial"
+                    hidden={tab !== "historial"}
+                    tabIndex={0}
+                >
+                    <div className="history-stack">
+                        <OpenPositions positions={positions} />
 
-                                <tbody>
-                                    {positions.map(
-                                        (position) => (
-                                            <tr
-                                                key={
-                                                    position.symbol
-                                                }
-                                            >
-                                                <td>
-                                                    <strong>
-                                                        {
-                                                            position.symbol
-                                                        }
-                                                    </strong>
-                                                </td>
-
-                                                <td>
-                                                    {
-                                                        position.quantity
-                                                    }
-                                                </td>
-
-                                                <td>
-                                                    $
-                                                    {formatMoney(
-                                                        position.average_entry_price
-                                                    )}
-                                                </td>
-
-                                                <td>
-                                                    $
-                                                    {formatMoney(
-                                                        position.market_value_usd
-                                                    )}
-                                                </td>
-
-                                                <td
-                                                    className={
-                                                        Number(
-                                                            position.unrealized_pnl_usd
-                                                        ) >= 0
-                                                            ? "value-positive"
-                                                            : "value-negative"
-                                                    }
-                                                >
-                                                    $
-                                                    {formatMoney(
-                                                        position.unrealized_pnl_usd
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </section>
-
-                <section className="data-section">
-                    <div className="section-header">
-                        <div>
-                            <span className="eyebrow">
-                                ACCOUNT BALANCE
-                            </span>
-
-                            <h2>Balance de la cuenta</h2>
-                        </div>
+                        <TradeHistory trades={trades} />
                     </div>
+                </div>
+            </main>
 
-                    {!balance ? (
-                        <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">
-                                ▣
-                            </span>
-
-                            <span>
-                                No hay información de balance.
-                            </span>
-                        </div>
-                    ) : (
-                        <div className="data-table-wrapper">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Concepto</th>
-                                        <th>USD</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                Disponible
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            $
-                                            {formatMoney(
-                                                balance.available_usd
-                                            )}
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                Invertido
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            $
-                                            {formatMoney(
-                                                balance.invested_usd
-                                            )}
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                Valor de mercado
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            $
-                                            {formatMoney(
-                                                balance.market_value_usd
-                                            )}
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                PnL realizado
-                                            </strong>
-                                        </td>
-
-                                        <td
-                                            className={
-                                                Number(
-                                                    balance.realized_pnl_usd
-                                                ) >= 0
-                                                    ? "value-positive"
-                                                    : "value-negative"
-                                            }
-                                        >
-                                            $
-                                            {formatMoney(
-                                                balance.realized_pnl_usd
-                                            )}
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                PnL no realizado
-                                            </strong>
-                                        </td>
-
-                                        <td
-                                            className={
-                                                Number(
-                                                    balance.unrealized_pnl_usd
-                                                ) >= 0
-                                                    ? "value-positive"
-                                                    : "value-negative"
-                                            }
-                                        >
-                                            $
-                                            {formatMoney(
-                                                balance.unrealized_pnl_usd
-                                            )}
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td>
-                                            <strong>
-                                                Balance total
-                                            </strong>
-                                        </td>
-
-                                        <td>
-                                            $
-                                            {formatMoney(
-                                                balance.total_balance_usd
-                                            )}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </section>
-
-                <section className="data-section">
-                    <div className="section-header">
-                        <div>
-                            <span className="eyebrow">
-                                TRADE HISTORY
-                            </span>
-
-                            <h2>
-                                Historial de operaciones
-                            </h2>
-                        </div>
-                    </div>
-
-                    {trades.length === 0 ? (
-                        <div className="empty-state table-empty-state">
-                            <span className="empty-state-icon">
-                                ▤
-                            </span>
-
-                            <span>
-                                Todavía no hay operaciones.
-                            </span>
-                        </div>
-                    ) : (
-                        <div className="data-table-wrapper">
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Activo</th>
-                                        <th>Tipo</th>
-                                        <th>Cantidad</th>
-                                        <th>Precio</th>
-                                        <th>Total</th>
-                                        <th>Comisión</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {trades.map((trade) => (
-                                        <tr key={trade.id}>
-                                            <td>
-                                                {new Date(
-                                                    trade.executed_at
-                                                ).toLocaleString()}
-                                            </td>
-
-                                            <td>
-                                                <strong>
-                                                    {
-                                                        trade.symbol
-                                                    }
-                                                </strong>
-                                            </td>
-
-                                            <td
-                                                className={
-                                                    trade.side ===
-                                                    "BUY"
-                                                        ? "value-positive"
-                                                        : "value-negative"
-                                                }
-                                            >
-                                                {trade.side === "BUY"
-                                                    ? "Compra"
-                                                    : "Venta"}
-                                            </td>
-
-                                            <td>
-                                                {trade.quantity}
-                                            </td>
-
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    trade.price
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    trade.total_usd
-                                                )}
-                                            </td>
-
-                                            <td>
-                                                $
-                                                {formatMoney(
-                                                    trade.fee_usd
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </section>
-            </section>
-        </main>
+            <Sidebar
+                balance={accountBalance}
+                marketPrices={marketPrices}
+                onReload={reload}
+                onOperar={() => setTab("operar")}
+            />
+        </div>
     );
 }
 

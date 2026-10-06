@@ -1,0 +1,251 @@
+/* ============================================================
+   Base: reset mínimo, tipografía, foco, botones, formularios,
+   estados y scrollbar global única (RF-6: scrolls consistentes)
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    background-clip: content-box;
+    border: 2px solid transparent;
+    border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: content-box;
+}
+
+html,
+body {
+    background: var(--bg-main);
+}
+
+body {
+    margin: 0;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.eyebrow {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+/* Foco visible compartido (RF-2 / accesibilidad) */
+.btn:focus-visible,
+.side-tab:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* ============================================================
+   Sistema de acciones (RF-2): primaria | destructiva |
+   utilitaria (blanca, design.json deposit/withdraw) | secundaria
+   ============================================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 var(--space-5);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition:
+        background 0.15s ease,
+        filter 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: var(--space-4);
+}
+
+.btn:hover {
+    filter: brightness(1.06);
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+    filter: none;
+    opacity: 0.55;
+}
+
+.btn-primary {
+    background: var(--color-buy);
+    color: var(--accent-ink);
+}
+
+.btn-danger {
+    border-color: var(--color-sell);
+    background: transparent;
+    color: var(--color-sell);
+}
+
+.btn-danger:hover {
+    background: rgba(255, 77, 90, 0.12);
+    filter: none;
+}
+
+.btn-utility {
+    background: var(--white-button);
+    color: var(--white-button-ink);
+}
+
+.btn-secondary {
+    border-color: var(--divider);
+    background: var(--surface-soft);
+    color: var(--text);
+}
+
+/* ============================================================
+   Formularios
+   ============================================================ */
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.field-group span {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.field-group label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.field-group input,
+.field-group select {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-md);
+    outline: none;
+    background: var(--surface-soft);
+    color: var(--text-value);
+    font: inherit;
+    font-size: 0.85rem;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.field-group input:focus,
+.field-group select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(39, 231, 207, 0.14);
+}
+
+.field-group input[readonly] {
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   Estados: carga, vacío y mensajes
+   ============================================================ */
+
+.loading-state {
+    display: flex;
+    min-height: 300px;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-7) var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    text-align: center;
+}
+
+.empty-state-icon {
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
+
+.form-message {
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-md);
+    line-height: 1.4;
+}
+
+.form-message.error {
+    border: 1px solid rgba(255, 77, 90, 0.35);
+    background: rgba(255, 77, 90, 0.08);
+    color: var(--negative);
+}
+
+.form-message.success {
+    border: 1px solid rgba(33, 217, 155, 0.35);
+    background: rgba(33, 217, 155, 0.08);
+    color: var(--positive);
+}
+
+/* Selectores con especificidad (0,1,1) para ganar a .summary-card strong
+   y .data-table td con reglas normales (auditoría #11). */
+strong.value-positive,
+td.value-positive,
+span.value-positive {
+    color: var(--positive);
+}
+
+strong.value-negative,
+td.value-negative,
+span.value-negative {
+    color: var(--negative);
+}

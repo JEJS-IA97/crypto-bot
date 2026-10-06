@@ -1,0 +1,122 @@
+/* ============================================================
+   Responsive (design.json responsive_behavior_inferred):
+   desktop-first; rail colapsa y la sidebar pasa bajo el
+   workspace. Único archivo con @media (test lo exige el último).
+   ============================================================ */
+
+@media (max-width: 1300px) {
+    .app-shell {
+        grid-template-areas:
+            "rail main"
+            "rail side";
+        grid-template-columns: var(--rail-width) minmax(0, 1fr);
+    }
+
+    .sidebar {
+        position: static;
+        height: auto;
+        overflow: visible;
+        border-top: 1px solid var(--divider);
+        padding-top: var(--space-8);
+    }
+
+    .summary-row {
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 250px)
+            minmax(0, 1fr);
+        gap: var(--space-6);
+    }
+}
+
+@media (max-width: 1050px) {
+    .summary-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-6);
+    }
+
+    .account-card {
+        order: -1;
+    }
+
+    .operar-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .trading-panel-content {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .data-table {
+        min-width: 600px;
+    }
+}
+
+@media (max-width: 700px) {
+    .app-shell {
+        grid-template-areas:
+            "rail"
+            "main"
+            "side";
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rail {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+        height: auto;
+        padding: var(--space-3) var(--space-4);
+        z-index: 10;
+    }
+
+    .rail-brand {
+        width: 44px;
+        height: 44px;
+    }
+
+    .rail-nav {
+        flex-direction: row;
+        margin: 0;
+    }
+
+    .rail-action {
+        width: 44px;
+        height: 44px;
+        margin-top: 0;
+    }
+
+    .workspace {
+        padding: var(--space-5) var(--space-4) var(--space-8);
+    }
+
+    .workspace-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
+
+    .page-heading h1 {
+        font-size: 2.4rem;
+    }
+
+    .simulation-badge {
+        align-self: flex-start;
+    }
+
+    .summary-group {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-4);
+    }
+
+    .section-tabs {
+        gap: var(--space-5);
+        overflow-x: auto;
+    }
+
+    .order-fields-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .portfolio-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

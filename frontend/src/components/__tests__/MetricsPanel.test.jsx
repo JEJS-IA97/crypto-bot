@@ -150,6 +150,25 @@ describe("MetricsPanel", () => {
         expect(reason).toHaveTextContent("5 fallos consecutivos");
     });
 
+    it("no muestra notación exponencial en el PnL (RF-5)", async () => {
+        mockPayloads(STATUS_STOPPED, {
+            ...METRICS,
+            balance_usd: "0E-8",
+            realized_pnl_usd: "0E-8",
+        });
+
+        render(<MetricsPanel />);
+
+        await screen.findByTestId("bot-state");
+
+        expect(screen.getByTestId("metric-balance")).toHaveTextContent(
+            "0.00 USD"
+        );
+        expect(
+            screen.queryByText(/0E-8/)
+        ).not.toBeInTheDocument();
+    });
+
     it("refresca los datos cada 5 segundos", async () => {
         vi.useFakeTimers();
         mockPayloads();

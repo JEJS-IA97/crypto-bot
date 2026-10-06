@@ -96,4 +96,16 @@ describe("ExternalSignalForm", () => {
         ).toBeInTheDocument();
         expect(sendExternalSignal).not.toHaveBeenCalled();
     });
+
+    it("presenta la sección como Copy trading con su explicación (RF-4)", () => {
+        render(<ExternalSignalForm />);
+
+        expect(
+            screen.getByRole("heading", { name: "Copy trading" })
+        ).toBeInTheDocument();
+        expect(
+            screen.getByText(/próximo ciclo/)
+        ).toBeInTheDocument();
+        expect(screen.getByText("RF-8")).toBeInTheDocument();
+    });
 });

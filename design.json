@@ -1,0 +1,885 @@
+{
+    "image": {
+    "description": "High-fidelity desktop cryptocurrency/financial dashboard UI mockup. The white/light-gray area surrounding the interface is intentionally ignored. The analyzed interface is a single dark dashboard composed of a left vertical navigation rail, a wide central workspace, and a right cryptocurrency information sidebar.",
+    "canvas_size_px": {
+    "width": 1600,
+    "height": 1200
+    },
+    "interface_bounds_approx_px": {
+    "left": 70,
+    "top": 92,
+    "right": 1338,
+    "bottom": 964,
+    "width": 1268,
+    "height": 872
+    },
+    "aspect_ratio": "approximately 1.45:1",
+    "visual_style": [
+    "dark mode",
+    "modern fintech dashboard",
+    "cryptocurrency banking aesthetic",
+    "high contrast",
+    "minimalist",
+    "rounded cards",
+    "thin dividers",
+    "neon turquoise accents",
+    "selective purple and blue accents",
+    "dense data-oriented desktop layout"
+    ]
+    },
+    "background_ignored": {
+    "description": "Light gray/white outer background surrounding the dashboard.",
+    "instruction": "Do not reproduce or include this outer background when recreating the UI."
+    },
+    "global_palette": {
+    "estimated_colors": {
+    "outer_background": "#DDE0E5",
+    "sidebar_black": "#050505",
+    "main_background": "#1D1E21",
+    "main_surface": "#202124",
+    "secondary_surface": "#151619",
+    "dark_card": "#050505",
+    "light_text": "#F4F4F4",
+    "primary_text": "#FFFFFF",
+    "secondary_text": "#929292",
+    "muted_text": "#6E6E6E",
+    "divider": "#303236",
+    "turquoise": "#27E7CF",
+    "cyan": "#14D8E8",
+    "blue": "#1498D8",
+    "purple": "#6846EA",
+    "green_positive": "#21D99B",
+    "orange": "#FF791E",
+    "white_button": "#F5F5F5"
+    },
+    "color_usage": {
+    "turquoise": [
+    "main accent",
+    "positive metrics",
+    "selected navigation/status indicators",
+    "small charts",
+    "add button",
+    "wallet/action icon",
+    "some crypto charts"
+    ],
+    "purple": [
+    "goals metric",
+    "personal/category indicator",
+    "some navigation/status accents"
+    ],
+    "blue": [
+    "earnings icon",
+    "weekly stats icon",
+    "BTC/ETH navigation accents"
+    ],
+    "orange": [
+    "Bitcoin live-price icon",
+    "work/category indicator"
+    ]
+    }
+    },
+    "layout": {
+    "type": "three_column_dashboard",
+    "columns": {
+    "left_navigation": {
+    "approx_x": 70,
+    "approx_width": 92,
+    "background": "#050505"
+    },
+    "main_workspace": {
+    "approx_x": 162,
+    "approx_width": 812,
+    "background": "#1D1E21"
+    },
+    "right_sidebar": {
+    "approx_x": 974,
+    "approx_width": 364,
+    "background": "#050505"
+    }
+    },
+    "vertical_structure": {
+    "top_header_and_summary": {
+    "approx_height": 308
+    },
+    "section_divider": {
+    "approx_y": 400
+    },
+    "tab_navigation": {
+    "approx_height": 61
+    },
+    "analytics_and_history_area": {
+    "approx_height": 444
+    }
+    }
+    },
+    "left_sidebar": {
+    "description": "Narrow black vertical navigation rail containing branding at the top, stacked navigation icons in the middle, and a large add button near the bottom.",
+    "background": "#050505",
+    "width_px_approx": 92,
+    "branding": {
+    "position": "top-left",
+    "container": {
+    "shape": "circle",
+    "diameter_px_approx": 51,
+    "background": "#168FC8"
+    },
+    "icon": {
+    "type": "abstract geometric fintech/crypto symbol",
+    "color": "#FFFFFF"
+    }
+    },
+    "navigation_icons": [
+    {
+    "order": 1,
+    "position": "upper navigation",
+    "icon": "4-square/grid icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 2,
+    "icon": "pie/donut chart icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 3,
+    "icon": "vertical bar chart icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 4,
+    "icon": "chat/message bubble icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 5,
+    "icon": "sliders/filter controls icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 6,
+    "icon": "up/down transfer icon",
+    "color": "#D9D9D9"
+    },
+    {
+    "order": 7,
+    "icon": "lock/bag/security icon",
+    "color": "#D9D9D9"
+    }
+    ],
+    "bottom_action": {
+    "position": "bottom-left",
+    "approx_size_px": {
+    "width": 60,
+    "height": 60
+    },
+    "shape": "rounded square",
+    "background": "#27E7CF",
+    "icon": "+",
+    "icon_color": "#101010",
+    "icon_size": "large"
+    }
+    },
+    "main_workspace": {
+    "background": "#1D1E21",
+    "header": {
+    "height_px_approx": 106,
+    "left_user_area": {
+    "avatar": {
+    "shape": "circle",
+    "diameter_px_approx": 43,
+    "image": "black-and-white male portrait with cyan/turquoise circular background"
+    },
+    "greeting": {
+    "text": "Good Evening Mikey!",
+    "font_color": "#F4F4F4",
+    "position": "to the right of avatar"
+    }
+    },
+    "wallet_selector": {
+    "position": "upper-right of main workspace",
+    "label": "Choose Wallet",
+    "background": "#050505",
+    "shape": "rounded rectangle",
+    "width_px_approx": 158,
+    "height_px_approx": 36,
+    "text_color": "#FFFFFF",
+    "right_icon": "up/down chevron"
+    },
+    "wallet_action_button": {
+    "shape": "rounded square",
+    "background": "#27E7CF",
+    "approx_size_px": 36,
+    "icon": "wallet/card/document style icon",
+    "icon_color": "#0C1616"
+    }
+    },
+    "summary_area": {
+    "description": "Upper dashboard summary area with four metrics surrounding a central VISA card mockup.",
+    "metrics": [
+    {
+    "position": "upper-left",
+    "title": "Total earnings",
+    "value": "$10,596.57",
+    "icon": {
+    "shape": "rounded square",
+    "background": "#0BD8E8",
+    "symbol": "rising chart/analytics icon",
+    "symbol_color": "#FFFFFF"
+    }
+    },
+    {
+    "position": "lower-left",
+    "title": "Total for all goals",
+    "value": "$5,596.10",
+    "icon": {
+    "shape": "rounded square",
+    "background": "#6846EA",
+    "symbol": "rising chart/analytics icon",
+    "symbol_color": "#FFFFFF"
+    }
+    },
+    {
+    "position": "upper-right",
+    "title": "Expenses",
+    "value": "$4,166.80",
+    "icon": {
+    "shape": "rounded square",
+    "background": "#27E7CF",
+    "symbol": "rising chart/analytics icon",
+    "symbol_color": "#FFFFFF"
+    }
+    },
+    {
+    "position": "lower-right",
+    "title": "Weekly stats",
+    "value": "$1,257.12",
+    "icon": {
+    "shape": "rounded square",
+    "background": "#148FC9",
+    "symbol": "rising chart/analytics icon",
+    "symbol_color": "#FFFFFF"
+    }
+    }
+    ],
+    "metric_typography": {
+    "title": {
+    "approx_weight": "regular",
+    "color": "#8D8D8D"
+    },
+    "value": {
+    "approx_weight": "semi-bold",
+    "color": "#F2F2F2",
+    "approx_size": "20-23px"
+    }
+    }
+    },
+    "payment_card": {
+    "position": "center of summary section",
+    "approx_size_px": {
+    "width": 253,
+    "height": 155
+    },
+    "background": "#020202",
+    "border_radius_px_approx": 13,
+    "brand": "VISA",
+    "decorative_corner": {
+    "shape": "large dark-gray diagonal/curved overlay",
+    "location": "upper-right corner",
+    "color": "#262B3B"
+    },
+    "text": {
+    "cardholder_label": "Name Card",
+    "cardholder_name": "Julia James",
+    "network": "VISA",
+    "card_number": "**** **** **** 1234",
+    "exp_date_label": "EXP DATE",
+    "exp_date": "12/25",
+    "cvv_label": "CVV NUMBER",
+    "cvv": "123"
+    },
+    "text_color": "#F4F4F4",
+    "secondary_text_color": "#8B8B8B"
+    },
+    "section_tabs": {
+    "border_top": true,
+    "border_bottom": true,
+    "tabs": [
+    {
+    "label": "ACTIVITY SUMMARY",
+    "state": "selected",
+    "color": "#F3F3F3"
+    },
+    {
+    "label": "SPENDING SUMMARY",
+    "state": "unselected",
+    "color": "#777777"
+    },
+    {
+    "label": "INCOME SUMMARY",
+    "state": "unselected",
+    "color": "#777777"
+    }
+    ],
+    "approx_height_px": 61
+    },
+    "lower_content": {
+    "description": "Two-column analytics/history area.",
+    "left_panel": {
+    "width_ratio_approx": "36%",
+    "activity_graph": {
+    "title": "Activity Graph",
+    "metric": "$186k",
+    "period_label": "BETWEEN SEP 9 - 27",
+    "chart": {
+    "type": "vertical_bar_chart",
+    "bars": "multiple turquoise bars of varying heights",
+    "x_axis_labels": [
+    "9",
+    "11",
+    "13",
+    "15",
+    "17",
+    "19",
+    "21",
+    "23",
+    "25",
+    "27"
+    ],
+    "y_axis_labels": [
+    "10k",
+    "15k",
+    "20k",
+    "25k"
+    ],
+    "color": "#27E7CF"
+    }
+    },
+    "quick_links": [
+    {
+    "label": "Goals",
+    "icon": "target",
+    "icon_container_background": "#08090A",
+    "icon_color": "#FF6B00",
+    "chevron_button": true
+    },
+    {
+    "label": "Monthly Plan",
+    "icon": "calendar",
+    "icon_container_background": "#08090A",
+    "icon_color": "#27E7CF",
+    "chevron_button": true
+    },
+    {
+    "label": "Settings",
+    "icon": "gear",
+    "icon_container_background": "#08090A",
+    "icon_color": "#148FC9",
+    "chevron_button": true
+    },
+    {
+    "label": "Transfers",
+    "icon": "up/down transfer",
+    "icon_container_background": "#08090A",
+    "icon_color": "#6846EA",
+    "chevron_button": true
+    }
+    ],
+    "quick_link_layout": {
+    "row_height": "approximately 76px",
+    "left_icon": "circular",
+    "label": "large muted gray text",
+    "right_control": "dark rounded-square button with > chevron"
+    }
+    },
+    "right_history_panel": {
+    "tabs": [
+    {
+    "label": "History",
+    "state": "selected",
+    "text_color": "#27E7CF",
+    "underline_color": "#27E7CF"
+    },
+    {
+    "label": "Upcoming",
+    "state": "unselected",
+    "text_color": "#F2F2F2"
+    }
+    ],
+    "toolbar": {
+    "date_filter": {
+    "label": "6 Sep 20 - 13 Sep 20",
+    "background": "#040404",
+    "text_color": "#DCDCDC",
+    "icon": "calendar"
+    },
+    "settings_button": {
+    "shape": "small rounded square",
+    "background": "#050505",
+    "icon": "gear"
+    },
+    "add_button": {
+    "shape": "rounded square",
+    "background": "#27E7CF",
+    "icon": "+",
+    "icon_color": "#0A0A0A"
+    }
+    },
+    "transaction_groups": [
+    {
+    "date": "13 Sep, 2020",
+    "transactions": [
+    {
+    "description": "Transfer to Mikey",
+    "datetime": "10 Sep, 2020 at 3:30 PM",
+    "category": "Personal",
+    "category_indicator": {
+    "background": "#080909",
+    "dot_color": "#27E7CF"
+    },
+    "attachment": true,
+    "amount": "-$10,100.00"
+    }
+    ]
+    },
+    {
+    "date": "10 Sep, 2020",
+    "transactions": [
+    {
+    "description": "Investment to BGA",
+    "datetime": "10 Sep, 2020 at 3:30 PM",
+    "category": "Investments",
+    "category_indicator": {
+    "background": "#080909",
+    "dot_color": "#148FC9"
+    },
+    "attachment": true,
+    "amount": "+$50,400.00",
+    "amount_color": "#27E7CF"
+    },
+    {
+    "description": "Personal",
+    "datetime": "10 Sep, 2020 at 3:30 PM",
+    "category": "Personal",
+    "category_indicator": {
+    "background": "#080909",
+    "dot_color": "#27E7CF"
+    },
+    "attachment": true,
+    "amount": "-$10,100.00"
+    },
+    {
+    "description": "Cash withdrawal",
+    "datetime": "10 Sep, 2020 at 3:30 PM",
+    "category": "General",
+    "category_indicator": {
+    "background": "#080909",
+    "dot_color": "#6846EA"
+    },
+    "attachment": true,
+    "amount": "-$20,905.00"
+    }
+    ]
+    },
+    {
+    "date": "11 Sep, 2020",
+    "transactions": [
+    {
+    "description": "Ad Spends",
+    "datetime": "10 Sep, 2020 at 3:30 PM",
+    "category": "Work",
+    "category_indicator": {
+    "background": "#080909",
+    "dot_color": "#FF6B00"
+    },
+    "attachment": true,
+    "amount": "-$2,340.00"
+    }
+    ]
+    }
+    ]
+    }
+    }
+    },
+    "right_sidebar": {
+    "background": "#000000",
+    "approx_width_px": 364,
+    "header": {
+    "brand_name": "Cryptoline",
+    "brand_color": "#FFFFFF",
+    "tagline": "Increase your profit",
+    "tagline_color": "#D8D8D8",
+    "top_actions": [
+    {
+    "icon": "search",
+    "container": "dark circular button"
+    },
+    {
+    "icon": "notification bell",
+    "container": "dark circular button"
+    }
+    ]
+    },
+    "portfolio_card": {
+    "position": "top section",
+    "background": "#222326",
+    "border_radius_px_approx": 14,
+    "title": "My Portfolio",
+    "portfolio_value": "$34,010.00",
+    "change": "+ 2,5%",
+    "change_color": "#E3E3E3",
+    "small_chart_icon": "bar chart icon in upper-right",
+    "actions": [
+    {
+    "label": "Deposit",
+    "background": "#FFFFFF",
+    "text_color": "#151515",
+    "icon": "download/down arrow"
+    },
+    {
+    "label": "Withdraw",
+    "background": "#FFFFFF",
+    "text_color": "#151515",
+    "icon": "upload/up arrow"
+    }
+    ]
+    },
+    "favorites_section": {
+    "title": "Favorites",
+    "see_all": "See All",
+    "cards": [
+    {
+    "symbol": "BTC",
+    "name": "Bitcoin",
+    "icon_background": "#7342F5",
+    "icon_symbol": "Bitcoin logo",
+    "chart_type": "small line chart",
+    "chart_color": "#7342F5",
+    "value": "$20,788",
+    "change": "+0,25%",
+    "change_color": "#19D992"
+    },
+    {
+    "symbol": "ETH",
+    "name": "Ethereum",
+    "icon_background": "#19DDEA",
+    "icon_symbol": "Ethereum logo",
+    "chart_type": "small line chart",
+    "chart_color": "#19DDEA",
+    "value": "$21,543",
+    "change": "+1,56%",
+    "change_color": "#19D992"
+    }
+    ],
+    "card_layout": {
+    "count": 2,
+    "orientation": "horizontal",
+    "card_width": "approximately 148px each",
+    "card_height": "approximately 177px"
+    }
+    },
+    "live_prices": {
+    "title": "Live Prices",
+    "assets": [
+    {
+    "name": "Binance",
+    "symbol": "BNB",
+    "icon": "Binance logo",
+    "icon_background": "#10CFE5",
+    "chart_color": "#10CFE5",
+    "price": "$18,788",
+    "change": "+0,15%",
+    "change_color": "#20D697"
+    },
+    {
+    "name": "Litecoin",
+    "symbol": "LTC",
+    "icon": "Litecoin logo",
+    "icon_background": "#1799DB",
+    "chart_color": "#1799DB",
+    "price": "$11,657",
+    "change": "-0,18%",
+    "change_color": "#FF4D5A"
+    },
+    {
+    "name": "Ethereum",
+    "symbol": "ETH",
+    "icon": "Ethereum logo",
+    "icon_background": "#1EDCBF",
+    "chart_color": "#1EDCBF",
+    "price": "$21,543",
+    "change": "+1,56%",
+    "change_color": "#20D697"
+    },
+    {
+    "name": "Bitcoin",
+    "symbol": "BTC",
+    "icon": "Bitcoin logo",
+    "icon_background": "#FF711E",
+    "chart_color": "#FF711E",
+    "price": "$20,788",
+    "change": "+0,25%",
+    "change_color": "#20D697"
+    }
+    ],
+    "row_structure": {
+    "left": "circular cryptocurrency logo",
+    "center_left": "asset name and ticker",
+    "center_right": "small sparkline chart",
+    "right": "price and percentage change"
+    }
+    }
+    },
+    "typography": {
+    "overall_style": "modern geometric sans-serif",
+    "likely_font_family": "similar to Inter / SF Pro / modern fintech sans-serif",
+    "weights": {
+    "large_metric": "600-700",
+    "section_titles": "600-700",
+    "body": "400-500",
+    "muted_metadata": "400"
+    },
+    "characteristics": [
+    "clean sans serif",
+    "high legibility",
+    "compact labels",
+    "uppercase section labels",
+    "large financial numbers",
+    "muted metadata text"
+    ]
+    },
+    "shape_language": {
+    "corner_radius": {
+    "small_buttons": "8-12px",
+    "cards": "12-16px",
+    "portfolio_card": "14-16px",
+    "circular_controls": "50%"
+    },
+    "borders": "mostly none on cards; thin dark dividers between major sections",
+    "shadows": "minimal or essentially absent",
+    "surfaces": "strong separation primarily through color rather than shadows"
+    },
+    "charts": {
+    "activity_chart": {
+    "type": "vertical bar chart",
+    "background": "transparent",
+    "primary_color": "#27E7CF",
+    "bars": "roughly 15-18 bars",
+    "trend": "generally increasing toward the later dates, with fluctuations"
+    },
+    "crypto_sparklines": {
+    "type": "smooth mini line charts",
+    "background": "transparent",
+    "filled_area": "subtle/dark translucent glow beneath some lines",
+    "style": "thin high-contrast neon line"
+    }
+    },
+    "icons": {
+    "style": "thin-line modern UI icons with occasional brand logos",
+    "consistent_characteristics": [
+    "simple geometric outlines",
+    "rounded strokes",
+    "small footprint",
+    "mostly centered inside dark or colored circular/rounded containers"
+    ],
+    "functional_icons_present": [
+    "grid",
+    "pie chart",
+    "bar chart",
+    "chat",
+    "sliders",
+    "transfer",
+    "lock",
+    "plus",
+    "search",
+    "notification",
+    "wallet",
+    "calendar",
+    "settings",
+    "attachment",
+    "download",
+    "upload",
+    "chevron"
+    ]
+    },
+    "spacing": {
+    "overall": "generous internal whitespace despite dense data",
+    "main_horizontal_padding_px_approx": 26,
+    "right_sidebar_horizontal_padding_px_approx": 25,
+    "metric_gap": "approximately 30-45px",
+    "section_gap": "approximately 25-35px",
+    "transaction_row_spacing": "approximately 20-30px"
+    },
+    "content_hierarchy": [
+    "User greeting and wallet selector",
+    "Financial summary metrics",
+    "Central payment card",
+    "Activity/spending/income tabs",
+    "Activity graph and quick links",
+    "Transaction history",
+    "Cryptocurrency portfolio",
+    "Favorite assets",
+    "Live cryptocurrency prices"
+    ],
+    "ui_behavior_implied": {
+    "wallet_selector": "dropdown/select control",
+    "summary_tabs": "switch between activity, spending, and income analytics",
+    "history_tabs": "switch between historical and upcoming transactions",
+    "date_filter": "date-range picker",
+    "settings_icon": "opens configuration/preferences",
+    "plus_buttons": "create/add a new item or transaction",
+    "see_all": "opens complete cryptocurrency favorites list",
+    "deposit_withdraw": "financial action buttons",
+    "sidebar_icons": "primary application navigation",
+    "quick_link_chevrons": "navigate to Goals, Monthly Plan, Settings, and Transfers"
+    },
+    "exact_visible_text": {
+    "header": [
+    "Good Evening Mikey!",
+    "Choose Wallet"
+    ],
+    "summary": [
+    "Total earnings",
+    "$10,596.57",
+    "Total for all goals",
+    "$5,596.10",
+    "Expenses",
+    "$4,166.80",
+    "Weekly stats",
+    "$1,257.12"
+    ],
+    "card": [
+    "Name Card",
+    "Julia James",
+    "VISA",
+    "**** **** **** 1234",
+    "EXP DATE",
+    "12/25",
+    "CVV NUMBER",
+    "123"
+    ],
+    "summary_tabs": [
+    "ACTIVITY SUMMARY",
+    "SPENDING SUMMARY",
+    "INCOME SUMMARY"
+    ],
+    "activity": [
+    "Activity Graph",
+    "$186k",
+    "BETWEEN SEP 9 - 27",
+    "Goals",
+    "Monthly Plan",
+    "Settings",
+    "Transfers"
+    ],
+    "history": [
+    "History",
+    "Upcoming",
+    "6 Sep 20 - 13 Sep 20",
+    "13 Sep, 2020",
+    "Transfer to Mikey",
+    "10 Sep, 2020 at 3:30 PM",
+    "Personal",
+    "-$10,100.00",
+    "10 Sep, 2020",
+    "Investment to BGA",
+    "Investments",
+    "+$50,400.00",
+    "Personal",
+    "-$10,100.00",
+    "Cash withdrawal",
+    "General",
+    "-$20,905.00",
+    "11 Sep, 2020",
+    "Ad Spends",
+    "Work",
+    "-$2,340.00"
+    ],
+    "right_panel": [
+    "Cryptoline",
+    "Increase your profit",
+    "My Portfolio",
+    "$34,010.00",
+    "+ 2,5%",
+    "Deposit",
+    "Withdraw",
+    "Favorites",
+    "See All",
+    "BTC",
+    "Bitcoin",
+    "$20,788",
+    "+0,25%",
+    "ETH",
+    "Ethereum",
+    "$21,543",
+    "+1,56%",
+    "Live Prices",
+    "Binance",
+    "BNB",
+    "$18,788",
+    "+0,15%",
+    "Litecoin",
+    "LTC",
+    "$11,657",
+    "-0,18%",
+    "Ethereum",
+    "ETH",
+    "$21,543",
+    "+1,56%",
+    "Bitcoin",
+    "BTC",
+    "$20,788",
+    "+0,25%"
+    ]
+    },
+    "visual_recreation_priorities": {
+    "highest": [
+    "preserve three-column structure",
+    "preserve dark black/tinted background hierarchy",
+    "preserve bright turquoise primary accent",
+    "preserve narrow left navigation rail",
+    "preserve black cryptocurrency sidebar",
+    "preserve central VISA card",
+    "preserve top summary metrics",
+    "preserve activity/history split in lower center area"
+    ],
+    "medium": [
+    "replicate exact spacing and alignment",
+    "replicate card corner radii",
+    "replicate typography hierarchy",
+    "replicate sparkline shapes approximately",
+    "replicate icon container colors"
+    ],
+    "low": [
+    "exact user portrait",
+    "exact micro-shapes of decorative chart curves",
+    "exact font family unless available",
+    "exact anti-aliasing and pixel-level rendering"
+    ]
+    },
+    "responsive_behavior_inferred": {
+    "desktop_first": true,
+    "mobile_layout_not_shown": true,
+    "likely_mobile_strategy": "collapse left navigation and move or hide right cryptocurrency sidebar"
+    },
+    "semantic_structure": {
+    "application_type": "cryptocurrency/financial management dashboard",
+    "primary_user_role": "authenticated financial/crypto dashboard user",
+    "primary_actions": [
+    "view earnings",
+    "view expenses",
+    "review goals",
+    "review weekly stats",
+    "manage wallet",
+    "view transaction history",
+    "deposit funds",
+    "withdraw funds",
+    "monitor cryptocurrency prices"
+    ],
+    "secondary_actions": [
+    "settings",
+    "transfers",
+    "date filtering",
+    "favorite asset browsing"
+    ]
+    }
+}

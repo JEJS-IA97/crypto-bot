@@ -75,7 +75,7 @@ function TokenField() {
             <div className="token-actions">
                 <button
                     type="button"
-                    className="execute-button buy-button"
+                    className="btn btn-primary btn-block"
                     onClick={handleSave}
                     disabled={!value.trim()}
                 >
@@ -85,7 +85,7 @@ function TokenField() {
                 {hasToken && (
                     <button
                         type="button"
-                        className="execute-button sell-button"
+                        className="btn btn-danger btn-block"
                         onClick={handleClear}
                     >
                         Quitar

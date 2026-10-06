@@ -118,9 +118,9 @@ function KillSwitch({ refreshMs = REFRESH_MS }) {
 
             <button
                 type="button"
-                className={`execute-button ${
-                    status?.running ? "sell-button" : "buy-button"
-                }`}
+                className={`btn ${
+                    status?.running ? "btn-danger" : "btn-primary"
+                } btn-block`}
                 onClick={handleToggle}
                 disabled={!status || busy}
             >

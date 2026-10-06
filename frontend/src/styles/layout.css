@@ -1,0 +1,481 @@
+/* ============================================================
+   Layout de tres columnas (design.json layout.type):
+   rail de navegación | workspace | sidebar de crypto
+   ============================================================ */
+
+.app-shell {
+    display: grid;
+    grid-template-areas: "rail main side";
+    grid-template-columns: var(--rail-width) minmax(0, 1fr)
+        var(--sidebar-width);
+    min-height: 100vh;
+    background: var(--bg-main);
+}
+
+/* Rail de navegación (design.json left_sidebar) */
+.rail {
+    position: sticky;
+    top: 0;
+    grid-area: rail;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100vh;
+    padding: var(--space-5) 0;
+    background: var(--bg-rail);
+}
+
+.rail-brand {
+    display: grid;
+    place-items: center;
+    width: 51px;
+    height: 51px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--blue);
+    color: var(--text-primary);
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+
+.rail-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin: auto 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rail-link {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: #d9d9d9;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.rail-link:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.rail-link[aria-current="true"] {
+    background: rgba(39, 231, 207, 0.1);
+    color: var(--accent);
+}
+
+.rail-action {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    margin-top: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+
+/* Workspace central (design.json main_workspace) */
+.workspace {
+    grid-area: main;
+    min-width: 0;
+    padding: var(--space-7) var(--space-7) var(--space-10);
+}
+
+.workspace-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-6);
+    margin-bottom: var(--space-7);
+}
+
+.page-heading h1 {
+    margin: var(--space-3) 0 var(--space-2);
+    color: var(--text-primary);
+    font-size: var(--font-size-page-title);
+    font-weight: 750;
+    letter-spacing: -0.05em;
+    line-height: 1;
+}
+
+.page-heading p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.simulation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 38px;
+    padding: 0 var(--space-4);
+    border: 1px solid rgba(39, 231, 207, 0.4);
+    border-radius: var(--radius-md);
+    background: rgba(39, 231, 207, 0.07);
+    color: var(--accent);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(39, 231, 207, 0.12);
+}
+
+/* ============================================================
+   Fila de resumen: 4 métricas con icono + tarjeta central
+   (design.json summary_area; las métricas NO llevan tarjeta)
+   ============================================================ */
+
+.summary-row {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr) minmax(240px, 270px) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: center;
+    margin-bottom: var(--space-8);
+}
+
+.summary-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6) var(--space-8);
+}
+
+.metric-tile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+}
+
+.metric-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--cyan);
+    color: var(--accent-ink);
+}
+
+.metric-icon.tone-accent {
+    background: var(--accent);
+}
+
+.metric-icon.tone-purple {
+    background: var(--purple);
+    color: var(--text-primary);
+}
+
+.metric-icon.tone-blue {
+    background: var(--blue);
+}
+
+.metric-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.metric-label {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.metric-value {
+    color: var(--text-value);
+    font-size: 1.35rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+}
+
+/* Tarjeta central de cuenta (análoga a la tarjeta del design.json) */
+.account-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-5);
+    border-radius: var(--radius-xl);
+    background: var(--surface-deep);
+}
+
+.account-card h2 {
+    margin: var(--space-2) 0 0;
+    color: var(--text-primary);
+    font-size: 1.15rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+}
+
+.account-id {
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+}
+
+.account-total {
+    display: block;
+    margin-top: var(--space-3);
+    color: var(--text-primary);
+    font-size: 1.9rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+}
+
+.account-total-label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.account-sub {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--divider);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+}
+
+.account-sub strong {
+    color: var(--text-value);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Pestañas de sección (design.json section_tabs; reales, RF-6)
+   ============================================================ */
+
+.section-tabs {
+    display: flex;
+    gap: var(--space-7);
+    margin-bottom: var(--space-6);
+    border-top: 1px solid var(--divider);
+    border-bottom: 1px solid var(--divider);
+}
+
+.section-tab {
+    min-height: 56px;
+    margin-bottom: -1px;
+    padding: 0 var(--space-1);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.15s ease;
+}
+
+.section-tab:hover {
+    color: var(--text);
+}
+
+.section-tab[aria-selected="true"] {
+    border-bottom-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+.tab-panel {
+    min-height: 320px;
+}
+
+.tab-panel:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+/* Columnas del contenido (design.json lower_content: 36% / 64%) */
+.operar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 36fr) minmax(0, 64fr);
+    gap: var(--space-6);
+    align-items: start;
+}
+
+.history-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+/* ============================================================
+   Sidebar derecha (design.json right_sidebar)
+   ============================================================ */
+
+.sidebar {
+    position: sticky;
+    top: 0;
+    grid-area: side;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    width: 100%;
+    height: 100vh;
+    min-width: 0;
+    overflow-y: auto;
+    padding: var(--space-6) var(--space-6) var(--space-8);
+    background: var(--bg-sidebar);
+}
+
+.sidebar-brand strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.sidebar-brand span {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.portfolio-card {
+    padding: var(--space-5);
+    border-radius: var(--radius-xl);
+    background: var(--surface-card);
+}
+
+.portfolio-value {
+    display: block;
+    margin-top: var(--space-3);
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+}
+
+.portfolio-change {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.portfolio-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+}
+
+.sidebar-heading {
+    margin: 0;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+/* Precios en vivo (design.json live_prices; datos reales, sin sparkline) */
+.price-list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.price-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--divider);
+}
+
+.price-row:last-child {
+    border-bottom: 0;
+}
+
+.price-coin {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.price-coin.coin-orange {
+    background: var(--orange);
+}
+
+.price-coin.coin-cyan {
+    background: var(--cyan);
+}
+
+.price-coin.coin-blue {
+    background: var(--blue);
+}
+
+.price-coin.coin-purple {
+    background: var(--purple);
+    color: var(--text-primary);
+}
+
+.price-name strong {
+    display: block;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.price-quote {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+}
+
+.price-value {
+    color: var(--text-value);
+    font-size: 0.9rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Estados de página fuera del shell (carga/error/vacío) */
+.simulation-page {
+    min-height: 100vh;
+    padding: var(--space-8) var(--space-6);
+    background: var(--bg-main);
+}

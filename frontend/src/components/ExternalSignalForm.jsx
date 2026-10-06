@@ -76,12 +76,18 @@ function ExternalSignalForm() {
         >
             <div className="panel-heading">
                 <div>
-                    <span className="eyebrow">SEÑAL EXTERNA</span>
-                    <h2>Enviar señal copy</h2>
+                    <span className="eyebrow">COPY TRADING</span>
+                    <h2>Copy trading</h2>
                 </div>
 
                 <span className="panel-caption">RF-8</span>
             </div>
+
+            <p className="panel-help">
+                Envía una señal al bot; la evaluará en el próximo
+                ciclo con las mismas reglas de riesgo que cualquier
+                operación.
+            </p>
 
             <form
                 className="signal-form"
@@ -194,7 +200,7 @@ function ExternalSignalForm() {
 
                 <button
                     type="submit"
-                    className="execute-button buy-button"
+                    className="btn btn-primary btn-block"
                     disabled={busy}
                 >
                     {busy ? "Enviando..." : "Enviar señal"}

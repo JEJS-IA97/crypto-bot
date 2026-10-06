@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createOrder } from "../api/simulation";
+import { formatMoney } from "../utils/format";
 
 const FEE_RATE = 0.001;
 
@@ -9,13 +10,6 @@ const DEFAULT_SYMBOLS = [
     "SOLUSDT",
     "BNBUSDT",
 ];
-
-function formatMoney(value) {
-    return Number(value || 0).toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 8,
-    });
-}
 
 function getPriceForSymbol(marketPrices, symbol) {
     const marketPrice = marketPrices.find(
@@ -61,11 +55,15 @@ function TradingPanel({
     const estimatedTotal =
         side === "BUY" ? subtotal + fee : subtotal - fee;
 
-    useEffect(() => {
+    const [syncedPrice, setSyncedPrice] = useState(null);
+
+    if (currentPrice !== syncedPrice) {
+        setSyncedPrice(currentPrice);
+
         if (currentPrice > 0) {
             setLimitPrice(String(currentPrice));
         }
-    }, [currentPrice]);
+    }
 
     const handleSideChange = (nextSide) => {
         setSide(nextSide);
@@ -286,8 +284,8 @@ function TradingPanel({
                         type="submit"
                         className={
                             side === "BUY"
-                                ? "execute-button buy-button"
-                                : "execute-button sell-button"
+                                ? "btn btn-primary btn-block"
+                                : "btn btn-danger btn-block"
                         }
                         disabled={submitting}
                     >

@@ -5,6 +5,7 @@ import {
     getBotStatus,
     getDecisions,
 } from "../api/bot";
+import { formatMoney } from "../utils/format";
 
 const REFRESH_MS = 5000;
 
@@ -26,7 +27,7 @@ function money(value) {
     if (value === null || value === undefined || value === "") {
         return "—";
     }
-    return `${value} USD`;
+    return `${formatMoney(value)} USD`;
 }
 
 function decisionResult(decision) {

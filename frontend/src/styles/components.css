@@ -1,0 +1,561 @@
+/* ============================================================
+   Paneles: superficie por color, sin bordes (design.json borders:
+   "mostly none on cards; thin dividers between major sections")
+   ============================================================ */
+
+.panel-card {
+    min-width: 0;
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.data-section {
+    min-width: 0;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--divider);
+}
+
+.panel-heading,
+.section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--card-pad) var(--card-pad) var(--space-4);
+}
+
+.data-section .section-header {
+    padding: 0 var(--space-1) var(--space-4);
+}
+
+.panel-heading h2,
+.section-header h2 {
+    margin: var(--space-2) 0 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.panel-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 29px;
+    padding: 0 var(--space-3);
+    border: 1px solid rgba(33, 217, 155, 0.45);
+    border-radius: var(--radius-pill);
+    color: var(--positive);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
+
+.panel-caption {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.panel-caption.state-active {
+    color: var(--positive);
+}
+
+.panel-caption.state-stopped {
+    color: var(--text-secondary);
+}
+
+.panel-caption.state-blocked {
+    color: var(--negative);
+}
+
+.panel-help {
+    margin: 0 var(--card-pad) var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+}
+
+/* ============================================================
+   Terminal de trading
+   ============================================================ */
+
+.trading-panel-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 300px);
+    gap: var(--grid-gap);
+    padding: 0 var(--card-pad) var(--card-pad);
+}
+
+.order-form {
+    min-width: 0;
+}
+
+.side-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-bottom: var(--space-5);
+    padding: var(--space-1);
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+}
+
+.side-tab {
+    min-height: 38px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.side-tab:hover {
+    color: var(--text-primary);
+}
+
+.side-tab.active {
+    background: var(--surface-active);
+    color: var(--text-primary);
+}
+
+.side-tab.active.buy-tab {
+    background: var(--color-buy);
+    color: var(--accent-ink);
+}
+
+.side-tab.active.sell-tab {
+    background: var(--color-sell);
+    color: var(--negative-ink);
+}
+
+.side-tab:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.order-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--grid-gap);
+}
+
+.signal-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.signal-form .form-message {
+    margin: 0;
+}
+
+/* Resumen de la orden */
+.order-summary {
+    align-self: stretch;
+    min-width: 0;
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+}
+
+.summary-heading {
+    margin-bottom: var(--space-6);
+    color: var(--text);
+    font-size: var(--font-size-md);
+    font-weight: 700;
+}
+
+.order-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    font-variant-numeric: tabular-nums;
+}
+
+.order-summary-row strong {
+    color: var(--text-value);
+    font-weight: 650;
+}
+
+.summary-divider {
+    height: 1px;
+    margin: var(--space-5) 0;
+    background: var(--divider);
+}
+
+.order-summary-row.total-row {
+    margin-bottom: 0;
+}
+
+.total-row span,
+.total-row strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.available-balance {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--divider);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   Métricas y decisiones (RF-17 / RF-18)
+   ============================================================ */
+
+.metrics-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--grid-gap);
+    padding: 0 var(--card-pad);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+}
+
+.metrics-reason {
+    color: var(--negative);
+    font-weight: 700;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: var(--space-4);
+    padding: 0 var(--card-pad) var(--space-3);
+}
+
+.summary-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    min-height: 104px;
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+    overflow: hidden;
+}
+
+.summary-card::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 3px;
+    content: "";
+}
+
+.summary-card span {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.summary-card strong {
+    color: var(--text-value);
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+}
+
+.summary-card small {
+    margin-top: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    line-height: 1.35;
+}
+
+.summary-blue::before {
+    background: var(--blue);
+}
+
+.summary-green::before {
+    background: var(--positive);
+}
+
+.summary-purple::before {
+    background: var(--purple);
+}
+
+.summary-cyan::before {
+    background: var(--cyan);
+}
+
+.summary-orange::before {
+    background: var(--orange);
+}
+
+.summary-yellow::before {
+    background: var(--accent);
+}
+
+.summary-red::before {
+    background: var(--negative);
+}
+
+.metrics-section {
+    margin-top: var(--space-7);
+    padding: 0 var(--card-pad);
+}
+
+.metrics-section h3 {
+    margin: 0 0 var(--space-3);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.metrics-section .empty-state {
+    padding: var(--space-6) var(--space-4);
+}
+
+.rejected-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rejected-list li {
+    padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--negative);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    font-size: var(--font-size-md);
+}
+
+.rejected-list code {
+    color: var(--negative);
+}
+
+.metrics-panel details {
+    font-size: var(--font-size-sm);
+}
+
+.metrics-panel details pre {
+    max-width: 260px;
+    max-height: 140px;
+    overflow: auto;
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   Tablas de datos
+   ============================================================ */
+
+.data-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    min-width: 440px;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table th,
+.data-table td {
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--divider);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.data-table th {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.data-table td {
+    color: var(--text);
+    font-size: var(--font-size-sm);
+}
+
+.data-table td strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table-empty-state {
+    min-height: 116px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--surface-soft);
+}
+
+/* ============================================================
+   Kill switch, señal externa y token (sidebar: sin caja propia,
+   separados por divisor fino)
+   ============================================================ */
+
+.sidebar .panel-card {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--divider);
+    border-radius: 0;
+    background: transparent;
+}
+
+.sidebar .panel-heading {
+    padding: 0 0 var(--space-4);
+}
+
+.sidebar .panel-help {
+    margin: 0 0 var(--space-4);
+}
+
+.sidebar .trading-panel-content {
+    padding: 0;
+}
+
+.kill-note {
+    margin: var(--space-4) 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+}
+
+.kill-reason {
+    margin-top: var(--space-3);
+    font-size: var(--font-size-md);
+}
+
+.kill-switch .btn-block {
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.token-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.token-field input {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-md);
+    outline: none;
+    background: var(--surface-soft);
+    color: var(--text-value);
+    font: inherit;
+    font-size: 0.85rem;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.token-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(39, 231, 207, 0.14);
+}
+
+.token-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.token-actions .btn {
+    margin-top: 0;
+}
+
+/* ============================================================
+   Curva de equity (RF-3)
+   ============================================================ */
+
+.equity-section {
+    min-width: 0;
+}
+
+.equity-chart {
+    padding: 0 var(--space-1);
+}
+
+.equity-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.equity-grid-line {
+    stroke: var(--divider);
+    stroke-width: 1;
+}
+
+.equity-area {
+    fill: var(--equity-fill);
+}
+
+.equity-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.equity-point {
+    fill: var(--accent);
+}
+
+.equity-point-last {
+    fill: var(--positive);
+}
+
+.equity-axis-label {
+    fill: var(--text-secondary);
+    font-size: 11px;
+}
+
+.equity-empty {
+    padding: var(--space-8) var(--space-4);
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    text-align: center;
+}
+
+.equity-note {
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+}
