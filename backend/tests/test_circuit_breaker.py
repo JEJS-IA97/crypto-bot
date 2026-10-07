@@ -6,8 +6,15 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, _enable_sqlite_foreign_keys
-from app.domain.signal_engine import Candle, StrategyConfig
-from app.models import BotRuntime, PositionV2, SignalDecision
+from app.domain.signal_engine import Candle
+from app.models import (
+    BotRuntime,
+    DecisionOrigin,
+    DecisionStatus,
+    PositionV2,
+    SignalDecision,
+    TradeSide,
+)
 from app.schemas import SimulationAccountCreate
 from app.services.binance_market_data_client import (
     MarketDataUnavailable,
@@ -23,6 +30,9 @@ from app.services.risk_guard_service import (
     reset_breaker,
 )
 from app.services.simulation_service import create_simulation_account
+
+# Mediodía en Nueva York (EDT): fuera de la ventana ORB.
+NOW_OUTSIDE = datetime(2026, 10, 5, 16, 0)
 
 
 def _session_factory():
@@ -151,12 +161,14 @@ class _BrokenMarket:
 
 class _FakeMarket:
     def __init__(self) -> None:
-        self.kline_calls: list[str] = []
+        self.kline_calls: list[tuple[str, str]] = []
 
     def get_klines(
         self, symbol: str, interval: str = "15m", limit: int = 200
     ) -> list[Candle]:
-        self.kline_calls.append(symbol)
+        self.kline_calls.append((symbol, interval))
+        if interval == "5m":
+            return []
         return _buy_candles()
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:
@@ -192,7 +204,7 @@ class BreakerBlocksOrdersTests(unittest.TestCase):
                 market_data=_BrokenMarket(),
                 symbols=["BTCUSDT"],
                 account_id=self.account.id,
-                strategy=StrategyConfig(),
+                now=NOW_OUTSIDE,
             )
             self.assertEqual(report.status, "failed")
             self.assertIn("offline", report.error)
@@ -210,7 +222,7 @@ class BreakerBlocksOrdersTests(unittest.TestCase):
             market_data=good,
             symbols=["BTCUSDT"],
             account_id=self.account.id,
-            strategy=StrategyConfig(),
+            now=NOW_OUTSIDE,
         )
         self.assertEqual(report.status, "breaker")
         self.assertEqual(good.kline_calls, [])
@@ -219,17 +231,31 @@ class BreakerBlocksOrdersTests(unittest.TestCase):
 
         # Reinicio manual → el loop vuelve a operar (RF-22).
         reset_breaker(self.db)
+        self.db.add(
+            SignalDecision(
+                client_order_id="ext-buy-breaker-0001",
+                symbol="BTCUSDT",
+                side=TradeSide.BUY,
+                origin=DecisionOrigin.EXTERNAL,
+                source="copia-proveedor",
+                status=DecisionStatus.PENDING,
+                config_json="{}",
+                market_snapshot_json="{}",
+                created_at=NOW_OUTSIDE,
+            )
+        )
+        self.db.commit()
         good = _FakeMarket()
         report = run_once(
             self.db,
             market_data=good,
             symbols=["BTCUSDT"],
             account_id=self.account.id,
-            strategy=StrategyConfig(),
+            now=NOW_OUTSIDE,
         )
         self.assertEqual(report.status, "ok")
         self.assertEqual(report.opened, 1)
-        self.assertEqual(good.kline_calls, ["BTCUSDT"])
+        self.assertEqual(good.kline_calls, [("BTCUSDT", "15m")])
         positions = list(self.db.scalars(select(PositionV2)).all())
         self.assertEqual(len(positions), 1)
         runtime = get_runtime(self.db)

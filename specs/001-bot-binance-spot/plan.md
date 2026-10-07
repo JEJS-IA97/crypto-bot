@@ -1,14 +1,17 @@
 # Plan 001 — Bot de trading Binance Spot con 20 USD (fase 1)
 
-Referencias: `docs/constitution.md`, `spec.md` (v2), `clarificacion.md`.
+Referencias: `docs/constitution.md`, `spec.md` (v3), `clarificacion.md`.
 
 > Regla: el plan **no es código**. Define módulos, datos, decisiones y tests. Los parámetros
 > finales de la estrategia se fijan en la fase de tareas a partir del backtest (duda abierta #1).
 
 ## Alcance de este plan
 
-- **Se construye:** loop autónomo en Binance Spot (8 pares), señales técnicas + externas (copy),
-  riesgo acotado, panel web con kill switch, backtest con métricas, fases simulación→testnet→real.
+- **Se construye:** loop autónomo en Binance Spot (8 pares), señal técnica **ORB**
+  (rango de apertura 9:00–9:30 AM Nueva York, velas 5m, rompimiento a las 9:30,
+  RF-7/RF-27) sobre BTC/ETH/BNB/SOL + señales externas (copy) en los 8 pares,
+  riesgo acotado, panel web con kill switch, backtest con métricas, fases
+  simulación→testnet→real.
 - **Se congela (RF-21), sin tocar un solo fichero:** `arbitrage_service.py`,
   `trade_opportunity_service.py`, `execution_price_service.py`, `bot_engine.py`,
   `bot_runner_service.py`, `exchange_market_service.py`, `okx_demo_client.py`,
@@ -19,14 +22,14 @@ Referencias: `docs/constitution.md`, `spec.md` (v2), `clarificacion.md`.
 
 | # | Módulo (ruta) | Responsabilidad | RF |
 |---|---|---|---|
-| M1 | `app/services/binance_market_data_client.py` (nuevo) | Klines y exchangeInfo públicos con caché corta y fail-closed | RF-6, RNF-6 |
-| M2 | `app/domain/signal_engine.py` (nuevo) | Indicadores + señal determinista `BUY/SELL/HOLD` puro (sin red/BD) | RF-7, RF-23 |
+| M1 | `app/services/binance_market_data_client.py` (nuevo) | Klines y exchangeInfo públicos con caché corta y fail-closed; klines 15m por defecto y **5m en la ventana ORB** para los 4 pares (D-12) | RF-6, RNF-6 |
+| M2 | `app/domain/orb_engine.py` (nuevo) + `app/domain/signal_engine.py` (candidata EMA/RSI) | ORB determinista `BUY`/`HOLD` puro (sin red/BD): rango 9:00–9:30 NY sobre velas 5m, ventana 9:30–10:00 NY; EMA/RSI queda solo para backtest/grid (RF-15) | RF-7 |
 | M3 | `app/services/external_signal_service.py` (nuevo) | Validación de señales externas: side, TTL, precio lejano, pares, duplicados | RF-8, RF-9, RF-23 |
 | M4 | `app/domain/risk_math.py` (nuevo) | Cálculos puros: tamaño de orden, stop/tp, tope 1 USD, 25%, 3 posiciones | RF-12, RF-13 |
 | M5 | `app/services/risk_guard_service.py` (nuevo) | Estado de riesgo: pérdida diaria, aperturas/día, cooldown, circuit breaker | RF-4, RF-5, RF-22, RF-26 |
 | M6 | `app/services/order_lifecycle.py` (nuevo) | Ciclo de vida: fill → stop/tp (OCO) → cierre, slippage, reconciliación | RF-13, RF-24, RF-25, RF-10 |
 | M7 | `app/services/binance_executor.py` (nuevo) | Adaptador de `BinanceSpotClient` al protocolo `ExchangeExecutor` + reglas de par | RF-11, RF-14, RF-1, RF-2 |
-| M8 | `app/services/bot_loop.py` (nuevo) | Orquestador: evaluar → decidir → riesgo → ejecutar; kill switch; breaker | RF-3, RF-22, RF-5 |
+| M8 | `app/services/bot_loop.py` (nuevo) | Orquestador: evaluar → decidir → riesgo → ejecutar; ventana ORB y 1 decisión técnica/día por par (RF-27); kill switch; breaker | RF-3, RF-22, RF-5, RF-27 |
 | M9 | `app/services/decision_store.py` (nuevo) | Persistencia de decisiones, snapshot, resultado; métricas del panel | RF-10, RF-17, RF-18 |
 | M10 | `app/services/phase_service.py` (nuevo) | Fases simulación/testnet/real + criterios de paso bloqueantes | RF-16, RF-2 |
 | M11 | `app/services/strategy_lab_service.py` (existente, extender) | Backtest con comisiones 0.1% + slippage, splits y grid search | RF-15 |
@@ -78,16 +81,21 @@ como `signal_decision.status = REJECTED` con su motivo (RF-18).
 
 1. Si `bot_runtime.running == false` o `breaker_active` → dormir (kill switch / breaker).
 2. Cargar `daily_risk_state` de hoy; si `blocked` → no abrir nuevas (los stops siguen en M6).
-3. Descargar klines (15m) + exchangeInfo de los 8 pares (M1). Cualquier fallo → ciclo fallido
-   (fail-closed, RNF-6) y sumar al contador del breaker (RF-22 a los 5).
+3. Descargar klines (15m, 8 pares) + exchangeInfo (M1); **si es entre 9:00 y
+   10:00 AM Nueva York, descargar además klines 5m de los 4 pares ORB** (D-12).
+   Cualquier fallo → ciclo fallido (fail-closed, RNF-6) y sumar al contador
+   del breaker (RF-22 a los 5).
 4. Para cada par con posición abierta → M6 comprueba fills de stop/tp y actualiza la decisión (RF-10).
-5. Para cada par **sin** posición → M2 genera la señal técnica.
+5. Para cada par ORB **sin posición y sin decisión técnica hoy (día NY)** → M2
+   evalúa el ORB sobre las velas 5m (RF-7); fuera de ventana o con dedup ya
+   agotada → `HOLD` sin emitir (RF-27).
 6. Procesar señales externas en cola (M3): validadas por TTL/side/precio/duplicados.
 7. Conflicto técnico vs externa sobre el mismo par → gana la externa (RF-23).
 8. Si hay señal `BUY` → M4 calcula tamaño (mín. notional, tope 25%, ≤3 posiciones) → M5 valida
    pérdida diaria, aperturas/día y cooldown → si aprueba, M7 envía la orden con `clientOrderId`
-   idempotente (RF-25) → M6 coloca stop/tp y persiste todo (RF-10).
-9. Señal `SELL` sobre posición propia → M6 cierra y registra PnL con comisiones.
+   idempotente (RF-25) → M6 coloca stop/tp (RR 1:1, D-11) y persiste todo (RF-10).
+9. Las posiciones se cierran por **stop/take-profit** (M6, RF-13) o **señal
+   externa SELL** (RF-8); la técnica ya no emite `SELL` (RF-7 v3).
 10. Actualizar métricas (M9) y dormir hasta el siguiente intervalo (config, defecto 60 s).
 
 ## Decisiones justificadas
@@ -154,6 +162,36 @@ como `signal_decision.status = REJECTED` con su motivo (RF-18).
 - **Motivo:** constitución #8 (RF sin test = no implementado) — RF-19 es UI; Playwright es
   infraestructura pesada para este alcance.
 
+### Decisión 10: ORB reemplaza a EMA/RSI en el loop; EMA/RSI sigue como candidata de backtest
+- **Elegido:** la señal técnica en producción es el ORB (rango 9:00–9:30 AM NY,
+  velas 5m, rompimiento a las 9:30, ventana hasta las 10:00, RF-7 v3) sobre
+  BTC/ETH/BNB/SOL; `signal_engine.evaluate` (EMA/RSI) se conserva **sin cambios**
+  como estrategia candidata del grid search (RF-15).
+- **Alternativa descartada:** borrar EMA/RSI (rompería RF-15/grid y sus tests) o
+  que convivan ambas emitiendo en el loop (doble señal, más riesgo que el
+  permitido).
+- **Motivo:** decisión del propietario (D-12…D-14); una señal al día por par
+  encaja con RF-5 (10 aperturas/día) y el rango acotado es fácil de backtear
+  sin look-ahead (constitución #9).
+
+### Decisión 11: RR 1:1 por configuración, sin "modos"
+- **Elegido:** `TAKE_PROFIT_PCT = STOP_LOSS_PCT` (defecto 2.0% cada uno,
+  D-11); el tope de 1 USD por operación lo garantizan RF-12/RF-13 como hasta ahora.
+- **Alternativa descartada:** perfiles tranquilo/agresivo con tamaños distintos
+  (la estrategia original usaba contratos de futuros; en Spot con 20 USD solo
+  cabe un modo) y stops basados en el alto/bajo del rango (más fiel al original
+  pero exige cambio de RF-13; se puede evaluar en el backtest de RF-15).
+- **Motivo:** constitución #3 (riesgo ≤1 USD, capital 20 USD) y respuesta
+  explícita del propietario.
+
+### Decisión 12: 4 pares ORB, los otros 4 solo con copy
+- **Elegido:** ORB sobre BTC, ETH, BNB y SOL (D-12); XRP, DOGE, ADA y LINK
+  quedan sin señal técnica (solo RF-8).
+- **Alternativa descartada:** ORB en los 8 pares (4 señales diarias extra sin
+  validar) y un solo par (pocas muestras para RF-16: ≥15 operaciones en 30 días).
+- **Motivo:** respuesta del propietario; los 4 elegidos son líquidos y el
+  máximo teórico de 4 señales/día respeta RF-5 con margen.
+
 ## Contrato público (API / CLI / interfaz)
 
 Todas las rutas bajo `/api`. JSON. Pydantic v2 con validación estricta.
@@ -198,8 +236,8 @@ CLI existentes que se conservan: `collect_market_snapshots.py` (zona multi-excha
 | RF-3 | M8, M12 | `tests/test_kill_switch.py::test_stop_during_cycle` |
 | RF-4 | M5 | `tests/test_daily_risk.py::test_blocks_after_5pct_loss` |
 | RF-5 | M5 | `tests/test_daily_risk.py::test_open_limit_and_cooldown` |
-| RF-6 | M1 | `tests/test_binance_market_data.py::test_fail_closed_on_error` |
-| RF-7 | M2 | `tests/test_signal_engine.py::test_deterministic_signal` |
+| RF-6 | M1 | `tests/test_binance_market_data.py::test_fail_closed_on_error` (+ klines 5m en ventana ORB en `tests/test_binance_market_data.py`) |
+| RF-7 | M2 | `tests/test_orb_engine.py` (determinismo, ventana, rango, rompimiento, DST, fail-closed) |
 | RF-8 | M3, M12 | `tests/test_external_signals.py::test_ttl_and_price_distance` |
 | RF-9 | M3 | `tests/test_external_signals.py::test_duplicate_and_unknown_symbol` |
 | RF-10 | M9, M6 | `tests/test_decision_audit.py::test_snapshot_and_result` |
@@ -207,8 +245,9 @@ CLI existentes que se conservan: `collect_market_snapshots.py` (zona multi-excha
 | RF-12 | M4 | `tests/test_position_sizing.py::test_min_notional_cap_and_rounding` |
 | RF-13 | M4, M6 | `tests/test_order_lifecycle.py::test_stop_loss_capped_1usd` y `::test_error_without_stop` |
 | RF-14 | M7 | `tests/test_credentials_guard.py::test_fails_safe_without_keys` |
-| RF-15 | M11 | `tests/test_strategy_lab.py::test_fees_and_slippage` (ampliar) |
+| RF-15 | M11 | `tests/test_strategy_lab.py::KlineBacktestTest` (EMA/RSI: comisiones, slippage, grid, splits) + `::OrbKlineBacktestTest` (backtest ORB con TP/SL RR 1:1, ventana del día, DST, costes) |
 | RF-16 | M10 | `tests/test_phase_service.py::test_requires_30d_15ops_drawdown` |
+| RF-27 | M8, M9 | `tests/test_orb_loop.py::test_one_technical_decision_per_ny_day` |
 | RF-17 | M9, M12 | `tests/test_metrics_api.py::test_metrics_payload` |
 | RF-18 | M12, M13 | `tests/test_bot_api.py::test_status_and_history` + vitest de panel |
 | RF-19 | M12, M13 | `tests/test_bot_api.py::test_start_stop_and_signal` + vitest del formulario |
@@ -228,8 +267,10 @@ CLI existentes que se conservan: `collect_market_snapshots.py` (zona multi-excha
 | RNF-7 | revisión | convención (AGENTS.md) |
 
 ## Riesgos del plan
-1. **15 operaciones en 30 días:** con 8 pares y señales técnicas puede no alcanzarse el mínimo de
-   RF-16 → si ocurre, se amplía el periodo (decisión del propietario, no del código).
+1. **15 operaciones en 30 días:** con ORB (4 pares, 1 señal/día como máximo) el
+   teórico son ~120 señales/mes, pero días sin rompimiento o con el bot caído
+   pueden reducirlo → si no se alcanza el mínimo de RF-16, se amplía el periodo
+   (decisión del propietario, no del código).
 2. **Comisiones/stop mal calibrados** → el grid search sobre klines históricos es la primera tarea
    de validación de la estrategia antes de gastar tareas en la UI.
 3. **Zona congelada:** cualquier "mejora" tentativa a los ficheros congelados rompe RF-21; el test

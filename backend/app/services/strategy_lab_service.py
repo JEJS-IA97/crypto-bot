@@ -2,11 +2,17 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Iterable
 
+from app.domain.orb_engine import (
+    CANDLE_MINUTES,
+    OrbConfig,
+    ny_datetime,
+    session_bounds,
+)
 from app.domain.signal_engine import (
     Candle,
     SignalAction,
@@ -653,6 +659,228 @@ def grid_search_candles(
         backtest_candles(candles, strategy, config)
         for strategy in strategies
     ]
+    return sorted(
+        results,
+        key=lambda result: (
+            result.net_pnl_usd,
+            result.win_rate_pct,
+            -result.max_drawdown_pct,
+        ),
+        reverse=True,
+    )
+
+
+@dataclass(frozen=True)
+class OrbBacktestConfig:
+    """Costes y salidas del backtest ORB (RF-15, D-11: TP/SL 1:1)."""
+
+    fee_rate: Decimal = FEE_RATE_DEFAULT
+    slippage_pct: Decimal = Decimal("0")
+    capital_usd: Decimal = Decimal("20")
+    stop_loss_pct: Decimal = Decimal("2.0")
+    take_profit_pct: Decimal = Decimal("2.0")
+    orb: OrbConfig = OrbConfig()
+
+    def __post_init__(self) -> None:
+        for name in (
+            "fee_rate",
+            "slippage_pct",
+            "capital_usd",
+            "stop_loss_pct",
+            "take_profit_pct",
+        ):
+            value = getattr(self, name)
+            if not isinstance(value, Decimal):
+                raise TypeError(f"{name} must be a Decimal")
+        if self.fee_rate < 0:
+            raise ValueError("fee_rate must be >= 0")
+        if self.slippage_pct < 0:
+            raise ValueError("slippage_pct must be >= 0")
+        if self.capital_usd <= 0:
+            raise ValueError("capital_usd must be > 0")
+        if self.stop_loss_pct <= 0:
+            raise ValueError("stop_loss_pct must be > 0")
+        if self.take_profit_pct <= 0:
+            raise ValueError("take_profit_pct must be > 0")
+        if not isinstance(self.orb, OrbConfig):
+            raise TypeError("orb must be an OrbConfig")
+
+
+def backtest_orb(
+    candles: list[Candle],
+    config: OrbBacktestConfig | None = None,
+) -> KlineBacktestResult:
+    """Backtest ORB sobre klines 5m (RF-15).
+
+    Por cada día de Nueva York con las 6 velas del rango (9:00–9:30 AM NY,
+    si falta alguna el día se ignora, fail-closed): la primera vela 9:30–10:00
+    cuyo cierre supera el alto del rango entra en largo con la referencia de
+    su cierre, y sólo una entrada al día (RF-27). La posición sale por SL/TP
+    (``stop_loss_pct``/``take_profit_pct``, D-11) o al cerrar la ventana con
+    el cierre de la última vela de 9:55 AM NY. Sólo se usan velas abiertas
+    dentro de la ventana: sin look-ahead. Costes: comisión ``fee_rate`` por
+    lado y deslizamiento ``slippage_pct`` configurable en entrada y salida.
+    """
+    if not candles:
+        raise ValueError("No klines supplied for backtest.")
+    active = config if config is not None else OrbBacktestConfig()
+
+    ordered = sorted(candles, key=lambda item: item.open_time)
+    slip = active.slippage_pct / _HUNDRED
+    fee_rate = active.fee_rate
+    capital = active.capital_usd
+    stop_distance = active.stop_loss_pct / _HUNDRED
+    target_distance = active.take_profit_pct / _HUNDRED
+
+    trades: list[KlineTrade] = []
+    open_position: dict[str, Any] | None = None
+    equity = capital
+    peak = capital
+    max_drawdown_usd = Decimal("0")
+    max_drawdown_pct = Decimal("0")
+
+    def _close_position(
+        position: dict[str, Any],
+        exit_time: datetime,
+        exit_reference: Decimal,
+    ) -> None:
+        nonlocal open_position, equity, peak
+        nonlocal max_drawdown_usd, max_drawdown_pct
+
+        exit_fill = exit_reference * (Decimal("1") - slip)
+        proceeds = position["quantity"] * exit_fill
+        exit_fee = proceeds * fee_rate
+        pnl = (
+            proceeds
+            - exit_fee
+            - position["entry_cost"]
+            - position["entry_fee"]
+        )
+        trades.append(
+            KlineTrade(
+                entry_time=position["entry_time"],
+                exit_time=exit_time,
+                entry_price=position["entry_fill"],
+                exit_price=exit_fill,
+                quantity=position["quantity"],
+                fees_usd=position["entry_fee"] + exit_fee,
+                pnl_usd=pnl,
+            )
+        )
+
+        equity += pnl
+        peak = max(peak, equity)
+        drawdown_usd = peak - equity
+        if drawdown_usd > max_drawdown_usd:
+            max_drawdown_usd = drawdown_usd
+            max_drawdown_pct = (
+                drawdown_usd * _HUNDRED / peak if peak > 0 else Decimal("0")
+            )
+
+        open_position = None
+
+    by_day: dict[date, list[Candle]] = {}
+    for candle in ordered:
+        ny_day = ny_datetime(candle.open_time, active.orb).date()
+        by_day.setdefault(ny_day, []).append(candle)
+
+    for ny_day in sorted(by_day):
+        range_open, range_close, window_close = session_bounds(
+            ny_day, active.orb
+        )
+        expected_opens = [
+            range_open + timedelta(minutes=CANDLE_MINUTES * index)
+            for index in range(active.orb.range_minutes // CANDLE_MINUTES)
+        ]
+        by_open_ny = {
+            ny_datetime(candle.open_time, active.orb): candle
+            for candle in by_day[ny_day]
+        }
+        if any(moment not in by_open_ny for moment in expected_opens):
+            continue  # rango incompleto: el día se ignora (fail-closed)
+
+        range_high = max(by_open_ny[moment].high for moment in expected_opens)
+
+        session = sorted(
+            (
+                candle
+                for candle in by_day[ny_day]
+                if range_open
+                <= ny_datetime(candle.open_time, active.orb)
+                < window_close
+            ),
+            key=lambda item: item.open_time,
+        )
+        entered_today = False
+
+        for index, candle in enumerate(session):
+            open_ny = ny_datetime(candle.open_time, active.orb)
+            if open_ny < range_close:
+                continue  # velas del rango: sólo construyen el rango
+
+            is_last_window_candle = index == len(session) - 1
+
+            if open_position is None:
+                if not entered_today and candle.close > range_high:
+                    entry_fill = candle.close * (Decimal("1") + slip)
+                    quantity = capital / entry_fill
+                    entry_cost = quantity * entry_fill
+                    open_position = {
+                        "entry_time": candle.open_time,
+                        "entry_fill": entry_fill,
+                        "quantity": quantity,
+                        "entry_cost": entry_cost,
+                        "entry_fee": entry_cost * fee_rate,
+                        "stop": entry_fill * (Decimal("1") - stop_distance),
+                        "target": entry_fill * (Decimal("1") + target_distance),
+                    }
+                    entered_today = True
+            else:
+                # El SL se comprueba antes que el TP (conservador).
+                if candle.low <= open_position["stop"]:
+                    _close_position(
+                        open_position, candle.open_time, open_position["stop"]
+                    )
+                elif candle.high >= open_position["target"]:
+                    _close_position(
+                        open_position,
+                        candle.open_time,
+                        open_position["target"],
+                    )
+
+            # Cierre forzado al terminar la ventana del día.
+            if open_position is not None and is_last_window_candle:
+                _close_position(
+                    open_position, candle.open_time, candle.close
+                )
+
+    winning = sum(1 for trade in trades if trade.pnl_usd > 0)
+    net_pnl = sum((trade.pnl_usd for trade in trades), Decimal("0"))
+    fees = sum((trade.fees_usd for trade in trades), Decimal("0"))
+
+    return KlineBacktestResult(
+        strategy=asdict(active),
+        candles=len(ordered),
+        trades=len(trades),
+        winning_trades=winning,
+        net_pnl_usd=net_pnl.quantize(_MONEY_QUANTUM),
+        return_pct=(net_pnl * _HUNDRED / capital).quantize(_PCT_QUANTUM),
+        max_drawdown_usd=max_drawdown_usd.quantize(_MONEY_QUANTUM),
+        max_drawdown_pct=max_drawdown_pct.quantize(_PCT_QUANTUM),
+        win_rate_pct=(
+            Decimal(str(winning)) / Decimal(str(len(trades))) * _HUNDRED
+            if trades
+            else Decimal("0")
+        ).quantize(_PCT_QUANTUM),
+        fees_usd=fees.quantize(_MONEY_QUANTUM),
+    )
+
+
+def grid_search_orb(
+    candles: list[Candle],
+    configs: Iterable[OrbBacktestConfig],
+) -> list[KlineBacktestResult]:
+    results = [backtest_orb(candles, config) for config in configs]
     return sorted(
         results,
         key=lambda result: (

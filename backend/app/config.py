@@ -41,10 +41,13 @@ class Settings(BaseSettings):
     trading_symbols: str = (
         "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT"
     )
+    # Pares con señal técnica ORB (spec 001, D-12); el resto solo externas.
+    orb_symbols: str = "BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")
-    take_profit_pct: Decimal = Decimal("4.0")
+    # D-11: RR 1:1 — take-profit igual al stop-loss (2% por defecto).
+    take_profit_pct: Decimal = Decimal("2.0")
     max_signal_price_distance_pct: Decimal = Decimal("1.0")
     signal_ttl_seconds: int = 300
 

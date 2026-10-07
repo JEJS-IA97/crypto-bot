@@ -8,7 +8,9 @@ from typing import Any
 from app.domain.signal_engine import Candle, StrategyConfig as SignalConfig
 from app.services.strategy_lab_service import (
     KlineBacktestConfig,
+    OrbBacktestConfig,
     backtest_candles,
+    backtest_orb,
     final_parameters_section,
     load_klines_jsonl,
     split_candles,
@@ -68,6 +70,25 @@ def _aggregate(
         for candles in per_symbol.values()
         if candles
     ]
+    return _aggregate_results(results, kline_config.capital_usd)
+
+
+def _aggregate_orb(
+    per_symbol: dict[str, list[Candle]],
+    orb_config: OrbBacktestConfig,
+) -> dict[str, Any]:
+    results = [
+        backtest_orb(candles, orb_config)
+        for candles in per_symbol.values()
+        if candles
+    ]
+    return _aggregate_results(results, orb_config.capital_usd)
+
+
+def _aggregate_results(
+    results: list[Any],
+    capital: Decimal,
+) -> dict[str, Any]:
     if not results:
         return {
             "net_pnl_usd": Decimal("0"),
@@ -85,13 +106,15 @@ def _aggregate(
     trades = sum(result.trades for result in results)
     winning = sum(result.winning_trades for result in results)
     fees = sum((result.fees_usd for result in results), Decimal("0"))
-    capital = kline_config.capital_usd * Decimal(str(len(results)))
+    total_capital = capital * Decimal(str(len(results)))
     return {
         "net_pnl_usd": net.quantize(_MONEY_QUANTUM),
         "trades": trades,
         "winning_trades": winning,
         "fees_usd": fees.quantize(_MONEY_QUANTUM),
-        "return_pct": (net * Decimal("100") / capital).quantize(_PCT_QUANTUM),
+        "return_pct": (net * Decimal("100") / total_capital).quantize(
+            _PCT_QUANTUM
+        ),
         "max_drawdown_pct": max(
             (result.max_drawdown_pct for result in results),
             default=Decimal("0"),
@@ -142,14 +165,28 @@ def _print_metrics(label: str, aggregate: dict[str, Any]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Grid search de la estrategia de señales sobre klines"
-            " históricos (RF-15)."
+            "Grid search de la estrategia de señales y backtest ORB sobre"
+            " klines históricos (RF-15)."
         )
     )
     parser.add_argument(
         "--klines-dir",
         default="data/klines",
         help="Directorio con los ficheros *.jsonl del recolector T14",
+    )
+    parser.add_argument(
+        "--klines-orb-dir",
+        default="data/klines5m",
+        help=(
+            "Directorio con los ficheros *.jsonl de 5m para el backtest ORB"
+            " (collect_klines.py --interval 5m)"
+        ),
+    )
+    parser.add_argument(
+        "--strategy",
+        choices=("both", "signal", "orb"),
+        default="both",
+        help="Qué evaluar: EMA/RSI, ORB o ambas (defecto: both)",
     )
     parser.add_argument(
         "--plan",
@@ -173,76 +210,148 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    run_signal = args.strategy in ("both", "signal")
+    run_orb = args.strategy in ("both", "orb")
+
     kline_config = KlineBacktestConfig(
         slippage_pct=Decimal(args.slippage),
         capital_usd=Decimal(args.capital),
     )
-    per_symbol = load_klines_dir(args.klines_dir)
-    train, validation, test = _split_all(per_symbol)
 
-    print(f"Símbolos: {len(per_symbol)}")
-    print(
-        f"Train: {sum(len(c) for c in train.values())} velas"
-        f" | Validation: {sum(len(c) for c in validation.values())} velas"
-        f" | Test: {sum(len(c) for c in test.values())} velas"
-    )
+    signal_splits: dict[str, dict[str, Any]] = {}
+    orb_splits: dict[str, dict[str, Any]] = {}
+    best: SignalConfig | None = None
+    metrics: dict[str, Any] | None = None
+    notes: list[str] = []
 
-    ranked: list[tuple[SignalConfig, dict[str, Any]]] = sorted(
-        (
-            (config, _aggregate(config, train, kline_config))
-            for config in build_signal_configs()
-        ),
-        key=lambda item: (
-            item[1]["net_pnl_usd"],
-            item[1]["win_rate_pct"],
-            -item[1]["max_drawdown_pct"],
-        ),
-        reverse=True,
-    )
-    if not ranked or ranked[0][1]["trades"] == 0:
-        raise SystemExit(
-            "No strategy produced trades on the train split."
+    if run_signal:
+        per_symbol = load_klines_dir(args.klines_dir)
+        train, validation, test = _split_all(per_symbol)
+
+        print(f"Símbolos: {len(per_symbol)}")
+        print(
+            f"Train: {sum(len(c) for c in train.values())} velas"
+            f" | Validation: {sum(len(c) for c in validation.values())} velas"
+            f" | Test: {sum(len(c) for c in test.values())} velas"
         )
 
-    _print_ranking(ranked)
-    best, train_metrics = ranked[0]
+        ranked: list[tuple[SignalConfig, dict[str, Any]]] = sorted(
+            (
+                (config, _aggregate(config, train, kline_config))
+                for config in build_signal_configs()
+            ),
+            key=lambda item: (
+                item[1]["net_pnl_usd"],
+                item[1]["win_rate_pct"],
+                -item[1]["max_drawdown_pct"],
+            ),
+            reverse=True,
+        )
+        if not ranked or ranked[0][1]["trades"] == 0:
+            raise SystemExit(
+                "No strategy produced trades on the train split."
+            )
 
-    # El mejor se evalúa en validación y test SIN re-seleccionar.
-    valid_metrics = _aggregate(best, validation, kline_config)
-    test_metrics = _aggregate(best, test, kline_config)
-    _print_metrics("MEJOR CONFIGURACIÓN — TRAIN", train_metrics)
-    _print_metrics("MEJOR CONFIGURACIÓN — VALIDATION", valid_metrics)
-    _print_metrics("MEJOR CONFIGURACIÓN — TEST", test_metrics)
+        _print_ranking(ranked)
+        best, train_metrics = ranked[0]
 
-    metrics = {
-        "Rentabilidad neta (TRAIN)": (
-            f"{_fmt(train_metrics['net_pnl_usd'])} USD"
-        ),
-        "Rentabilidad % (TRAIN)": f"{_fmt(train_metrics['return_pct'])}%",
-        "Drawdown máximo (TRAIN)": (
-            f"{_fmt(train_metrics['max_drawdown_pct'])}%"
-        ),
-        "Operaciones (TRAIN)": train_metrics["trades"],
-        "Win rate (TRAIN)": f"{_fmt(train_metrics['win_rate_pct'])}%",
-        "Rentabilidad neta (VALIDATION)": (
-            f"{_fmt(valid_metrics['net_pnl_usd'])} USD"
-        ),
-        "Rentabilidad neta (TEST)": (
-            f"{_fmt(test_metrics['net_pnl_usd'])} USD"
-        ),
-        "Split": "train 70% / validation 15% / test 15% (cronológico)",
-    }
-    notes = [
-        "Selección de hiperparámetros únicamente sobre TRAIN.",
-        (
-            "VALIDATION y TEST sin re-selección para estimar"
-            " la generalización (sin look-ahead)."
-        ),
-        (
-            "Costes modelados: comisión 0.1% por lado y slippage"
-            f" {_fmt(kline_config.slippage_pct)}% por lado."
-        ),
-    ]
+        # El mejor se evalúa en validación y test SIN re-seleccionar.
+        valid_metrics = _aggregate(best, validation, kline_config)
+        test_metrics = _aggregate(best, test, kline_config)
+        _print_metrics("MEJOR CONFIGURACIÓN — TRAIN", train_metrics)
+        _print_metrics("MEJOR CONFIGURACIÓN — VALIDATION", valid_metrics)
+        _print_metrics("MEJOR CONFIGURACIÓN — TEST", test_metrics)
+
+        signal_splits = {
+            "TRAIN": train_metrics,
+            "VALIDATION": valid_metrics,
+            "TEST": test_metrics,
+        }
+        metrics = {
+            "Rentabilidad neta (TRAIN)": (
+                f"{_fmt(train_metrics['net_pnl_usd'])} USD"
+            ),
+            "Rentabilidad % (TRAIN)": (
+                f"{_fmt(train_metrics['return_pct'])}%"
+            ),
+            "Drawdown máximo (TRAIN)": (
+                f"{_fmt(train_metrics['max_drawdown_pct'])}%"
+            ),
+            "Operaciones (TRAIN)": train_metrics["trades"],
+            "Win rate (TRAIN)": (
+                f"{_fmt(train_metrics['win_rate_pct'])}%"
+            ),
+            "Rentabilidad neta (VALIDATION)": (
+                f"{_fmt(valid_metrics['net_pnl_usd'])} USD"
+            ),
+            "Rentabilidad neta (TEST)": (
+                f"{_fmt(test_metrics['net_pnl_usd'])} USD"
+            ),
+            "Split": "train 70% / validation 15% / test 15% (cronológico)",
+        }
+        notes = [
+            "Selección de hiperparámetros únicamente sobre TRAIN.",
+            (
+                "VALIDATION y TEST sin re-selección para estimar"
+                " la generalización (sin look-ahead)."
+            ),
+            (
+                "Costes modelados: comisión 0.1% por lado y slippage"
+                f" {_fmt(kline_config.slippage_pct)}% por lado."
+            ),
+        ]
+
+    if run_orb:
+        directory = Path(args.klines_orb_dir)
+        files = sorted(directory.glob("*.jsonl")) if directory.is_dir() else []
+        if not files:
+            if args.strategy == "orb":
+                raise SystemExit(
+                    f"No 5m kline JSONL files found in {directory}"
+                    " (collect them with collect_klines.py --interval 5m)."
+                )
+            print(
+                f"\nORB: sin datos 5m en {directory} — comparación"
+                " omitida (collect_klines.py --interval 5m)."
+            )
+        else:
+            per_symbol_5m = load_klines_dir(directory)
+            orb_train, orb_validation, orb_test = _split_all(per_symbol_5m)
+            if not run_signal:
+                print(f"Símbolos: {len(per_symbol_5m)}")
+            print(
+                f"\nORB (5m):"
+                f" {sum(len(c) for c in per_symbol_5m.values())} velas"
+                f" | Train: {sum(len(c) for c in orb_train.values())}"
+                f" | Validation: {sum(len(c) for c in orb_validation.values())}"
+                f" | Test: {sum(len(c) for c in orb_test.values())}"
+            )
+            orb_config = OrbBacktestConfig(
+                slippage_pct=kline_config.slippage_pct,
+                capital_usd=kline_config.capital_usd,
+            )
+            orb_splits = {
+                "TRAIN": _aggregate_orb(orb_train, orb_config),
+                "VALIDATION": _aggregate_orb(orb_validation, orb_config),
+                "TEST": _aggregate_orb(orb_test, orb_config),
+            }
+            for label in ("TRAIN", "VALIDATION", "TEST"):
+                _print_metrics(f"ORB — {label}", orb_splits[label])
+
+    if orb_splits and signal_splits:
+        print("\nCOMPARATIVA ORB vs EMA/RSI (PnL neto | operaciones)")
+        for label in ("TRAIN", "VALIDATION", "TEST"):
+            orb_metrics = orb_splits[label]
+            signal_metrics = signal_splits[label]
+            print(
+                f"  {label:<10} ORB {_fmt(orb_metrics['net_pnl_usd'])} USD"
+                f" ({orb_metrics['trades']} ops) |"
+                f" EMA/RSI {_fmt(signal_metrics['net_pnl_usd'])} USD"
+                f" ({signal_metrics['trades']} ops)"
+            )
+
+    if not run_signal:
+        return
 
     plan_path = args.plan
     if plan_path is None:

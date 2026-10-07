@@ -2,8 +2,9 @@
 
 Bot de trading de cripto en Binance Spot con capital mínimo (20 USD), construido
 con metodología SDD. Las especificaciones viven en `../specs/`: `001-bot-binance-spot/`
-(completa) y `002-nube-informe-diario/` (ejecución gratis en la nube + informe diario);
-las reglas del proyecto en `../AGENTS.md` y `../docs/constitution.md`.
+(completa, v3 con estrategia ORB), `002-nube-informe-diario/` (ejecución gratis en la
+nube + informe diario), `003-panel-ui/` y `004-informe-html/`; las reglas del proyecto
+en `../AGENTS.md` y `../docs/constitution.md`.
 
 ## Requisitos
 
@@ -27,8 +28,9 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 | Tests (TDD, siempre en verde) | `.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py"` |
 | Lint | `.\.venv\Scripts\python.exe -m ruff check .` |
 | Byte-compile | `.\.venv\Scripts\python.exe -m compileall app tests` |
-| Descargar velas (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbol BTCUSDT --interval 1h` |
-| Backtest + grid sobre velas | `.\.venv\Scripts\python.exe train_strategy.py --klines-dir klines --plan ..\specs\001-bot-binance-spot\plan.md` |
+| Descargar velas 15m (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbol BTCUSDT --interval 15m` |
+| Descargar velas 5m para ORB (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT --interval 5m --data-dir data\klines5m` |
+| Backtest ORB + comparativa con EMA/RSI | `.\.venv\Scripts\python.exe train_strategy.py --strategy both --klines-dir data\klines --klines-orb-dir data\klines5m --no-write-plan` |
 | Testnet (manual, T20) | `.\.venv\Scripts\python.exe check_binance_testnet.py` |
 | Informe diario manual | `.\.venv\Scripts\python.exe send_daily_report.py [--date YYYY-MM-DD]` |
 
@@ -36,8 +38,9 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 
 - `app/api/` — FastAPI: routers (`/api/bot`, `/api/signals…`, `/simulation`, `/health`)
   y token de control `app/api/auth.py` (RF-20).
-- `app/domain/` — reglas puras: `signal_engine.py` (señal EMA/RSI/volumen, RF-7),
-  `risk_math.py` (tamaño de posición y límites, RF-4/RF-5/RF-12).
+- `app/domain/` — reglas puras: `orb_engine.py` (señal **ORB** determinista
+  `BUY`/`HOLD`, RF-7), `signal_engine.py` (EMA/RSI/volumen, solo candidata del
+  backtest/grid, RF-15), `risk_math.py` (tamaño de posición y límites, RF-4/RF-5/RF-12).
 - `app/models.py`, `app/schemas.py`, `app/database.py`, `app/config.py`
   (ajustes `.env`; `Decimal` para todo valor monetario).
 - `app/services/` — casos de uso: `bot_loop.py`, `risk_guard_service.py`,
@@ -45,6 +48,18 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
   `binance_market_data_client.py`, `binance_executor.py`,
   `external_signal_service.py`, `strategy_lab_service.py`…
 - `tests/` — un test por servicio/requisito (unittest + TDD; RF sin test = no implementado).
+
+## Estrategia ORB (spec 001 v3, RF-7)
+
+- Rango de apertura con las **6 velas 5m de 9:00–9:30 AM de Nueva York**
+  (`America/New_York`, DST incluido) de BTC, ETH, BNB y SOL (D-12).
+- Entre las **9:30 y las 10:00 AM NY**: si el cierre supera el máximo del rango
+  → `BUY` (una sola señal técnica por par por día NY, RF-27); rompimiento
+  bajista o sin rompimiento → `HOLD` (Binance Spot sin cortos, D-13).
+- Salidas por stop-loss/take-profit **RR 1:1** (`STOP_LOSS_PCT` =
+  `TAKE_PROFIT_PCT` = 2.0, D-11) y señales externas en los 8 pares (RF-8).
+- XRP, DOGE, ADA y LINK: solo señales externas (D-12). EMA/RSI queda como
+  candidata del backtest/grid (RF-15), sin emisión en el loop.
 
 ## Panel y API (resumen)
 
@@ -59,15 +74,16 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
   **y** fase `LIVE` (RF-1/RF-2); fuera de simulación se exige `API_TOKEN` (RF-20).
 - Límites fijados por spec: ≤1 USD por operación, ~5 USDT mínimo, pérdida diaria
   ≥5 % bloquea el día, ≤10 aperturas/día, 3 posiciones máx., breaker tras 5 fallos,
-  stop 2 % / take-profit 4 %, TTL de señal 300 s.
+  stop 2 % / take-profit 2 % (RR 1:1, D-11), TTL de señal 300 s.
 
 ## Zona congelada (RF-21)
 
 No refactorizar ni ampliar: `arbitrage_service`, `trade_opportunity_service`,
 `execution_price_service`, `bot_engine`, `bot_runner_service`,
 `exchange_market_service`, `okx_demo_client`, `market_sync_service`
-(+ sus dependencias `inventory_service`, `market_data_service`, sus tests y los CLIs
-`check_okx_demo.py` y `collect_market_snapshots.py`). El baseline SHA-256 está en
+(+ sus dependencias `inventory_service`, `market_data_service`, `risk_service`,
+sus tests y los CLIs `check_okx_demo.py` y `collect_market_snapshots.py`). El baseline
+SHA-256 está en
 `../specs/001-bot-binance-spot/frozen_zone.json` y lo verifica
 `tests/test_frozen_zone.py`, que además ejecuta la sub-suite congelada.
 

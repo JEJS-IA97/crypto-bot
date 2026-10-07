@@ -2,9 +2,10 @@ import json
 import shutil
 import tempfile
 import unittest
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from app.domain.signal_engine import (
     Candle,
@@ -14,12 +15,15 @@ from app.domain.signal_engine import (
 )
 from app.services.strategy_lab_service import (
     KlineBacktestConfig,
+    OrbBacktestConfig,
     Snapshot,
     StrategyConfig,
     backtest,
     backtest_candles,
+    backtest_orb,
     grid_search,
     grid_search_candles,
+    grid_search_orb,
     load_klines_jsonl,
     split_candles,
     split_time_series,
@@ -393,6 +397,297 @@ class KlineBacktestTest(unittest.TestCase):
         self.assertEqual(candles[1].close, Decimal("100.5"))
         self.assertEqual(candles[1].volume, Decimal("10.25"))
         self.assertEqual(candles[1].open, Decimal("100.1"))
+
+
+_NY_TZ = ZoneInfo("America/New_York")
+
+
+def _orb_candle(
+    day: date,
+    hour: int,
+    minute: int,
+    open_: str,
+    high: str,
+    low: str,
+    close: str,
+) -> Candle:
+    open_time = (
+        datetime(day.year, day.month, day.day, hour, minute, tzinfo=_NY_TZ)
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
+    return Candle(
+        open_time=open_time,
+        open=Decimal(open_),
+        high=Decimal(high),
+        low=Decimal(low),
+        close=Decimal(close),
+        volume=Decimal("100"),
+    )
+
+
+def _range_candles(day: date, skip_minute: int | None = None) -> list[Candle]:
+    """Rango 9:00–9:25 AM NY: alto 99.5, bajo 98.5."""
+    candles = []
+    for minute in (0, 5, 10, 15, 20, 25):
+        if minute == skip_minute:
+            continue
+        candles.append(_orb_candle(day, 9, minute, "99", "99.5", "98.5", "99"))
+    return candles
+
+
+def _breakout(
+    day: date,
+    close: str = "100",
+    high: str = "100.5",
+    low: str = "98.9",
+) -> Candle:
+    return _orb_candle(day, 9, 30, "99", high, low, close)
+
+
+def _orb_series() -> list[Candle]:
+    """Serie ORB determinista: 3 operaciones (TP, SL, cierre de ventana).
+
+    - Día A (10-05): TP 102 en la vela 9:35 (+0.4 sin costes); velas
+      posteriores con cierre > rango (sólo 1 entrada por día, RF-27).
+    - Día B (10-06): SL 98 en la 9:35 (−0.4 sin costes).
+    - Día C (10-07): sin TP/SL → cierre forzado al cerrar la ventana
+      en 100.5 (+0.1).
+    - Día D (10-08): sin rompimiento + vela de 10:05 fuera de ventana.
+    - Día E (10-09): rango incompleto → el día se ignora (fail-closed).
+    """
+    day_a, day_b, day_c, day_d, day_e = (
+        date(2026, 10, 5),
+        date(2026, 10, 6),
+        date(2026, 10, 7),
+        date(2026, 10, 8),
+        date(2026, 10, 9),
+    )
+    candles: list[Candle] = []
+
+    candles += _range_candles(day_a)
+    candles.append(_breakout(day_a))
+    candles.append(_orb_candle(day_a, 9, 35, "100", "103", "99.4", "102"))
+    candles.append(_orb_candle(day_a, 9, 40, "102", "103", "101", "101"))
+    candles.append(_orb_candle(day_a, 9, 55, "101", "101.5", "100.5", "101"))
+
+    candles += _range_candles(day_b)
+    candles.append(_breakout(day_b))
+    candles.append(_orb_candle(day_b, 9, 35, "99.5", "99.9", "97", "98.5"))
+    candles.append(_orb_candle(day_b, 9, 40, "98.5", "101", "98", "101"))
+
+    candles += _range_candles(day_c)
+    candles.append(_breakout(day_c))
+    for minute in (35, 40, 45, 50):
+        candles.append(_orb_candle(day_c, 9, minute, "100", "101", "99", "100"))
+    candles.append(_orb_candle(day_c, 9, 55, "100", "101", "99", "100.5"))
+
+    candles += _range_candles(day_d)
+    candles.append(_breakout(day_d, close="99", high="99.4", low="98.9"))
+    candles.append(_orb_candle(day_d, 9, 35, "99", "99.4", "98.6", "99"))
+    candles.append(_orb_candle(day_d, 10, 5, "99", "200", "98", "200"))
+
+    candles += _range_candles(day_e, skip_minute=15)
+    candles.append(_breakout(day_e))
+    candles.append(_orb_candle(day_e, 9, 35, "100", "103", "99", "102"))
+
+    return candles
+
+
+class OrbKlineBacktestTest(unittest.TestCase):
+    """Backtest ORB: TP/SL 1:1, una sesión al día y costes (RF-15, D-11)."""
+
+    def test_take_profit_stop_loss_and_window_exit(self) -> None:
+        series = _orb_series()
+        result = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+        )
+
+        self.assertEqual(result.trades, 3)
+        self.assertEqual(result.winning_trades, 2)
+        self.assertEqual(result.candles, len(series))
+        self.assertEqual(result.net_pnl_usd, Decimal("0.1"))
+        self.assertEqual(result.return_pct, Decimal("0.5"))
+        self.assertEqual(result.max_drawdown_usd, Decimal("0.4"))
+        self.assertEqual(result.max_drawdown_pct, Decimal("1.96"))
+        self.assertEqual(result.win_rate_pct, Decimal("66.67"))
+        self.assertEqual(result.fees_usd, Decimal("0"))
+
+    def test_fees_and_slippage(self) -> None:
+        series = _orb_series()
+        charged = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0")
+            ),
+        )
+        slipped = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0.5")
+            ),
+        )
+
+        self.assertEqual(charged.trades, 3)
+        self.assertEqual(charged.net_pnl_usd, Decimal("-0.0201"))
+        self.assertEqual(charged.fees_usd, Decimal("0.1201"))
+        # El slippage configurable siempre empeora el neto.
+        self.assertLess(slipped.net_pnl_usd, charged.net_pnl_usd)
+
+    def test_forced_window_exit_closes_open_position(self) -> None:
+        day = date(2026, 10, 7)
+        candles = _range_candles(day) + [_breakout(day)]
+        for minute in (35, 40, 45, 50, 55):
+            close = "100.5" if minute == 55 else "100"
+            candles.append(
+                _orb_candle(day, 9, minute, "100", "101", "99", close)
+            )
+
+        result = backtest_orb(
+            candles,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+        )
+
+        self.assertEqual(result.trades, 1)
+        self.assertEqual(result.winning_trades, 1)
+        self.assertEqual(result.net_pnl_usd, Decimal("0.1"))
+
+    def test_one_entry_per_day_only(self) -> None:
+        # El día A tiene tres velas con cierre > rango tras salir: sólo
+        # cuenta la primera entrada (RF-27: una operación al día).
+        day = date(2026, 10, 5)
+        candles = _range_candles(day) + [_breakout(day)]
+        candles.append(_orb_candle(day, 9, 35, "100", "103", "99.4", "102"))
+        candles.append(_orb_candle(day, 9, 40, "102", "103", "101", "101"))
+        candles.append(_orb_candle(day, 9, 45, "101", "104", "100", "103"))
+        candles.append(_orb_candle(day, 9, 55, "103", "104", "102", "103"))
+
+        result = backtest_orb(
+            candles,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+        )
+
+        self.assertEqual(result.trades, 1)
+
+    def test_incomplete_range_skips_the_day(self) -> None:
+        day = date(2026, 10, 9)
+        candles = _range_candles(day, skip_minute=15)
+        candles.append(_breakout(day))
+        candles.append(_orb_candle(day, 9, 35, "100", "103", "99", "102"))
+
+        result = backtest_orb(candles)
+
+        self.assertEqual(result.trades, 0)
+        self.assertEqual(result.net_pnl_usd, Decimal("0"))
+
+    def test_candle_after_window_close_is_ignored(self) -> None:
+        day = date(2026, 10, 8)
+        candles = _range_candles(day)
+        candles.append(_breakout(day, close="99", high="99.4", low="98.9"))
+        candles.append(_orb_candle(day, 10, 5, "99", "200", "98", "200"))
+
+        result = backtest_orb(candles)
+
+        self.assertEqual(result.trades, 0)
+
+    def test_stop_checked_before_target_when_both_touched(self) -> None:
+        day = date(2026, 10, 12)
+        candles = _range_candles(day) + [_breakout(day)]
+        # La misma vela toca el TP (103) y el SL (97): manda el SL
+        # (conservador).
+        candles.append(_orb_candle(day, 9, 35, "100", "103", "97", "100"))
+
+        result = backtest_orb(
+            candles,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+        )
+
+        self.assertEqual(result.trades, 1)
+        self.assertEqual(result.winning_trades, 0)
+        self.assertEqual(result.net_pnl_usd, Decimal("-0.4"))
+
+    def test_winter_session_uses_est_offset(self) -> None:
+        day = date(2026, 1, 15)
+        candles = _range_candles(day) + [_breakout(day)]
+        candles.append(_orb_candle(day, 9, 35, "100", "103", "99.4", "102"))
+
+        result = backtest_orb(
+            candles,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+        )
+
+        self.assertEqual(result.trades, 1)
+        self.assertEqual(result.net_pnl_usd, Decimal("0.4"))
+
+    def test_default_config_is_one_to_one_reward(self) -> None:
+        result = backtest_orb(_orb_series())
+
+        self.assertEqual(result.strategy["stop_loss_pct"], Decimal("2.0"))
+        self.assertEqual(result.strategy["take_profit_pct"], Decimal("2.0"))
+        self.assertEqual(result.strategy["fee_rate"], Decimal("0.001"))
+        self.assertEqual(result.strategy["orb"]["range_start_hour"], 9)
+
+    def test_invalid_config_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            OrbBacktestConfig(fee_rate=Decimal("-0.001"))
+        with self.assertRaises(ValueError):
+            OrbBacktestConfig(slippage_pct=Decimal("-1"))
+        with self.assertRaises(ValueError):
+            OrbBacktestConfig(capital_usd=Decimal("0"))
+        with self.assertRaises(ValueError):
+            OrbBacktestConfig(stop_loss_pct=Decimal("0"))
+        with self.assertRaises(ValueError):
+            OrbBacktestConfig(take_profit_pct=Decimal("0"))
+        with self.assertRaises(TypeError):
+            OrbBacktestConfig(fee_rate=0.001)  # type: ignore[arg-type]
+
+    def test_empty_candles_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            backtest_orb([])
+
+    def test_grid_search_orb_is_ranked_by_net(self) -> None:
+        configs = [
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+            ),
+            OrbBacktestConfig(
+                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0.5")
+            ),
+        ]
+
+        results = grid_search_orb(_orb_series(), configs)
+
+        self.assertEqual(len(results), 2)
+        nets = [result.net_pnl_usd for result in results]
+        self.assertEqual(nets, sorted(nets, reverse=True))
+        self.assertEqual(results[0].trades, 3)
+
+    def test_orb_split_is_chronological(self) -> None:
+        train, validation, test = split_candles(_orb_series())
+
+        self.assertTrue(train)
+        self.assertTrue(validation)
+        self.assertTrue(test)
+        self.assertEqual(
+            len(train) + len(validation) + len(test),
+            len(_orb_series()),
+        )
+        self.assertLessEqual(train[-1].open_time, validation[0].open_time)
+        self.assertLessEqual(
+            validation[-1].open_time,
+            test[0].open_time,
+        )
 
 
 if __name__ == "__main__":

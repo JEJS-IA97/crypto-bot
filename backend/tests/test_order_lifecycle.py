@@ -143,7 +143,8 @@ class StopTakeProtectionTests(OrderLifecycleTestCase):
         pos_btc = self._protect(dec_btc, pos_btc, fill=fill_btc)
 
         self.assertEqual(pos_btc.stop_price, Decimal("98"))
-        self.assertEqual(pos_btc.take_profit_price, Decimal("104"))
+        # D-11: RR 1:1 → take-profit al mismo 2% que el stop-loss.
+        self.assertEqual(pos_btc.take_profit_price, Decimal("102"))
         self.assertEqual(
             pos_btc.stop_order_id, f"sim-stop-{pos_btc.id}"
         )
@@ -152,7 +153,7 @@ class StopTakeProtectionTests(OrderLifecycleTestCase):
         self.assertEqual(dec_btc.status, DecisionStatus.OPENED)
         self.assertIsNotNone(dec_btc.filled_at)
         self.assertEqual(dec_btc.stop_price, Decimal("98"))
-        self.assertEqual(dec_btc.take_profit_price, Decimal("104"))
+        self.assertEqual(dec_btc.take_profit_price, Decimal("102"))
 
         dec_eth, pos_eth, fill_eth = self._open_position(
             symbol="ETHUSDT",
@@ -314,16 +315,17 @@ class FeesAndSlippageTests(OrderLifecycleTestCase):
 
         self.assertEqual(decision.status, DecisionStatus.CLOSED)
         self.assertIsNotNone(decision.closed_at)
-        # Comisión 0.1% por lado: 0.01 (compra) + 0.0104 (venta).
-        self.assertEqual(decision.fees_usd, Decimal("0.0204"))
-        # PnL neto: 0.1 × (104 − 100) − 0.01 − 0.0104 = 0.3796.
-        self.assertEqual(decision.pnl_usd, Decimal("0.3796"))
+        # El take-profit llena a 102 (D-11: RR 1:1). Comisión 0.1% por
+        # lado: 0.01 (compra) + 0.0102 (venta).
+        self.assertEqual(decision.fees_usd, Decimal("0.0202"))
+        # PnL neto: 0.1 × (102 − 100) − 0.01 − 0.0102 = 0.1798.
+        self.assertEqual(decision.pnl_usd, Decimal("0.1798"))
 
         # El saldo confirma la comisión en ambos lados:
-        # 50 − 10.01 + 10.4 − 0.0104 = 50.3796.
+        # 50 − 10.01 + 10.2 − 0.0102 = 50.1798.
         balance = get_balance_record(self.db, self.account.id)
         self.assertEqual(
-            balance.available_usd, Decimal("50.3796")
+            balance.available_usd, Decimal("50.1798")
         )
 
     def test_slippage_reported(self) -> None:

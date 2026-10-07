@@ -4,13 +4,15 @@ Flujo por ciclo (plan §Algoritmo / flujo principal):
 
 1. ``bot_runtime``: breaker (RF-22) o ``running=false`` (kill switch,
    RF-3) → el ciclo no opera.
-2. Descarga de klines + exchangeInfo de todos los pares; cualquier fallo
-   propaga ``MarketDataUnavailable`` → ciclo fallido, sin órdenes (RNF-6,
+2. Descarga de klines 15m + exchangeInfo de todos los pares; en la ventana
+   ORB (9:00–10:00 AM NY) además klines 5m de los pares ORB sin decisión
+   técnica hoy (RF-6/RF-27). Cualquier fallo propaga
+   ``MarketDataUnavailable`` → ciclo fallido, sin órdenes (RNF-6,
    fail-closed) y se cuenta para el breaker.
 3. Para cada par: reconciliar stop/tp de posiciones abiertas (M6),
-   señales externas en cola (M3), señal técnica (M2), conflicto → gana la
+   señales externas en cola (M3), señal ORB (M2), conflicto → gana la
    externa (RF-23), riesgo (M5), orden idempotente (M7, RF-25) y
-   persistencia (M9/M6, RF-10/RF-13).
+   persistencia (M9/M6, RF-10/RF-13). La técnica nunca emite SELL (RF-7).
 
 El kill switch se revisa antes de cada par y otra vez justo antes de cada
 orden: detener no reinicia el loop, solo lo deja dormido (``controller``.
@@ -32,13 +34,17 @@ from sqlalchemy.orm import Session
 
 from app import database
 from app.config import settings
+from app.domain.orb_engine import (
+    OrbConfig,
+    evaluate_orb,
+    in_orb_window,
+    ny_day_start_utc,
+)
 from app.domain.risk_math import calculate_order_size
 from app.domain.signal_engine import (
     Candle,
     SignalAction,
     SignalResult,
-    StrategyConfig,
-    evaluate,
 )
 from app.models import (
     BotRuntime,
@@ -55,7 +61,11 @@ from app.services.binance_market_data_client import (
     MarketDataUnavailable,
     SymbolRules,
 )
-from app.services.decision_store import mark_rejected, record_decision
+from app.services.decision_store import (
+    has_technical_decision_since,
+    mark_rejected,
+    record_decision,
+)
 from app.services.exchange_executor import ExchangeExecutor, OrderRequest
 from app.services.external_signal_service import (
     EXTERNAL_CONFLICT_REASON,
@@ -89,6 +99,12 @@ REASON_NO_POSITION = "no_position_to_close"
 REASON_POSITION_OPEN = "position_already_open"
 REASON_SUPERSEDED = "superseded_by_external_signal"
 REASON_NOT_TRADING = "symbol_not_trading"
+REASON_NON_ORB = "non_orb_symbol"
+REASON_ORB_SKIPPED = "orb_not_evaluated"
+
+# Velas 5m para la ventana ORB (6 del rango + 6 del rompimiento, con
+# margen para reinicios y caché): 50 velas = ~4 h de historial.
+ORB_KLINE_LIMIT = 50
 
 
 @dataclass(frozen=True)
@@ -153,6 +169,15 @@ def _trading_symbols() -> list[str]:
         for part in settings.trading_symbols.split(",")
         if part.strip()
     ]
+
+
+def _orb_symbols() -> set[str]:
+    """Pares con señal técnica ORB (spec 001, D-12)."""
+    return {
+        part.strip().upper()
+        for part in settings.orb_symbols.split(",")
+        if part.strip()
+    }
 
 
 def _is_running(db: Session) -> bool:
@@ -221,7 +246,7 @@ def _try_open(
     state,
     balance,
     executor: ExchangeExecutor,
-    strategy: StrategyConfig,
+    orb_config: OrbConfig,
     now: datetime,
     account_id: int,
     decision: SignalDecision | None = None,
@@ -234,7 +259,7 @@ def _try_open(
             symbol=symbol,
             side=TradeSide.BUY,
             origin=DecisionOrigin.TECHNICAL,
-            config=asdict(strategy),
+            config=asdict(orb_config),
             snapshot=_snapshot(
                 candles=candles,
                 price=price,
@@ -323,7 +348,7 @@ def _execute_cycle(
     market_data: MarketData,
     symbols: list[str],
     account_id: int,
-    strategy: StrategyConfig,
+    orb_config: OrbConfig,
     executor: ExchangeExecutor | None,
     now: datetime,
 ) -> CycleReport:
@@ -348,6 +373,30 @@ def _execute_cycle(
         rules = market_data.get_exchange_info(symbol)
         candles_by_symbol[symbol] = candles
         rules_by_symbol[symbol] = rules
+
+    # RF-6: en la ventana ORB (9:00–10:00 AM NY) descarga además 5m para
+    # los pares ORB sin decisión técnica hoy (RF-27: sin dedup no hay
+    # evaluación, así que tampoco descarga).
+    active_orb_symbols = _orb_symbols()
+    orb_symbols = [
+        symbol for symbol in symbols if symbol in active_orb_symbols
+    ]
+    orb_candles_by_symbol: dict[str, list[Candle]] = {}
+    if orb_symbols and in_orb_window(now, orb_config):
+        since = ny_day_start_utc(now, orb_config)
+        for symbol in orb_symbols:
+            if has_technical_decision_since(
+                db, symbol=symbol, since=since
+            ):
+                continue
+            candles_5m = market_data.get_klines(
+                symbol, interval="5m", limit=ORB_KLINE_LIMIT
+            )
+            if not candles_5m:
+                raise MarketDataUnavailable(
+                    f"Empty ORB klines for {symbol}"
+                )
+            orb_candles_by_symbol[symbol] = candles_5m
 
     active_executor = (
         executor
@@ -426,24 +475,24 @@ def _execute_cycle(
             if closed_position is not None:
                 closed += 1
                 _record_close_pnl(db, state, decision)
-                continue
-
-            technical = evaluate(candles, strategy)
-            if technical.action == SignalAction.SELL:
-                close_position(
-                    db,
-                    position=position,
-                    decision=decision,
-                    executor=active_executor,
-                    exit_price=price,
-                    expected_price=price,
-                    reason="manual",
-                )
-                closed += 1
-                _record_close_pnl(db, state, decision)
+            # RF-7 v3: la señal técnica nunca emite SELL. Las posiciones
+            # se cierran por stop/tp (RF-13) o externa (RF-8).
             continue
 
-        technical = evaluate(candles, strategy)
+        orb_candles = orb_candles_by_symbol.get(symbol)
+        if orb_candles is not None:
+            technical = evaluate_orb(orb_candles, now, orb_config)
+        elif symbol not in active_orb_symbols:
+            technical = SignalResult(
+                SignalAction.HOLD, REASON_NON_ORB, {}
+            )
+        else:
+            # Fuera de ventana o día NY ya agotado (RF-27): sin emitir.
+            technical = SignalResult(
+                SignalAction.HOLD, REASON_ORB_SKIPPED, {}
+            )
+        # Snapshot de la decisión técnica: las velas con las que se evaluó.
+        decision_candles = orb_candles if orb_candles is not None else candles
 
         if external is not None:
             age_seconds = (now - external.created_at).total_seconds()
@@ -475,9 +524,9 @@ def _execute_cycle(
                     symbol=symbol,
                     side=side,
                     origin=DecisionOrigin.TECHNICAL,
-                    config=asdict(strategy),
+                    config=asdict(orb_config),
                     snapshot=_snapshot(
-                        candles=candles,
+                        candles=decision_candles,
                         price=price,
                         result=technical,
                         now=now,
@@ -498,7 +547,7 @@ def _execute_cycle(
                     state=state,
                     balance=balance,
                     executor=active_executor,
-                    strategy=strategy,
+                    orb_config=orb_config,
                     now=now,
                     account_id=account_id,
                     decision=external,
@@ -518,13 +567,13 @@ def _execute_cycle(
             outcome = _try_open(
                 db,
                 symbol=symbol,
-                candles=candles,
+                candles=decision_candles,
                 price=price,
                 rules=rules,
                 state=state,
                 balance=balance,
                 executor=active_executor,
-                strategy=strategy,
+                orb_config=orb_config,
                 now=now,
                 account_id=account_id,
                 technical=technical,
@@ -557,7 +606,7 @@ def run_once(
     market_data: MarketData,
     symbols: list[str] | None = None,
     account_id: int | None = None,
-    strategy: StrategyConfig | None = None,
+    orb_config: OrbConfig | None = None,
     executor: ExchangeExecutor | None = None,
     now: datetime | None = None,
 ) -> CycleReport:
@@ -570,9 +619,7 @@ def run_once(
         if account_id is not None
         else settings.simulation_bot_account_id
     )
-    active_strategy = (
-        strategy if strategy is not None else StrategyConfig()
-    )
+    active_orb_config = orb_config if orb_config is not None else OrbConfig()
     active_now = now if now is not None else utc_now()
 
     try:
@@ -581,7 +628,7 @@ def run_once(
             market_data=market_data,
             symbols=active_symbols,
             account_id=active_account,
-            strategy=active_strategy,
+            orb_config=active_orb_config,
             executor=executor,
             now=active_now,
         )
@@ -607,7 +654,7 @@ async def run(
     market_data: MarketData | None = None,
     symbols: list[str] | None = None,
     account_id: int | None = None,
-    strategy: StrategyConfig | None = None,
+    orb_config: OrbConfig | None = None,
     interval_seconds: int | None = None,
 ) -> None:
     """Loop continuo (Decisión 7): una sola tarea asyncio en el proceso."""
@@ -630,9 +677,7 @@ async def run(
         if account_id is not None
         else settings.simulation_bot_account_id
     )
-    active_strategy = (
-        strategy if strategy is not None else StrategyConfig()
-    )
+    active_orb_config = orb_config if orb_config is not None else OrbConfig()
     interval = (
         interval_seconds
         if interval_seconds is not None
@@ -653,7 +698,7 @@ async def run(
                         market_data=data,
                         symbols=active_symbols,
                         account_id=active_account,
-                        strategy=active_strategy,
+                        orb_config=active_orb_config,
                     )
             except Exception:
                 logger.exception("bot loop cycle failed")

@@ -151,8 +151,9 @@ class SnapshotAndResultTests(unittest.TestCase):
         self.assertEqual(decision.status, DecisionStatus.CLOSED)
         self.assertIsNotNone(decision.filled_at)
         self.assertIsNotNone(decision.closed_at)
-        self.assertEqual(decision.fees_usd, Decimal("0.0204"))
-        self.assertEqual(decision.pnl_usd, Decimal("0.3796"))
+        # Take-profit a 102 (D-11): comisiones y PnL del cierre en 102.
+        self.assertEqual(decision.fees_usd, Decimal("0.0202"))
+        self.assertEqual(decision.pnl_usd, Decimal("0.1798"))
 
         # El snapshot emitido queda intacto tras el cierre.
         after = json.loads(decision.market_snapshot_json)

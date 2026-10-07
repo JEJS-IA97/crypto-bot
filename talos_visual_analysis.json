@@ -1,0 +1,322 @@
+{
+  "document": {
+    "title": "Análisis visual y funcional de referencias para bot de trading con IA",
+    "version": "1.0",
+    "date": "2026-10-07",
+    "purpose": "Usar estas referencias como dirección conceptual y de producto antes de inspeccionar o modificar el bot existente. No se pretende clonar literalmente la interfaz."
+  },
+  "reference_views": [
+    {
+      "id": "view_01_performance_history",
+      "name": "Historial de operaciones y curva de capital",
+      "image": "019951dd-c0be-4e7d-b156-7588a411ec65.png",
+      "primary_purpose": "Mostrar de forma inmediata cómo evolucionó el capital durante el día y relacionarlo con las operaciones cerradas.",
+      "layout": {
+        "main_area": "Gráfico horizontal de evolución del capital, ocupando casi todo el ancho.",
+        "time_axis": "Eje X de 00h a 23h aproximadamente.",
+        "capital_axis": "Eje Y en dólares, con línea base alrededor de 0 y pérdidas bajo la base.",
+        "secondary_area": "Listado de operaciones del día debajo del gráfico.",
+        "density": "Alta densidad informativa, pero con jerarquía clara."
+      },
+      "chart": {
+        "type": "equity_curve_intraday",
+        "behavior": [
+          "La curva cambia de color según esté por encima o por debajo de cero.",
+          "Las pérdidas aparecen visualmente como zonas o tramos rojos bajo la referencia.",
+          "Las ganancias aparecen en verde.",
+          "Cada operación queda vinculada visualmente mediante marcadores circulares.",
+          "Cada marcador puede mostrar el resultado monetario de la operación.",
+          "La línea horizontal permite entender rápidamente el punto de equilibrio.",
+          "La lectura permite reconstruir la secuencia temporal de pérdidas y recuperaciones."
+        ],
+        "visible_examples": [
+          "ETH al alza: -6,01 $",
+          "SUI a la baja: -7,39 $",
+          "XRP a la baja: -8,37 $",
+          "BTC al alza: +16,93 $",
+          "BTC al alza: +15,71 $"
+        ]
+      },
+      "operation_list": {
+        "columns_or_fields": [
+          "activo",
+          "dirección",
+          "fecha",
+          "hora de apertura",
+          "hora de cierre",
+          "resultado monetario",
+          "estado implícito por color"
+        ],
+        "interaction_ideas": [
+          "Seleccionar una operación debería resaltar su tramo correspondiente en la curva.",
+          "Abrir el detalle debería mostrar entrada, salida, stop, objetivo, tamaño, fees, slippage y motivo de decisión.",
+          "Ordenar por hora, PnL, activo o dirección.",
+          "Filtrar por long/short, ganador/perdedor y activo."
+        ]
+      },
+      "design": {
+        "theme": "dark",
+        "background": "azul-negro muy oscuro",
+        "surface": "paneles ligeramente más claros que el fondo",
+        "grid": "líneas sutiles azul grisáceas",
+        "positive": "verde",
+        "negative": "rojo",
+        "accent": "azul/cian discreto para selección y elementos interactivos",
+        "typography": "sans-serif compacta, números pequeños y legibles",
+        "borders": "sutiles, bajo contraste",
+        "corner_style": "bordes redondeados moderados",
+        "overall_feel": "terminal financiero moderno, técnico y profesional"
+      },
+      "functional_lesson": "La interfaz no intenta explicar todo a la vez; primero comunica resultado y secuencia temporal, y deja el detalle operativo para una capa secundaria."
+    },
+    {
+      "id": "view_02_live_intelligence_flow",
+      "name": "Centro de operaciones en vivo y flujo de inteligencia",
+      "image": "492103d1-ff15-4bb7-a668-7cfb93c4ae3d.png",
+      "primary_purpose": "Visualizar qué está haciendo el bot ahora mismo, de dónde vienen los datos, cómo se transforman y qué módulos participan antes de ejecutar una operación.",
+      "header": {
+        "left": [
+          "marca/nombre del sistema",
+          "estado NORMAL",
+          "modo Solo cierre",
+          "modo Operar"
+        ],
+        "middle": [
+          "control de agresividad",
+          "indicador de nivel de agresividad"
+        ],
+        "right": [
+          "capital",
+          "resultado del día",
+          "drawdown",
+          "operaciones",
+          "consultas",
+          "calibración",
+          "coste/R",
+          "estado activo"
+        ],
+        "time": "Reloj UTC visible."
+      },
+      "status_banner": {
+        "content": "Operando con normalidad",
+        "supporting_text": "Mensaje contextual que explica que el sistema está vigilando condiciones y puede abrir posiciones.",
+        "visual": "Punto verde y texto de estado."
+      },
+      "main_flow": {
+        "title": "Cómo fluye la información",
+        "layout": "Canvas de nodos dentro de un panel grande.",
+        "source_nodes": [
+          "Exchange",
+          "Datos agregados",
+          "Mercado",
+          "Índice de mercado",
+          "RSS y agregadores",
+          "Calendario económico",
+          "Mercado de opciones",
+          "Volatilidad",
+          "Perpetuos",
+          "Mercado DEX"
+        ],
+        "intermediate_nodes": [
+          "normalización/ingesta",
+          "consolidación del contexto",
+          "analista IA"
+        ],
+        "decision_chain": [
+          "Indicadores",
+          "Filtro",
+          "Controles",
+          "Analista IA",
+          "Motor de riesgo",
+          "Ejecución",
+          "Posición"
+        ],
+        "node_information": "Los nodos muestran nombre, estado y una métrica o tiempo de respuesta. Al pasar el cursor puede aparecer un tooltip con la función y origen de los datos.",
+        "connections": "Líneas animables que representan flujo de información; el estado de cada conexión debería poder ser normal, retrasado, degradado o fallido.",
+        "live_behavior": [
+          "Animar únicamente actividad real o simulada con eventos reales, evitando decoración sin significado.",
+          "Mostrar latencia de cada fuente.",
+          "Mostrar timestamp de último dato.",
+          "Indicar cuando una fuente queda stale.",
+          "Permitir hacer clic en un nodo para inspeccionar su payload normalizado.",
+          "Mostrar qué información fue utilizada en la última decisión."
+        ]
+      },
+      "ai_decision_area": {
+        "concept": "El LLM no debe aparecer como una caja mágica. Debe verse como un componente dentro de un pipeline determinista.",
+        "required_inputs": [
+          "indicadores técnicos",
+          "tendencia",
+          "volumen",
+          "volatilidad",
+          "microestructura",
+          "order book",
+          "liquidez",
+          "funding",
+          "open interest cuando esté disponible",
+          "opciones cuando esté disponible",
+          "noticias",
+          "sentimiento",
+          "contexto macro",
+          "posiciones actuales",
+          "riesgo de cartera",
+          "coste de oportunidad"
+        ],
+        "output": [
+          "OPERAR",
+          "NO OPERAR",
+          "ESPERAR",
+          "REDUCIR",
+          "CERRAR",
+          "CAMBIAR STOP",
+          "CAMBIAR TAKE PROFIT"
+        ]
+      },
+      "bottom_panels": [
+        "Qué está pensando la IA",
+        "Controles de seguridad",
+        "estado de la última evaluación",
+        "motivo de bloqueo o autorización"
+      ],
+      "design": {
+        "theme": "dark navy/black",
+        "accent": "verde para estados positivos y azul/cian para actividad",
+        "warning": "amarillo/naranja",
+        "danger": "rojo",
+        "visual_language": "control room / mission control / trading terminal",
+        "spacing": "compacto, con muchos datos sin parecer una tabla administrativa",
+        "cards": "paneles delgados y densos",
+        "decorative_effects": "mínimos; las animaciones deben representar eventos reales"
+      },
+      "functional_lesson": "El valor principal está en hacer observable el pipeline de decisión completo, no únicamente el PnL."
+    },
+    {
+      "id": "view_03_learning_and_memory",
+      "name": "Operaciones cerradas, aprendizaje y memoria del sistema",
+      "image": "09d12fa0-56b5-4973-87bd-c034a1876af8.png",
+      "primary_purpose": "Mostrar resultados recientes y convertir el historial en aprendizaje verificable.",
+      "header": {
+        "same_core_metrics": [
+          "hora UTC",
+          "modo",
+          "agresividad",
+          "capital",
+          "resultado diario",
+          "drawdown",
+          "operaciones",
+          "consultas",
+          "calibración",
+          "coste/R",
+          "estado"
+        ]
+      },
+      "closed_operations": {
+        "format": "lista cronológica compacta",
+        "fields": [
+          "hora",
+          "activo",
+          "dirección",
+          "resultado",
+          "motivo de salida"
+        ],
+        "examples": [
+          "alcanzó el stop",
+          "alcanzó su objetivo",
+          "el analista decidió cerrar"
+        ],
+        "color_semantics": "verde para resultado positivo y rojo para negativo"
+      },
+      "learning_columns": {
+        "left": {
+          "title": "Lo que va aprendiendo",
+          "meaning": "Hipótesis o patrones detectados recientemente que todavía no están suficientemente confirmados.",
+          "fields": [
+            "tipo: sugerencia/suposición",
+            "hipótesis",
+            "evidencia o número de casos",
+            "confianza",
+            "estado de confirmación",
+            "fecha",
+            "contador de casos faltantes"
+          ],
+          "visual": "tarjetas de aprendizaje con acento amarillo y separadores."
+        },
+        "right": {
+          "title": "Lo que ha aprendido",
+          "meaning": "Reglas, patrones o conocimientos que ya superaron el umbral de evidencia definido por el sistema.",
+          "fields": [
+            "tipo: razonamiento",
+            "afirmación aprendida",
+            "evidencia",
+            "confianza",
+            "fecha de supuesto",
+            "fecha de confirmación",
+            "número de casos",
+            "efecto esperado"
+          ],
+          "visual": "tarjetas con acento verde."
+        }
+      },
+      "important_design_principle": "Separar explícitamente hipótesis no confirmadas de conocimiento confirmado. El sistema no debe poder convertir automáticamente una intuición del LLM en una regla de trading sin validación estadística.",
+      "functional_lesson": "El aprendizaje se representa como un sistema de memoria auditable, no como una frase genérica de 'la IA está aprendiendo'."
+    }
+  ],
+  "shared_design_system": {
+    "visual_identity": "Dark trading intelligence console.",
+    "palette": {
+      "background": "near-black navy",
+      "surface": "dark blue-gray",
+      "surface_elevated": "slightly lighter blue-gray",
+      "text_primary": "near-white",
+      "text_secondary": "muted gray-blue",
+      "positive": "green",
+      "negative": "red",
+      "warning": "amber/orange",
+      "interactive": "cyan/blue"
+    },
+    "principles": [
+      "Información primero, decoración después.",
+      "La densidad de datos debe ser alta pero jerárquica.",
+      "Los colores tienen semántica consistente.",
+      "Todo dato en vivo debe mostrar timestamp o frescura cuando sea relevante.",
+      "No usar animaciones que no representen eventos reales.",
+      "No ocultar riesgo detrás de gráficos bonitos.",
+      "Toda decisión importante debe poder rastrearse hasta sus inputs."
+    ],
+    "visual_components": [
+      "KPI header",
+      "status banner",
+      "equity curve",
+      "operation timeline",
+      "node flow canvas",
+      "decision cards",
+      "learning cards",
+      "security controls",
+      "position cards",
+      "data-source health indicators",
+      "latency badges",
+      "event log"
+    ]
+  },
+  "concepts_to_preserve_but_not_clone": [
+    "curva de capital con marcadores de operaciones",
+    "dashboard de control en vivo",
+    "flujo de datos mediante nodos",
+    "separación entre indicadores, filtro, controles, IA, riesgo, ejecución y posición",
+    "visualización explícita de decisiones",
+    "historial de operaciones",
+    "memoria de aprendizaje separando hipótesis y conocimiento confirmado"
+  ],
+  "concepts_to_improve": [
+    "hacer trazable cada decisión hasta datos concretos",
+    "mostrar calidad/frescura de cada fuente",
+    "separar datos observados, features calculadas, evaluación del modelo y decisión final",
+    "mostrar incertidumbre y confianza sin presentarlas como certeza",
+    "mostrar riesgo de cartera y coste de oportunidad",
+    "hacer visible la microestructura del mercado",
+    "diferenciar paper trading, shadow mode y live execution",
+    "permitir replay de decisiones históricas",
+    "hacer auditable el aprendizaje",
+    "evitar que el LLM tenga autoridad directa sobre ejecución sin pasar por políticas de riesgo"
+  ]
+}

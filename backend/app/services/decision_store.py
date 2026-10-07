@@ -127,6 +127,34 @@ def list_decisions(
     return list(db.scalars(statement).all())
 
 
+def has_technical_decision_since(
+    db: Session,
+    *,
+    symbol: str,
+    since: datetime,
+) -> bool:
+    """¿Existe ya una decisión técnica para ``symbol`` desde ``since``? (RF-27)
+
+    `since` es el inicio del día de Nueva York en curso (UTC naive, calculado
+    por `orb_engine.ny_day_start_utc`). El primer intento técnico —abierto,
+    rechazado o contradicho— agota el día: la señal no se vuelve a evaluar.
+    """
+    if not isinstance(symbol, str) or not symbol.strip():
+        raise ValueError("symbol must be a non-empty string")
+    if not isinstance(since, datetime):
+        raise TypeError("since must be a datetime")
+    statement = (
+        select(SignalDecision.id)
+        .where(
+            SignalDecision.symbol == symbol.strip(),
+            SignalDecision.origin == DecisionOrigin.TECHNICAL,
+            SignalDecision.created_at >= since,
+        )
+        .limit(1)
+    )
+    return db.execute(statement).first() is not None
+
+
 def get_metrics(
     db: Session,
     *,

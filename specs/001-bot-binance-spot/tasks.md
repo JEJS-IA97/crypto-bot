@@ -3,7 +3,7 @@
 Cada tarea dura **<30 min**, tiene sus RF y un "Hecho cuando:" verificable.
 Ordenadas por dependencia. Marca `[x]` solo tras tests en verde.
 
-Referencias: `plan.md` (módulos M1-M14), `spec.md` v2 (RF-1…RF-26).
+Referencias: `plan.md` (módulos M1-M14), `spec.md` v3 (RF-1…RF-27).
 
 ## Bloque 0 — Base
 
@@ -128,6 +128,28 @@ Referencias: `plan.md` (módulos M1-M14), `spec.md` v2 (RF-1…RF-26).
   - RF: RF-14, RF-16 (preparación)
   - Hecho cuando: con credenciales en `.env`, `check_binance_testnet.py` conecta y lee cuenta/exchangeInfo; documentado en README con el paso a fase `TESTNET` (solo se usará cuando RF-16 lo permita).
   - Tests: manual (marcado como no parte de la suite, RNF-2)
+
+## Bloque 12 — Estrategia ORB (spec v3)
+
+- [x] **T21** — Dominio ORB determinista
+  - RF: RF-7 (v3)
+  - Hecho cuando: `app/domain/orb_engine.py` (módulo puro, sin red/BD) devuelve `BUY`/`HOLD` según el rompimiento del rango 9:00–9:30 AM `America/New_York` sobre velas 5m: `BUY` si el cierre de la vela en curso supera el máximo del rango dentro de la ventana 9:30–10:00 NY; `HOLD` con motivo (`breakdown_no_short`, `no_breakout`, `range_incomplete`, `breakout_candle_missing`, `before_range_close`, `breakout_window_closed`) en el resto; determinista (mismas velas + mismo instante → misma salida), horario de verano/invierno correcto, todo `Decimal`; `signal_engine.py` (EMA/RSI) intacto como candidata de backtest; `tzdata` declarado en `requirements.txt` (constitución #12).
+  - Tests: `tests/test_orb_engine.py` (nuevo)
+
+- [x] **T22** — Integración ORB en el loop
+  - RF: RF-6, RF-7 (v3), RF-27, RF-23, D-11, D-12
+  - Hecho cuando: `bot_loop.py` descarga klines 5m solo en la ventana ORB para los 4 pares (D-12) y opera el flujo con `evaluate_orb` (sin `SELL` técnico: cierres por RF-13/RF-8); una sola decisión técnica por par por día NY (RF-27, consultada en `decision_store`); snapshot de la decisión incluye el rango ORB; `TAKE_PROFIT_PCT` por defecto = `STOP_LOSS_PCT` (RR 1:1, D-11); pares no ORB solo con señales externas.
+  - Tests: `tests/test_orb_loop.py` (nuevo) + ajuste de `tests/test_signal_conflict.py`, `tests/test_kill_switch.py`, `tests/test_circuit_breaker.py`, `tests/test_config.py`
+
+- [x] **T23** — Backtest ORB con salidas TP/SL
+  - RF: RF-15
+  - Hecho cuando: `strategy_lab_service.py` añade backtest ORB sobre klines 5m: entra en el rompimiento de 9:30 AM NY, sale por take-profit/stop (RR 1:1) o al cerrar la ventana del día, con comisión 0.1% por lado, slippage configurable y splits train/valid/test sin look-ahead; `train_strategy.py` puede comparar ORB frente a la candidata EMA/RSI (grid).
+  - Tests: `tests/test_strategy_lab.py` (ampliar: clase `OrbKlineBacktestTest`, 13 tests) + `tests/test_orb_engine.py` (helpers `ny_datetime`/`session_bounds`)
+
+- [x] **T24** — Validación RF por RF de la spec v3 y limpieza
+  - RF: todos
+  - Hecho cuando: recorrido RF por RF de `spec.md` v3 (incluidos RF-27 y los casos límite ORB), suite completa en verde, sin código sin RF, `compileall` sin errores, README/`.env.example` actualizados con la estrategia ORB.
+  - Tests: suite completa + `compileall`
 
 ---
 

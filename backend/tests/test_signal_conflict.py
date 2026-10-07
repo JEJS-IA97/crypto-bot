@@ -1,12 +1,14 @@
+import json
 import unittest
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, _enable_sqlite_foreign_keys
-from app.domain.signal_engine import Candle, StrategyConfig
+from app.domain.signal_engine import Candle
 from app.models import (
     DecisionOrigin,
     DecisionStatus,
@@ -22,6 +24,14 @@ from app.services.external_signal_service import EXTERNAL_CONFLICT_REASON
 from app.services.simulation_executor import SimulationExecutor
 from app.services.simulation_service import create_simulation_account
 
+NY = ZoneInfo("America/New_York")
+SESSION_DAY = date(2026, 10, 5)  # EDT (UTC-4)
+NOW_IN_WINDOW = (
+    datetime(2026, 10, 5, 9, 35, tzinfo=NY)
+    .astimezone(timezone.utc)
+    .replace(tzinfo=None)
+)
+
 
 def _session_factory():
     engine = create_engine("sqlite://")
@@ -30,48 +40,69 @@ def _session_factory():
     return sessionmaker(bind=engine)
 
 
-def buy_candles() -> list[Candle]:
+def _ny_utc(hour: int, minute: int) -> datetime:
+    moment = datetime(
+        SESSION_DAY.year, SESSION_DAY.month, SESSION_DAY.day, hour, minute,
+        tzinfo=NY,
+    )
+    return moment.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def candles_15m() -> list[Candle]:
     base = datetime(2026, 10, 5, 0, 0)
-    price = Decimal("100")
-    closes = []
-    for index in range(57):
-        closes.append(price)
-        price = (
-            price + Decimal("0.1")
-            if index % 2 == 0
-            else price - Decimal("0.1")
+    return [
+        Candle(
+            open_time=base + timedelta(minutes=15 * index),
+            open=Decimal("100"),
+            high=Decimal("101"),
+            low=Decimal("99"),
+            close=Decimal("100"),
+            volume=Decimal("100"),
         )
-    closes.append(price - Decimal("0.1"))
-    closes.append(price - Decimal("0.1") + Decimal("0.5"))
+        for index in range(60)
+    ]
+
+
+def orb_candles() -> list[Candle]:
+    """Rango 9:00–9:25 + rompimiento alcista en la vela de las 9:30."""
     candles = []
-    previous = None
-    for index, close in enumerate(closes):
-        open_price = previous if previous is not None else close
-        volume = (
-            Decimal("200") if index == len(closes) - 1 else Decimal("100")
-        )
+    for minute in (0, 5, 10, 15, 20, 25):
         candles.append(
             Candle(
-                open_time=base + timedelta(minutes=15 * index),
-                open=open_price,
-                high=close + Decimal("0.05"),
-                low=close - Decimal("0.05"),
-                close=close,
-                volume=volume,
+                open_time=_ny_utc(9, minute),
+                open=Decimal("100"),
+                high=Decimal("100.5"),
+                low=Decimal("99.5"),
+                close=Decimal("100"),
+                volume=Decimal("100"),
             )
         )
-        previous = close
+    candles.append(
+        Candle(
+            open_time=_ny_utc(9, 30),
+            open=Decimal("100"),
+            high=Decimal("106.5"),
+            low=Decimal("99.8"),
+            close=Decimal("106"),
+            volume=Decimal("200"),
+        )
+    )
     return candles
 
 
 class FakeMarketData:
-    def __init__(self, candles_by_symbol: dict) -> None:
-        self._candles = candles_by_symbol
+    def __init__(self, candles_15m_by_symbol: dict, candles_5m: list[Candle]):
+        self._candles_15m = candles_15m_by_symbol
+        self._candles_5m = candles_5m
+        self.kline_calls: list[tuple[str, str]] = []
 
     def get_klines(
         self, symbol: str, interval: str = "15m", limit: int = 200
     ) -> list[Candle]:
-        return list(self._candles[symbol])
+        self.kline_calls.append((symbol, interval))
+        if interval == "5m":
+            return list(self._candles_5m)
+        return list(self._candles_15m[symbol])
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:
         return SymbolRules(
@@ -106,13 +137,15 @@ class SignalConflictTests(unittest.TestCase):
                 initial_balance_usd=Decimal("50"),
             ),
         )
-        self.market = FakeMarketData({"BTCUSDT": buy_candles()})
+        self.market = FakeMarketData(
+            {"BTCUSDT": candles_15m()}, orb_candles()
+        )
 
     def tearDown(self) -> None:
         self.db.close()
 
     def test_external_wins(self) -> None:
-        # Señal externa en cola: vender mientras la técnica dice comprar.
+        # Señal externa en cola: vender mientras el ORB dice comprar.
         external = SignalDecision(
             client_order_id="ext-sell-conflict-0001",
             symbol="BTCUSDT",
@@ -122,6 +155,7 @@ class SignalConflictTests(unittest.TestCase):
             status=DecisionStatus.PENDING,
             config_json="{}",
             market_snapshot_json="{}",
+            created_at=NOW_IN_WINDOW,
         )
         self.db.add(external)
         self.db.commit()
@@ -134,8 +168,8 @@ class SignalConflictTests(unittest.TestCase):
             market_data=self.market,
             symbols=["BTCUSDT"],
             account_id=self.account.id,
-            strategy=StrategyConfig(),
             executor=executor,
+            now=NOW_IN_WINDOW,
         )
 
         self.assertEqual(report.status, "ok")
@@ -155,6 +189,9 @@ class SignalConflictTests(unittest.TestCase):
         self.assertEqual(
             technical.rejection_reason, EXTERNAL_CONFLICT_REASON
         )
+        # El snapshot de la técnica conserva el rango ORB (RF-10).
+        snapshot = json.loads(technical.market_snapshot_json)
+        self.assertEqual(snapshot["indicators"]["range_high"], "100.5")
 
         external_row = next(
             item

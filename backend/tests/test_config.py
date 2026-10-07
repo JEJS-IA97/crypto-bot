@@ -32,7 +32,8 @@ class ConfigTests(unittest.TestCase):
     def test_trading_settings_defaults(self) -> None:
         settings = _settings_without_env()
         self.assertEqual(settings.stop_loss_pct, Decimal("2.0"))
-        self.assertEqual(settings.take_profit_pct, Decimal("4.0"))
+        # D-11: RR 1:1 — take-profit igual al stop-loss.
+        self.assertEqual(settings.take_profit_pct, Decimal("2.0"))
         self.assertEqual(settings.max_signal_price_distance_pct, Decimal("1.0"))
         self.assertEqual(settings.signal_ttl_seconds, 300)
         self.assertEqual(settings.trading_interval_seconds, 60)
@@ -40,6 +41,22 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(len(symbols), 8)
         self.assertIn("BTCUSDT", symbols)
         self.assertIn("LINKUSDT", symbols)
+
+    def test_orb_symbols_default(self) -> None:
+        """D-12: los 4 pares ORB; el resto solo opera con señales externas."""
+        settings = _settings_without_env()
+        symbols = [
+            s.strip() for s in settings.orb_symbols.split(",") if s.strip()
+        ]
+        self.assertEqual(
+            symbols, ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]
+        )
+        trading = {
+            s.strip()
+            for s in settings.trading_symbols.split(",")
+            if s.strip()
+        }
+        self.assertTrue(set(symbols) <= trading)
 
     def test_email_settings_defaults(self) -> None:
         """Spec 002 RF-7: defaults de Gmail y fail-closed por defecto (RF-4)."""
