@@ -67,6 +67,54 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 - `GET|POST /api/bot/phase` (SIMULATION → TESTNET → LIVE)
 - `POST /api/signals/external` (señal externa con TTL, RF-8) · `GET /api/signals/decisions` (auditoría con snapshot, RF-10)
 - `POST /api/webhooks/signal` (webhook)
+- `GET /api/bot/context/{symbol}` · `GET /api/bot/candidates` (solo lectura, spec 006 RF-7)
+
+## Observabilidad (spec 005)
+
+- Log JSON por línea con campos obligatorios: `timestamp` (UTC), `level`,
+  `service`, `event`, `mode`, `result`, `correlation_id`, `asset`,
+  `latency_ms`, `strategy_version`. Los secretos salen como `[REDACTED]`
+  (RF-1/RF-4) y un fallo de log/persistencia nunca corta el ciclo (fail-open).
+- Un `correlation_id` (UUID) por ciclo une los eventos con el snapshot de
+  cada decisión emitida (RF-2).
+- Eventos persistidos en `system_events`; salud de fuentes en `source_health`
+  (`HEALTHY|DEGRADED|STALE|ERROR|DISABLED`, RF-5).
+- Endpoints de solo lectura (sin token):
+  - `GET /api/bot/events` — filtros `level`/`asset`/`correlation_id`,
+    `limit` acotado a 1…200 (RF-6).
+  - `GET /api/bot/sources` — estado de las fuentes (RF-5).
+  - `GET /api/bot/observability` — agregados de las últimas 24 h (RF-7).
+- Retención: `EVENT_RETENTION_DAYS` (defecto 30), purga al arrancar y como
+  máximo cada 24 h (RF-8).
+- Vars nuevas: `EVENT_RETENTION_DAYS`, `LOG_LEVEL`, `STRATEGY_VERSION`.
+
+## Datos y contexto (spec 006)
+
+- Fuentes declaradas (D-2): Binance Spot público (`depth` de los 5 mejores
+  niveles y `ticker/24hr`, misma base que los klines), Alternative.me
+  Fear&Greed y RSS configurable. Fuera de alcance: datos de futuros,
+  CoinGecko/DefiLlama y cualquier servicio no declarado.
+- Caché en memoria con TTL (D-4): depth 30 s, F&G 6 h, noticias 15 min.
+  Fetch caído con caché → dato servido con `stale: true` (fuente `STALE`
+  en el snapshot y `ERROR` en `source_health`); sin caché → bloque `null`
+  y fuente `ERROR`. Nunca HTTP 500 por una fuente caída (D-5).
+- Endpoints de solo lectura (sin token):
+  - `GET /api/bot/context/{symbol}` — order book (`spread_bps`,
+    `imbalance`, 5 mejores niveles), ticker 24 h, Fear&Greed y noticias,
+    con `fetched_at` y estado por fuente; 404 `symbol_not_in_universe`
+    fuera de `TRADING_SYMBOLS` (D-3).
+  - `GET /api/bot/candidates?symbols=&limit=` — ranking 0-100 con score
+    numérico y `factors` explicados (momentum 0.30 / volume 0.25 /
+    trend 0.25 / range 0.20), `rank` y `excluded` con `filters`
+    (`missing_data` / `data_unavailable`); `limit` acotado a 1…50.
+- Features deterministas en `Decimal`, sin look-ahead ni ML: `null` cuando
+  faltan velas y candidato excluido si falta una feature obligatoria
+  (RF-5/RF-6; el LLM llega en la spec 007).
+- Eventos 005: `context.fetched` (INFO si todo sano, WARNING si hay
+  fuente `ERROR`/`STALE`) y `config.ignored` si `CANDIDATE_WEIGHTS` es
+  inválido (se usan los pesos por defecto).
+- Vars nuevas: `FEAR_GREED_URL`, `NEWS_RSS_FEEDS`, `DEPTH_CACHE_SECONDS`,
+  `FEAR_GREED_CACHE_SECONDS`, `NEWS_CACHE_SECONDS`, `CANDIDATE_WEIGHTS`.
 
 ## Fases y seguridad
 

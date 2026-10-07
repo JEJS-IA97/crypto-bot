@@ -31,6 +31,7 @@ from app.models import (
     utc_now,
 )
 from app.services.simulation_service import get_balance_record, money
+from app.services.structured_log import emit
 
 _HUNDRED = Decimal("100")
 _DRAWDOWN_PLACES = Decimal("0.01")
@@ -81,6 +82,26 @@ def record_decision(
     db.add(decision)
     db.commit()
     db.refresh(decision)
+
+    # Spec 005, RF-1/RF-2: la decisión queda trazada con el correlation_id
+    # del ciclo que la emitió (via snapshot; los externos van sin él).
+    correlation_id = snapshot.get("correlation_id")
+    emit(
+        service="decision_store",
+        event="decision.emitted",
+        result="ok",
+        asset=symbol,
+        correlation_id=(
+            str(correlation_id) if correlation_id is not None else None
+        ),
+        payload={
+            "decision_id": decision.id,
+            "origin": origin.value,
+            "side": side.value,
+            "client_order_id": decision.client_order_id,
+        },
+        db=db,
+    )
     return decision
 
 
@@ -94,7 +115,35 @@ def mark_rejected(
     decision.rejection_reason = reason
     db.commit()
     db.refresh(decision)
+
+    # Spec 005, RF-1: todo veto de riesgo es auditable (decision.blocked).
+    emit(
+        service="decision_store",
+        event="decision.blocked",
+        level="WARNING",
+        result="blocked",
+        asset=decision.symbol,
+        correlation_id=_decision_correlation(decision),
+        payload={
+            "decision_id": decision.id,
+            "reason": reason,
+            "origin": decision.origin.value,
+        },
+        db=db,
+    )
     return decision
+
+
+def _decision_correlation(decision: SignalDecision) -> str | None:
+    """Correlation_id del ciclo que creó la decisión, si existe (RF-2)."""
+    try:
+        snapshot = json.loads(decision.market_snapshot_json or "{}")
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(snapshot, dict):
+        return None
+    value = snapshot.get("correlation_id")
+    return str(value) if value is not None else None
 
 
 def list_decisions(

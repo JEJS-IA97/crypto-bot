@@ -719,3 +719,102 @@ class BotRuntime(Base):
         default=utc_now,
         onupdate=utc_now,
     )
+
+
+class SystemEvent(Base):
+    """Evento de observabilidad (spec 005, RF-3).
+
+    Una fila por evento estructurado (ciclo, decisiA3n, orden, fuente). El
+    ``correlation_id`` une todas las filas y la decisiA3n de un mismo ciclo
+    (RF-2); los secretos se redactan antes de persistir (RF-4).
+    """
+
+    __tablename__ = "system_events"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+    level: Mapped[str] = mapped_column(
+        String(10),
+    )
+
+    service: Mapped[str] = mapped_column(
+        String(50),
+    )
+
+    event: Mapped[str] = mapped_column(
+        String(60),
+        index=True,
+    )
+
+    asset: Mapped[str | None] = mapped_column(
+        String(12),
+        nullable=True,
+    )
+
+    correlation_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        index=True,
+    )
+
+    mode: Mapped[str] = mapped_column(
+        String(20),
+        default="unknown",
+    )
+
+    latency_ms: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    result: Mapped[str] = mapped_column(
+        String(20),
+    )
+
+    payload_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+
+class SourceHealth(Base):
+    """Estado de salud de una fuente de datos (spec 005, RF-5).
+
+    Estados: HEALTHY | DEGRADED | STALE | ERROR | DISABLED (D-6).
+    """
+
+    __tablename__ = "source_health"
+
+    name: Mapped[str] = mapped_column(
+        String(50),
+        primary_key=True,
+    )
+
+    state: Mapped[str] = mapped_column(
+        String(12),
+        default="DISABLED",
+    )
+
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    last_error: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        onupdate=utc_now,
+    )

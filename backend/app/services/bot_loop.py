@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
+import uuid
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime
@@ -71,11 +73,13 @@ from app.services.external_signal_service import (
     EXTERNAL_CONFLICT_REASON,
     resolve_signal_conflict,
 )
+from app.services.observability_service import mark_source, purge_old_events
 from app.services.order_lifecycle import (
     check_exits,
     close_position,
     protection_after_fill,
 )
+from app.services.phase_service import get_phase
 from app.services.risk_guard_service import (
     can_open,
     get_daily_state,
@@ -87,6 +91,7 @@ from app.services.risk_guard_service import (
 )
 from app.services.simulation_executor import SimulationExecutor
 from app.services.simulation_service import get_balance_record
+from app.services.structured_log import emit
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +111,10 @@ REASON_ORB_SKIPPED = "orb_not_evaluated"
 # margen para reinicios y caché): 50 velas = ~4 h de historial.
 ORB_KLINE_LIMIT = 50
 
+# Spec 005, RF-8: purga de eventos viejos como máximo una vez cada 24 h
+# (además de la purga al arrancar en el lifespan de main).
+PURGE_INTERVAL_SECONDS = 86400
+
 
 @dataclass(frozen=True)
 class CycleReport:
@@ -116,6 +125,25 @@ class CycleReport:
     closed: int = 0
     rejected: int = 0
     error: str = ""
+
+
+def _mark_source_quiet(
+    db: Session, name: str, *, ok: bool, error: str = ""
+) -> None:
+    """Marca la salud de una fuente sin romper el ciclo (spec 005, RF-5)."""
+    try:
+        mark_source(db, name, ok=ok, error=error)
+    except Exception:
+        logger.exception("could not mark source %s", name)
+
+
+def _current_mode(db: Session) -> str:
+    """Fase activa para el campo ``mode`` de los eventos (spec 005, RF-1)."""
+    try:
+        return get_phase(db).phase.value
+    except Exception:
+        logger.exception("could not resolve current phase")
+        return "unknown"
 
 
 class BotLoopController:
@@ -251,6 +279,7 @@ def _try_open(
     account_id: int,
     decision: SignalDecision | None = None,
     technical: SignalResult | None = None,
+    correlation_id: str | None = None,
 ) -> str:
     """Riesgo → orden idempotente → stop/tp. Devuelve opened/rejected/stopped."""
     if decision is None:
@@ -260,12 +289,16 @@ def _try_open(
             side=TradeSide.BUY,
             origin=DecisionOrigin.TECHNICAL,
             config=asdict(orb_config),
-            snapshot=_snapshot(
-                candles=candles,
-                price=price,
-                result=technical,
-                now=now,
-            ),
+            snapshot={
+                **_snapshot(
+                    candles=candles,
+                    price=price,
+                    result=technical,
+                    now=now,
+                ),
+                # Spec 005, RF-2: el correlation_id del ciclo.
+                "correlation_id": correlation_id,
+            },
             price=price,
         )
 
@@ -301,6 +334,21 @@ def _try_open(
             mark_rejected(db, decision, REASON_KILL_SWITCH)
         return "stopped"
 
+    # Spec 005, RF-1: traza de la orden enviada (auditable, sin secretos).
+    emit(
+        service="bot_loop",
+        event="order.sent",
+        result="ok",
+        asset=symbol,
+        correlation_id=correlation_id,
+        payload={
+            "decision_id": decision.id,
+            "client_order_id": decision.client_order_id,
+            "quantity": str(quantity),
+            "price": str(price),
+        },
+        db=db,
+    )
     try:
         fill = executor.place_order(
             OrderRequest(
@@ -314,6 +362,19 @@ def _try_open(
         )
     except ValueError as exc:
         reason_text = getattr(exc, "reason", None) or str(exc)
+        emit(
+            service="bot_loop",
+            event="order.failed",
+            level="WARNING",
+            result="failed",
+            asset=symbol,
+            correlation_id=correlation_id,
+            payload={
+                "decision_id": decision.id,
+                "reason": reason_text,
+            },
+            db=db,
+        )
         mark_rejected(db, decision, reason_text)
         return "rejected"
 
@@ -338,7 +399,35 @@ def _try_open(
     )
     if position.status == PositionStatus.OPEN:
         register_open(db, state, symbol)
+        emit(
+            service="bot_loop",
+            event="order.filled",
+            result="ok",
+            asset=symbol,
+            correlation_id=correlation_id,
+            payload={
+                "decision_id": decision.id,
+                "position_id": position.id,
+                "quantity": str(fill.executed_quantity),
+                "price": str(fill.average_price),
+            },
+            db=db,
+        )
         return "opened"
+    emit(
+        service="bot_loop",
+        event="order.failed",
+        level="WARNING",
+        result="failed",
+        asset=symbol,
+        correlation_id=correlation_id,
+        payload={
+            "decision_id": decision.id,
+            "position_id": position.id,
+            "status": position.status.value,
+        },
+        db=db,
+    )
     return "rejected"
 
 
@@ -351,6 +440,7 @@ def _execute_cycle(
     orb_config: OrbConfig,
     executor: ExchangeExecutor | None,
     now: datetime,
+    correlation_id: str | None = None,
 ) -> CycleReport:
     runtime = get_runtime(db)
     if runtime.breaker_active:
@@ -373,6 +463,11 @@ def _execute_cycle(
         rules = market_data.get_exchange_info(symbol)
         candles_by_symbol[symbol] = candles
         rules_by_symbol[symbol] = rules
+
+    # Spec 005, RF-5: las fuentes públicas respondieron (los fallos salen
+    # desde run_once y se marcan ERROR).
+    _mark_source_quiet(db, "binance_klines", ok=True)
+    _mark_source_quiet(db, "binance_exchange_info", ok=True)
 
     # RF-6: en la ventana ORB (9:00–10:00 AM NY) descarga además 5m para
     # los pares ORB sin decisión técnica hoy (RF-27: sin dedup no hay
@@ -525,12 +620,16 @@ def _execute_cycle(
                     side=side,
                     origin=DecisionOrigin.TECHNICAL,
                     config=asdict(orb_config),
-                    snapshot=_snapshot(
-                        candles=decision_candles,
-                        price=price,
-                        result=technical,
-                        now=now,
-                    ),
+                    snapshot={
+                        **_snapshot(
+                            candles=decision_candles,
+                            price=price,
+                            result=technical,
+                            now=now,
+                        ),
+                        # Spec 005, RF-2: el correlation_id del ciclo.
+                        "correlation_id": correlation_id,
+                    },
                     price=price,
                 )
                 mark_rejected(db, technical_decision, conflict_reason)
@@ -551,6 +650,7 @@ def _execute_cycle(
                     now=now,
                     account_id=account_id,
                     decision=external,
+                    correlation_id=correlation_id,
                 )
                 if outcome == "opened":
                     opened += 1
@@ -577,6 +677,7 @@ def _execute_cycle(
                 now=now,
                 account_id=account_id,
                 technical=technical,
+                correlation_id=correlation_id,
             )
             if outcome == "opened":
                 opened += 1
@@ -611,6 +712,10 @@ def run_once(
     now: datetime | None = None,
 ) -> CycleReport:
     """Un ciclo completo con la contabilidad de fallos del breaker (RF-22)."""
+    started_at = time.monotonic()
+    # Spec 005, RF-2: un correlation_id por ciclo para unir eventos y
+    # decisiones; viaja en el snapshot de cada decisión que emite el ciclo.
+    correlation_id = str(uuid.uuid4())
     active_symbols = (
         list(symbols) if symbols is not None else _trading_symbols()
     )
@@ -631,10 +736,16 @@ def run_once(
             orb_config=active_orb_config,
             executor=executor,
             now=active_now,
+            correlation_id=correlation_id,
         )
     except Exception as exc:
         logger.exception("bot cycle failed")
         report = CycleReport(status="failed", error=str(exc))
+        # Spec 005, RF-5: el fallo marca la fuente implicada (fail-open).
+        if isinstance(exc, MarketDataUnavailable):
+            _mark_source_quiet(db, "binance_klines", ok=False, error=str(exc))
+        else:
+            _mark_source_quiet(db, "database", ok=False, error=str(exc))
 
     if report.status == "failed":
         try:
@@ -643,6 +754,24 @@ def run_once(
             logger.exception("could not record cycle failure")
     elif report.status == "ok":
         record_cycle_success(db)
+        _mark_source_quiet(db, "database", ok=True)
+
+    emit(
+        service="bot_loop",
+        event="cycle.completed",
+        level="ERROR" if report.status == "failed" else "INFO",
+        result=report.status,
+        correlation_id=correlation_id,
+        latency_ms=int((time.monotonic() - started_at) * 1000),
+        mode=_current_mode(db),
+        payload={
+            "opened": report.opened,
+            "closed": report.closed,
+            "rejected": report.rejected,
+            "error": report.error,
+        },
+        db=db,
+    )
     return report
 
 
@@ -685,6 +814,7 @@ async def run(
     )
 
     controller._arm()
+    last_purge = time.monotonic()
     try:
         while True:
             if stop_event is not None and stop_event.is_set():
@@ -707,6 +837,17 @@ async def run(
                 except Exception:
                     logger.exception("could not record cycle failure")
             finally:
+                # Spec 005, RF-8: purga por edad sin penalizar al breaker
+                # (un fallo aquí nunca cuenta como ciclo fallido).
+                if (
+                    time.monotonic() - last_purge
+                    >= PURGE_INTERVAL_SECONDS
+                ):
+                    try:
+                        purge_old_events(db)
+                        last_purge = time.monotonic()
+                    except Exception:
+                        logger.exception("could not purge old events")
                 db.close()
             await controller.sleep(interval)
     finally:

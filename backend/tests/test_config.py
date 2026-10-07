@@ -58,6 +58,13 @@ class ConfigTests(unittest.TestCase):
         }
         self.assertTrue(set(symbols) <= trading)
 
+    def test_observability_settings_defaults(self) -> None:
+        """Spec 005 RF-1/RF-8: retencion, nivel de log y version."""
+        settings = _settings_without_env()
+        self.assertEqual(settings.event_retention_days, 30)
+        self.assertEqual(settings.log_level, "INFO")
+        self.assertEqual(settings.strategy_version, "orb-001-v3")
+
     def test_email_settings_defaults(self) -> None:
         """Spec 002 RF-7: defaults de Gmail y fail-closed por defecto (RF-4)."""
         settings = _settings_without_env()
@@ -100,6 +107,88 @@ class ConfigTests(unittest.TestCase):
             settings.keepalive_url,
             "https://crypto-bot.onrender.com",
         )
+
+    def test_context_settings_defaults(self) -> None:
+        """Spec 006 D-2/RF-3/RF-4/RF-6: fuentes declaradas, TTLs y pesos."""
+        settings = _settings_without_env()
+        self.assertEqual(
+            settings.fear_greed_url, "https://api.alternative.me/fng/"
+        )
+        # Vacío = fuente DISABLED por defecto (D-2: sin humo).
+        self.assertEqual(settings.news_rss_feeds, "")
+        self.assertEqual(settings.depth_cache_seconds, 30)
+        self.assertEqual(settings.fear_greed_cache_seconds, 21600)
+        self.assertEqual(settings.news_cache_seconds, 900)
+        self.assertEqual(
+            settings.candidate_weights,
+            "momentum:0.30,volume:0.25,trend:0.25,range:0.20",
+        )
+
+    def test_context_settings_from_env(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "FEAR_GREED_URL": "",
+                "NEWS_RSS_FEEDS": "https://feed.example/rss",
+                "DEPTH_CACHE_SECONDS": "10",
+                "FEAR_GREED_CACHE_SECONDS": "600",
+                "NEWS_CACHE_SECONDS": "60",
+                "CANDIDATE_WEIGHTS": "momentum:0.5,volume:0.5",
+            },
+            clear=True,
+        ):
+            settings = Settings(_env_file=None)
+        self.assertEqual(settings.fear_greed_url, "")
+        self.assertEqual(settings.news_rss_feeds, "https://feed.example/rss")
+        self.assertEqual(settings.depth_cache_seconds, 10)
+        self.assertEqual(settings.fear_greed_cache_seconds, 600)
+        self.assertEqual(settings.news_cache_seconds, 60)
+        self.assertEqual(settings.candidate_weights, "momentum:0.5,volume:0.5")
+
+
+    def test_gemini_settings_defaults(self) -> None:
+        """Spec 007 RF-3/RF-4/D-2: sin clave (DISABLED), solo free tier 0 USD."""
+        settings = _settings_without_env()
+        self.assertEqual(settings.gemini_api_key, "")
+        self.assertEqual(settings.gemini_model, "gemini-2.5-flash")
+        self.assertEqual(
+            settings.gemini_base_url,
+            "https://generativelanguage.googleapis.com/v1beta",
+        )
+        self.assertEqual(settings.gemini_timeout_seconds, 10)
+        self.assertEqual(settings.gemini_max_retries, 2)
+        self.assertEqual(settings.gemini_daily_query_limit, 4)
+        self.assertEqual(settings.gemini_cache_seconds, 3600)
+        self.assertEqual(settings.gemini_breaker_failures, 3)
+        self.assertEqual(settings.gemini_breaker_seconds, 900)
+        self.assertIs(settings.gemini_auto_analysis, False)
+        self.assertEqual(settings.gemini_auto_analysis_limit, 3)
+        self.assertEqual(settings.gemini_daily_budget_usd, Decimal("0"))
+        self.assertEqual(settings.gemini_price_mtok_input, Decimal("0"))
+        self.assertEqual(settings.gemini_price_mtok_output, Decimal("0"))
+
+    def test_gemini_settings_from_env(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "GEMINI_API_KEY": "env-key",
+                "GEMINI_MODEL": "gemini-2.5-pro",
+                "GEMINI_DAILY_QUERY_LIMIT": "10",
+                "GEMINI_AUTO_ANALYSIS": "true",
+                "GEMINI_AUTO_ANALYSIS_LIMIT": "2",
+                "GEMINI_DAILY_BUDGET_USD": "1.5",
+                "GEMINI_PRICE_MTOK_INPUT": "0.5",
+            },
+            clear=True,
+        ):
+            settings = Settings(_env_file=None)
+        self.assertEqual(settings.gemini_api_key, "env-key")
+        self.assertEqual(settings.gemini_model, "gemini-2.5-pro")
+        self.assertEqual(settings.gemini_daily_query_limit, 10)
+        self.assertIs(settings.gemini_auto_analysis, True)
+        self.assertEqual(settings.gemini_auto_analysis_limit, 2)
+        self.assertEqual(settings.gemini_daily_budget_usd, Decimal("1.5"))
+        self.assertEqual(settings.gemini_price_mtok_input, Decimal("0.5"))
 
 
 class ForeignKeyTests(unittest.TestCase):

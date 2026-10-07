@@ -34,6 +34,7 @@ from app.models import (
 )
 from app.services.exchange_executor import ExchangeExecutor, OrderRequest
 from app.services.simulation_service import QUANTITY_PLACES, money
+from app.services.structured_log import emit
 
 logger = logging.getLogger(__name__)
 
@@ -342,7 +343,36 @@ def close_position(
     decision.fees_usd = fees
     decision.pnl_usd = pnl
     db.commit()
+
+    # Spec 005, RF-1: toda salida (stop/tp/manual) deja su evento de orden.
+    emit(
+        service="order_lifecycle",
+        event="order.filled",
+        result="ok",
+        asset=position.symbol,
+        correlation_id=_decision_correlation(decision),
+        payload={
+            "side": "SELL",
+            "reason": reason,
+            "decision_id": decision.id,
+            "position_id": position.id,
+            "pnl_usd": str(pnl),
+        },
+        db=db,
+    )
     return position
+
+
+def _decision_correlation(decision: SignalDecision) -> str | None:
+    """Correlation_id del ciclo que creó la decisión, si existe (RF-2)."""
+    try:
+        snapshot = json.loads(decision.market_snapshot_json or "{}")
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(snapshot, dict):
+        return None
+    value = snapshot.get("correlation_id")
+    return str(value) if value is not None else None
 
 
 def check_exits(

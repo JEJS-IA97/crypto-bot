@@ -36,6 +36,18 @@ EXCHANGE_INFO_PAYLOAD = {
     ]
 }
 
+DEPTH_PAYLOAD = {
+    "lastUpdateId": 167,
+    "bids": [["100.0", "5.0"], ["99.9", "4.0"]],
+    "asks": [["100.5", "3.0"], ["100.6", "2.0"]],
+}
+
+TICKER_PAYLOAD = {
+    "lastPrice": "100.4",
+    "priceChangePercent": "1.25",
+    "quoteVolume": "123456.78",
+}
+
 
 class BinanceMarketDataClientTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -203,6 +215,118 @@ class BinanceMarketDataClientTest(unittest.TestCase):
             self.client.get_klines("BTCUSDT", limit=0)
         with self.assertRaises(ValueError):
             self.client.get_exchange_info("")
+
+
+class DepthAndTickerTests(unittest.TestCase):
+    """Spec 006 M2/RF-2: get_depth y get_ticker_24h públicos (sin claves)."""
+
+    def setUp(self) -> None:
+        self.now = 1000.0
+        self.client = BinanceMarketDataClient(clock=lambda: self.now)
+
+    @patch("app.services.binance_market_data_client.httpx.request")
+    def test_get_depth_ok(self, request_mock) -> None:
+        from app.services.binance_market_data_client import DepthBook
+
+        request_mock.return_value = httpx.Response(200, json=DEPTH_PAYLOAD)
+
+        book = self.client.get_depth("btcusdt", limit=5)
+
+        self.assertIsInstance(book, DepthBook)
+        self.assertEqual(book.last_update_id, 167)
+        self.assertEqual(
+            book.bids[0], (Decimal("100.0"), Decimal("5.0"))
+        )
+        self.assertEqual(
+            book.asks[0], (Decimal("100.5"), Decimal("3.0"))
+        )
+        self.assertIsInstance(book.bids[0][0], Decimal)
+
+        _, kwargs = request_mock.call_args
+        self.assertEqual(
+            kwargs["url"], "https://api.binance.com/api/v3/depth"
+        )
+        self.assertEqual(kwargs["params"]["symbol"], "BTCUSDT")
+        self.assertEqual(kwargs["params"]["limit"], 5)
+        headers = kwargs.get("headers") or {}
+        self.assertNotIn("X-MBX-APIKEY", headers)
+
+    @patch("app.services.binance_market_data_client.httpx.request")
+    def test_get_depth_fail_closed(self, request_mock) -> None:
+        # Payload no parseable
+        request_mock.return_value = httpx.Response(200, text="nope")
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_depth("BTCUSDT")
+
+        # Estructura ausente
+        request_mock.return_value = httpx.Response(200, json={"bids": "?"})
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_depth("BTCUSDT")
+
+        # Fila corrupta
+        request_mock.return_value = httpx.Response(
+            200,
+            json={
+                "lastUpdateId": 1,
+                "bids": [["oops", "1"]],
+                "asks": [],
+            },
+        )
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_depth("BTCUSDT")
+
+        # Red caída
+        request_mock.side_effect = httpx.ConnectError("boom")
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_depth("BTCUSDT")
+
+    @patch("app.services.binance_market_data_client.httpx.request")
+    def test_get_ticker_24h_ok(self, request_mock) -> None:
+        from app.services.binance_market_data_client import Ticker24
+
+        request_mock.return_value = httpx.Response(200, json=TICKER_PAYLOAD)
+
+        ticker = self.client.get_ticker_24h("btcusdt")
+
+        self.assertIsInstance(ticker, Ticker24)
+        self.assertEqual(ticker.last_price, Decimal("100.4"))
+        self.assertEqual(ticker.price_change_pct, Decimal("1.25"))
+        self.assertEqual(
+            ticker.quote_volume_24h, Decimal("123456.78")
+        )
+
+        _, kwargs = request_mock.call_args
+        self.assertEqual(
+            kwargs["url"],
+            "https://api.binance.com/api/v3/ticker/24hr",
+        )
+        self.assertEqual(kwargs["params"]["symbol"], "BTCUSDT")
+        headers = kwargs.get("headers") or {}
+        self.assertNotIn("X-MBX-APIKEY", headers)
+
+    @patch("app.services.binance_market_data_client.httpx.request")
+    def test_get_ticker_24h_fail_closed(self, request_mock) -> None:
+        request_mock.return_value = httpx.Response(200, text="nope")
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_ticker_24h("BTCUSDT")
+
+        request_mock.return_value = httpx.Response(200, json={})
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_ticker_24h("BTCUSDT")
+
+        request_mock.return_value = httpx.Response(
+            200, json={"lastPrice": "", "priceChangePercent": "1"}
+        )
+        with self.assertRaises(MarketDataUnavailable):
+            self.client.get_ticker_24h("BTCUSDT")
+
+    def test_depth_and_ticker_invalid_arguments(self) -> None:
+        with self.assertRaises(ValueError):
+            self.client.get_depth("")
+        with self.assertRaises(ValueError):
+            self.client.get_depth("BTCUSDT", limit=0)
+        with self.assertRaises(ValueError):
+            self.client.get_ticker_24h("")
 
 
 if __name__ == "__main__":

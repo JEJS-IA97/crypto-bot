@@ -30,6 +30,7 @@ from app.models import (
     SignalDecision,
     utc_now,
 )
+from app.services.structured_log import emit
 
 MIN_PAPER_DAYS = 30
 MIN_PAPER_OPERATIONS = 15
@@ -348,6 +349,20 @@ def request_phase_change(
     current.changed_by = changed_by
     db.commit()
     db.refresh(current)
+
+    # Spec 005, RF-1: el cambio de fase es un evento auditable.
+    emit(
+        service="phase_service",
+        event="phase.changed",
+        result="ok",
+        mode=new_phase.value,
+        payload={
+            "previous_phase": payload["previous_phase"],
+            "new_phase": new_phase.value,
+            "changed_by": changed_by,
+        },
+        db=db,
+    )
 
     return {
         "ok": True,

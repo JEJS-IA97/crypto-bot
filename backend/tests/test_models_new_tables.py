@@ -23,6 +23,8 @@ NEW_TABLES = (
     "daily_risk_states",
     "bot_phases",
     "bot_runtimes",
+    "system_events",
+    "source_health",
 )
 
 FROZEN_TABLES = {

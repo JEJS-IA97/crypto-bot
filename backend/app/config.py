@@ -82,6 +82,46 @@ class Settings(BaseSettings):
         "http://localhost:4173"
     )
 
+    # Observabilidad (spec 005, RF-1/RF-8): retencion de eventos en dias,
+    # nivel de log y version de estrategia que viaja en cada evento.
+    event_retention_days: int = 30
+    log_level: str = "INFO"
+    strategy_version: str = "orb-001-v3"
+
+    # Datos y contexto (spec 006, D-2): fuentes declaradas. URL vacia =
+    # fuente DISABLED sin llamada HTTP; RSS en CSV (vacio = sin noticias).
+    fear_greed_url: str = "https://api.alternative.me/fng/"
+    news_rss_feeds: str = ""
+    # TTL de la caché en memoria (segundos): depth 30s, F&G 6h, news 15min.
+    depth_cache_seconds: int = 30
+    fear_greed_cache_seconds: int = 21600
+    news_cache_seconds: int = 900
+    # Pesos del score de candidatos (RF-6): CSV "clave:peso". Vacio o
+    # invalido → DEFAULT_WEIGHTS de candidate_engine.
+    candidate_weights: str = "momentum:0.30,volume:0.25,trend:0.25,range:0.20"
+
+    # Analista IA (spec 007, D-2): solo tier gratuito, presupuesto 0 USD.
+    # Clave vacia = DISABLED; NUNCA se habilita pago (punto 4 de la
+    # constitucion). El modelo se confirma con la doc oficial al crearla.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    gemini_base_url: str = (
+        "https://generativelanguage.googleapis.com/v1beta"
+    )
+    gemini_timeout_seconds: int = 10
+    gemini_max_retries: int = 2
+    gemini_daily_query_limit: int = 4
+    gemini_cache_seconds: int = 3600
+    gemini_breaker_failures: int = 3
+    gemini_breaker_seconds: int = 900
+    # Pasada diaria opcional (RF-8); el loop de la 001 no se toca.
+    gemini_auto_analysis: bool = False
+    gemini_auto_analysis_limit: int = 3
+    # Coste en USD: precios por millon de tokens; 0 = sin coste registrado.
+    gemini_daily_budget_usd: Decimal = Decimal("0")
+    gemini_price_mtok_input: Decimal = Decimal("0")
+    gemini_price_mtok_output: Decimal = Decimal("0")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

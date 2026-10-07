@@ -35,6 +35,24 @@ class SymbolRules:
         return self.status == "TRADING"
 
 
+@dataclass(frozen=True)
+class DepthBook:
+    """Top-of-book depth levels (spec 006, RF-2), all Decimal."""
+
+    last_update_id: int
+    bids: tuple[tuple[Decimal, Decimal], ...]
+    asks: tuple[tuple[Decimal, Decimal], ...]
+
+
+@dataclass(frozen=True)
+class Ticker24:
+    """24h rolling ticker (spec 006, RF-1), all Decimal."""
+
+    last_price: Decimal
+    price_change_pct: Decimal
+    quote_volume_24h: Decimal
+
+
 class BinanceMarketDataClient:
     """Synchronous client with a short freshness-bounded cache."""
 
@@ -162,6 +180,93 @@ class BinanceMarketDataClient:
         rules = self._parse_rules(payload, normalized)
         self._rules_cache[normalized] = (now, rules)
         return rules
+
+    def get_depth(self, symbol: str, limit: int = 5) -> DepthBook:
+        """Public order book snapshot (spec 006, RF-2). No cache: the
+        service layer owns the TTL cache so every source behaves alike."""
+        if not symbol or not symbol.strip():
+            raise ValueError("symbol must not be empty")
+        if limit < 1:
+            raise ValueError("limit must be >= 1")
+
+        normalized = symbol.strip().upper()
+        payload = self._get(
+            "/api/v3/depth", {"symbol": normalized, "limit": limit}
+        )
+        return self._parse_depth(payload, normalized)
+
+    @staticmethod
+    def _parse_depth(payload: Any, symbol: str) -> DepthBook:
+        if not isinstance(payload, dict):
+            raise MarketDataUnavailable(
+                f"Unexpected depth payload for {symbol}"
+            )
+        last_update_id = payload.get("lastUpdateId")
+        bids = payload.get("bids")
+        asks = payload.get("asks")
+        if (
+            not isinstance(last_update_id, int)
+            or not isinstance(bids, list)
+            or not isinstance(asks, list)
+        ):
+            raise MarketDataUnavailable(
+                f"Malformed depth payload for {symbol}"
+            )
+        return DepthBook(
+            last_update_id=last_update_id,
+            bids=BinanceMarketDataClient._parse_levels(bids, symbol),
+            asks=BinanceMarketDataClient._parse_levels(asks, symbol),
+        )
+
+    @staticmethod
+    def _parse_levels(
+        rows: list[Any], symbol: str
+    ) -> tuple[tuple[Decimal, Decimal], ...]:
+        levels: list[tuple[Decimal, Decimal]] = []
+        for row in rows:
+            if not isinstance(row, list) or len(row) < 2:
+                raise MarketDataUnavailable(
+                    f"Malformed depth level for {symbol}"
+                )
+            try:
+                levels.append(
+                    (Decimal(str(row[0])), Decimal(str(row[1])))
+                )
+            except (ValueError, TypeError, ArithmeticError) as exc:
+                raise MarketDataUnavailable(
+                    f"Unparseable depth level for {symbol}: {exc}"
+                ) from exc
+        return tuple(levels)
+
+    def get_ticker_24h(self, symbol: str) -> Ticker24:
+        """Public 24h rolling ticker (spec 006, RF-1)."""
+        if not symbol or not symbol.strip():
+            raise ValueError("symbol must not be empty")
+
+        normalized = symbol.strip().upper()
+        payload = self._get(
+            "/api/v3/ticker/24hr", {"symbol": normalized}
+        )
+        if not isinstance(payload, dict):
+            raise MarketDataUnavailable(
+                f"Unexpected ticker payload for {symbol}"
+            )
+        try:
+            return Ticker24(
+                last_price=Decimal(str(payload["lastPrice"])),
+                price_change_pct=Decimal(
+                    str(payload["priceChangePercent"])
+                ),
+                quote_volume_24h=Decimal(str(payload["quoteVolume"])),
+            )
+        except KeyError as exc:
+            raise MarketDataUnavailable(
+                f"Missing ticker field {exc} for {symbol}"
+            ) from exc
+        except (ValueError, TypeError, ArithmeticError) as exc:
+            raise MarketDataUnavailable(
+                f"Unparseable ticker payload for {symbol}: {exc}"
+            ) from exc
 
     @staticmethod
     def _parse_rules(payload: Any, symbol: str) -> SymbolRules:
