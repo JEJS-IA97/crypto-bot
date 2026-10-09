@@ -18,6 +18,13 @@ Estructura: specs en `specs/`, docs en `docs/`, código en `backend/app/`, tests
 - Tipado completo en funciones públicas; `dataclass(frozen=True)`/`Enum` para modelos de dominio; Pydantic v2 en la API.
 - Cada servicio tiene su test en `backend/tests/`; los clientes de exchange se testean con `httpx` mockeado (sin red).
 
+## Método y skills
+- Método SDD (Spec-Driven Development) + estándar anti-vibecode: ver skill `anti-vibecode-sdd` en `.opencode/skills/anti-vibecode-sdd/`.
+- La skill define 7 fases (constitution → spec → clarification → plan → tasks → implementation → validation) con aprobación humana entre fases.
+- Jerarquía de autoridad: petición del usuario > constitución > spec activa > AGENTS.md > anti-vibecode-guide.md.
+- Prompts por fase en `.opencode/skills/anti-vibecode-sdd/prompts.md`.
+- Checklist de validación al cerrar cada spec: `docs/checklist.md`.
+
 ## Reglas
 - Lee `docs/constitution.md` y la spec activa antes de tocar código.
 - No implementes nada que no esté en la spec activa. Si falta una decisión, pregunta.

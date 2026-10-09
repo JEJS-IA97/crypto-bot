@@ -44,7 +44,7 @@ class EvaluateHypothesisTests(unittest.TestCase):
         self._counter = 0
 
         for attr, value in (
-            ("learning_min_cases", 5),
+            ("learning_min_cases", 4),
             ("learning_min_favorable_ratio", Decimal("0.60")),
             ("learning_window_days", 90),
         ):

@@ -1,0 +1,377 @@
+{
+  "name": "ANTI_VIBECODE",
+  "version": "1.0",
+  "purpose": "Reusable AI coding standard for creating or correcting web and mobile applications without generic AI-generated aesthetics, fake functionality, brittle architecture, accessibility failures, SEO omissions, security mistakes, or unverified claims.",
+  "principles": [
+    "correctness",
+    "real functionality",
+    "product-oriented information architecture",
+    "intentional visual hierarchy",
+    "accessibility",
+    "responsive behavior",
+    "performance",
+    "security",
+    "maintainability",
+    "testability",
+    "measured verification"
+  ],
+  "modes": {
+    "new_project": [
+      "understand product and users",
+      "define user journeys",
+      "define information architecture",
+      "define domain entities and business rules",
+      "choose stack based on requirements",
+      "define design tokens and component conventions",
+      "define architecture and folder structure",
+      "implement critical user flow first",
+      "implement real loading/empty/error/success states",
+      "implement accessibility and responsive behavior",
+      "implement web metadata when public web SEO applies",
+      "test critical behavior",
+      "measure performance",
+      "run production build",
+      "perform final anti-vibecode audit"
+    ],
+    "existing_project": [
+      "inspect repository before editing",
+      "inspect package and configuration files",
+      "identify framework/router/state/API architecture",
+      "run and reproduce the reported issue",
+      "inspect console and network errors",
+      "inspect relevant source",
+      "identify root cause",
+      "make the smallest safe fix",
+      "preserve unrelated behavior",
+      "build/lint/test",
+      "reproduce the original verification",
+      "check nearby regressions",
+      "refactor only when justified"
+    ]
+  },
+  "visual_rules": {
+    "avoid_default_ai_aesthetic": true,
+    "avoid_unnecessary_neon": true,
+    "avoid_global_purple_gradients": true,
+    "avoid_decorative_glow": true,
+    "avoid_excessive_glassmorphism": true,
+    "avoid_cardifying_everything": true,
+    "avoid_excessive_badges": true,
+    "avoid_meaningless_status_dots": true,
+    "avoid_emoji_as_primary_navigation_icons": true,
+    "avoid_random_icon_families": true,
+    "avoid_perpetual_decorative_animation": true,
+    "avoid_huge_hero_without_product_value": true,
+    "avoid_repeated_identical_card_grids": true,
+    "require_intentional_visual_hierarchy": true,
+    "require_consistent_design_tokens": true,
+    "require_semantic_components": true
+  },
+  "functionality_rules": {
+    "no_fake_functionality": true,
+    "no_fake_live_status": true,
+    "no_fake_data_as_production": true,
+    "no_fake_search": true,
+    "no_fake_filters": true,
+    "no_fake_pagination": true,
+    "no_fake_success_messages": true,
+    "mocked_features_must_be_explicit": true,
+    "do_not_invent_business_rules": true,
+    "do_not_invent_security_rules": true,
+    "do_not_invent_api_contracts_without_isolation": true
+  },
+  "architecture_rules": {
+    "avoid_giant_components": true,
+    "avoid_giant_css_files": true,
+    "avoid_giant_api_modules": true,
+    "avoid_duplicate_business_logic": true,
+    "avoid_magic_numbers": true,
+    "avoid_magic_strings": true,
+    "avoid_premature_abstraction": true,
+    "avoid_over_fragmentation": true,
+    "keep_ui_separate_from_business_logic_when_justified": true,
+    "keep_data_access_separate_from_presentation_when_justified": true,
+    "use_domain_or_feature_structure_when_beneficial": true
+  },
+  "accessibility": {
+    "baseline": "WCAG 2.2",
+    "semantic_html_first": true,
+    "buttons_for_actions": true,
+    "links_for_navigation": true,
+    "associated_form_labels": true,
+    "visible_focus": true,
+    "keyboard_navigation": true,
+    "meaningful_headings": true,
+    "sufficient_contrast": true,
+    "do_not_use_color_as_only_signal": true,
+    "appropriate_alt_text": true,
+    "decorative_images_not_announced": true,
+    "accessible_names_for_icon_only_controls": true,
+    "logical_focus_management": true,
+    "respect_text_resize_and_reflow": true,
+    "support_reduced_motion_when_relevant": true,
+    "avoid_title_attribute_as_important_ux": true
+  },
+  "web_seo": {
+    "apply_only_to_indexable_public_pages": true,
+    "unique_title_per_page": true,
+    "descriptive_meta_description": true,
+    "intentional_canonical": true,
+    "open_graph_metadata_when_useful": true,
+    "favicon": true,
+    "correct_html_lang": true,
+    "meaningful_heading_hierarchy": true,
+    "truthful_structured_data": true,
+    "xml_sitemap_when_appropriate": true,
+    "intentional_robots_policy": true,
+    "llms_txt_optional_emerging_convention": true,
+    "no_accidental_noindex": true,
+    "stable_public_urls": true,
+    "deep_link_support": true,
+    "custom_production_domain_preferred_when_available": true
+  },
+  "rendering": {
+    "choose_rendering_strategy_deliberately": true,
+    "consider_ssr_ssg_prerendering_for_public_content": true,
+    "do_not_assume_spa_csr_is_automatically_seo_ready": true,
+    "validate_rendered_html": true,
+    "do_not_treat_empty_view_source_as_automatic_proof_of_failure": true
+  },
+  "performance": {
+    "avoid_giant_initial_js_bundle": true,
+    "use_code_splitting_when_beneficial": true,
+    "lazy_load_heavy_noncritical_routes_or_components": true,
+    "tree_shake_unused_code": true,
+    "avoid_duplicate_large_dependencies": true,
+    "optimize_images": true,
+    "provide_image_dimensions": true,
+    "avoid_layout_shift": true,
+    "optimize_fonts": true,
+    "control_third_party_scripts": true,
+    "measure_core_web_vitals": true,
+    "monitor_lcp_cls_inp": true,
+    "avoid_long_main_thread_tasks": true,
+    "memoize_only_when_justified": true
+  },
+  "production_artifacts": {
+    "review_source_maps": true,
+    "do_not_expose_source_maps_without_reason": true,
+    "review_unminified_assets": true,
+    "review_debug_artifacts": true,
+    "review_environment_files": true,
+    "remove_development_only_logging_where_appropriate": true
+  },
+  "vite": {
+    "vite_is_not_itself_a_quality_problem": true,
+    "never_put_secrets_in_vite_exposed_env": true,
+    "review_VITE_prefixed_variables": true,
+    "verify_production_build": true,
+    "review_chunk_sizes": true,
+    "verify_spa_fallback": true,
+    "review_base_asset_paths": true
+  },
+  "security": {
+    "frontend_is_not_trusted": true,
+    "server_side_authorization_required": true,
+    "validate_inputs": true,
+    "do_not_ship_secrets_to_browser": true,
+    "review_xss_injection_points": true,
+    "review_cors": true,
+    "review_security_headers": true,
+    "review_dependencies": true,
+    "rate_limit_sensitive_endpoints_when_needed": true,
+    "do_not_log_sensitive_data": true
+  },
+  "state_model": {
+    "consider_loading": true,
+    "consider_success": true,
+    "consider_empty": true,
+    "consider_error": true,
+    "consider_unauthorized": true,
+    "consider_offline_or_unavailable": true,
+    "do_not_equate_empty_with_error": true,
+    "do_not_equate_unknown_with_healthy": true
+  },
+  "errors_and_reliability": {
+    "no_expected_production_console_errors": true,
+    "investigate_meaningful_console_warnings": true,
+    "use_error_boundaries_or_equivalent_recovery": true,
+    "never_swallow_errors_silently": true,
+    "never_expose_stack_traces_to_users": true,
+    "provide_recovery_paths": true,
+    "success_requires_real_confirmation": true
+  },
+  "forms": {
+    "labels": true,
+    "required_optional_states": true,
+    "validation": true,
+    "field_level_errors": true,
+    "submit_loading_state": true,
+    "success_feedback": true,
+    "failure_feedback": true,
+    "preserve_safe_user_input": true,
+    "server_side_validation": true
+  },
+  "react": {
+    "prefer_function_components": true,
+    "avoid_giant_components": true,
+    "stable_list_keys": true,
+    "avoid_unnecessary_use_memo": true,
+    "avoid_unnecessary_use_callback": true,
+    "avoid_use_effect_as_default_solution": true,
+    "lazy_load_heavy_components_when_beneficial": true,
+    "use_error_boundaries_at_meaningful_product_boundaries": true
+  },
+  "mobile": {
+    "do_not_wrap_web_ui_without_mobile_ux_design": true,
+    "handle_back_navigation": true,
+    "handle_keyboard_and_focus": true,
+    "handle_safe_areas": true,
+    "handle_offline_poor_networks": true,
+    "handle_permissions_deliberately": true,
+    "test_realistic_device_sizes": true,
+    "optimize_long_lists": true
+  },
+  "internationalization": {
+    "locale_aware_dates": true,
+    "locale_aware_numbers": true,
+    "locale_aware_currency": true,
+    "timezone_explicit": true,
+    "pluralization": true,
+    "language_metadata": true
+  },
+  "testing": {
+    "build": true,
+    "lint_or_typecheck_when_configured": true,
+    "critical_user_flows": true,
+    "critical_api_paths": true,
+    "error_paths": true,
+    "responsive_checks": true,
+    "accessibility_checks": true,
+    "routing_checks": true,
+    "unit_tests_where_valuable": true,
+    "integration_tests_where_valuable": true,
+    "e2e_tests_for_critical_journeys": true,
+    "do_not_inflate_test_count": true
+  },
+  "audit_findings": {
+    "severity_levels": [
+      "critical",
+      "high",
+      "medium",
+      "low",
+      "recommendation"
+    ],
+    "must_distinguish_confirmed_defect_from_recommendation": true,
+    "must_provide_evidence_for_confirmed_defects": true,
+    "must_not_claim_unverified_improvements": true
+  },
+  "definition_of_done": [
+    "requested behavior works",
+    "business rules are correct",
+    "no fake functionality remains",
+    "visual hierarchy is intentional",
+    "design tokens are consistent",
+    "accessibility basics pass",
+    "routes work",
+    "404 works on web",
+    "web metadata is intentional where applicable",
+    "performance is measured",
+    "no secrets are exposed",
+    "error states are recoverable",
+    "critical tests pass",
+    "production build passes",
+    "no expected production console errors remain",
+    "no meaningless abstractions or dead code remain in changed areas"
+  ],
+  "agent_instruction": "Use this standard as a guardrail rather than a mechanical checklist. Before adding UI, architecture, dependencies, animations, metadata, badges, cards or abstractions, identify the user or engineering problem it solves. If it exists only because it looks modern, fills space, imitates trends or makes a generated demo feel richer, do not add it. For existing projects, inspect and make the smallest safe root-cause fix before refactoring. Never claim an implementation, integration, test, SEO improvement or performance improvement unless it was actually implemented and verified.",
+  "research_basis": {
+    "note": "Normative/technical references were checked on 2026-09-17. llms.txt remains an emerging proposal/convention, not a universal mandatory web standard.",
+    "sources": [
+      {
+        "topic": "Google title links and metadata",
+        "url": "https://developers.google.com/search/docs/appearance/title-link"
+      },
+      {
+        "topic": "Google meta tags",
+        "url": "https://developers.google.com/search/docs/crawling-indexing/special-tags"
+      },
+      {
+        "topic": "Google canonicalization",
+        "url": "https://developers.google.com/search/docs/crawling-indexing/canonicalization-troubleshooting"
+      },
+      {
+        "topic": "Google sitemaps",
+        "url": "https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap"
+      },
+      {
+        "topic": "Google favicon",
+        "url": "https://developers.google.com/search/docs/appearance/favicon-in-search"
+      },
+      {
+        "topic": "Google structured data",
+        "url": "https://developers.google.com/search/docs/appearance/structured-data/sd-policies"
+      },
+      {
+        "topic": "Google JavaScript rendering guidance",
+        "url": "https://developers.google.com/search/docs/crawling-indexing/javascript/dynamic-rendering"
+      },
+      {
+        "topic": "Google-Extended robots token",
+        "url": "https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers"
+      },
+      {
+        "topic": "W3C WCAG 2.2",
+        "url": "https://www.w3.org/WAI/standards-guidelines/wcag/"
+      },
+      {
+        "topic": "W3C accessibility principles",
+        "url": "https://www.w3.org/WAI/fundamentals/accessibility-principles/"
+      },
+      {
+        "topic": "MDN lang attribute",
+        "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/lang"
+      },
+      {
+        "topic": "Vite build source maps",
+        "url": "https://vite.dev/config/build-options"
+      },
+      {
+        "topic": "Vite environment variables",
+        "url": "https://vite.dev/guide/env-and-mode"
+      },
+      {
+        "topic": "React lazy",
+        "url": "https://react.dev/reference/react/lazy"
+      },
+      {
+        "topic": "React error boundaries",
+        "url": "https://react.dev/reference/react/Component"
+      },
+      {
+        "topic": "web.dev code splitting",
+        "url": "https://web.dev/articles/reduce-javascript-payloads-with-code-splitting"
+      },
+      {
+        "topic": "web.dev long tasks",
+        "url": "https://web.dev/articles/optimize-long-tasks"
+      },
+      {
+        "topic": "web.dev LCP",
+        "url": "https://web.dev/articles/optimize-lcp"
+      },
+      {
+        "topic": "web.dev CLS",
+        "url": "https://web.dev/articles/cls"
+      },
+      {
+        "topic": "llms.txt proposal",
+        "url": "https://llmstxt.org/"
+      },
+      {
+        "topic": "Vercel automatic deployment URLs",
+        "url": "https://vercel.com/changelog/urls-are-becoming-consistent"
+      }
+    ]
+  }
+}
