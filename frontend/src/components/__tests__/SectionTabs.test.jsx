@@ -6,7 +6,7 @@ import SectionTabs from "../SectionTabs";
 describe("SectionTabs (RF-6, pestañas reales)", () => {
     afterEach(cleanup);
 
-    it("renderiza las tres pestañas con roles accesibles", () => {
+    it("renderiza las cuatro pestañas con roles accesibles", () => {
         render(<SectionTabs value="operar" onChange={() => {}} />);
 
         const list = screen.getByRole("tablist", {
@@ -15,14 +15,15 @@ describe("SectionTabs (RF-6, pestañas reales)", () => {
         expect(list).toBeInTheDocument();
 
         const tabs = screen.getAllByRole("tab");
-        expect(tabs).toHaveLength(3);
+        expect(tabs).toHaveLength(4);
         expect(tabs[0]).toHaveAttribute("aria-selected", "true");
         expect(tabs[0]).toHaveAttribute(
             "aria-controls",
             "panel-operar"
         );
         expect(tabs[1]).toHaveAttribute("tabindex", "-1");
-        expect(tabs[2]).toHaveTextContent("Historial");
+        expect(tabs[2]).toHaveTextContent("Consola");
+        expect(tabs[3]).toHaveTextContent("Historial");
     });
 
     it("cambia de pestaña con flechas y Home/End", () => {

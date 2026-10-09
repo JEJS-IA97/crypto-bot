@@ -196,6 +196,11 @@ class SimulationTrade(Base):
         default=utc_now,
     )
 
+    decision_id: Mapped[int | None] = mapped_column(
+        nullable=True,
+        index=True,
+    )
+
     account: Mapped[
         "SimulationAccount"
     ] = relationship(
@@ -817,4 +822,219 @@ class SourceHealth(Base):
         DateTime,
         default=utc_now,
         onupdate=utc_now,
+    )
+
+
+class AiEvaluation(Base):
+    """Dictamen del analista IA (spec 007, RF-6).
+
+    Una fila por consulta que llegó a Gemini (estado OK | ERROR); los
+    cortes locales (DISABLED/cuota/presupuesto/breaker) solo dejan evento.
+    El coste se guarda en USD como Decimal (nunca float).
+    """
+
+    __tablename__ = "ai_evaluations"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+    symbol: Mapped[str] = mapped_column(
+        String(20),
+        index=True,
+    )
+
+    trigger: Mapped[str] = mapped_column(
+        String(10),
+        default="manual",
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(10),
+        default="OK",
+    )
+
+    decision: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    direction: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    confidence: Mapped[Decimal | None] = mapped_column(
+        Numeric(10, 6),
+        nullable=True,
+    )
+
+    request_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+
+    correlation_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        index=True,
+    )
+
+    model: Mapped[str | None] = mapped_column(
+        String(60),
+        nullable=True,
+    )
+
+    prompt_version: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+    )
+
+    latency_ms: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    input_tokens: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    output_tokens: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    cost_usd: Mapped[Decimal] = mapped_column(
+        Numeric(20, 8),
+        default=Decimal("0"),
+    )
+
+    context_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    response_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    error: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+
+class HypothesisStatus(str, Enum):
+    """Máquina de estados del aprendizaje (spec 010, §17)."""
+
+    PROPOSED = "PROPOSED"
+    TESTING = "TESTING"
+    VALIDATED = "VALIDATED"
+    ACTIVE = "ACTIVE"
+    DEPRECATED = "DEPRECATED"
+    REJECTED = "REJECTED"
+
+
+class Hypothesis(Base):
+    """Hipótesis de aprendizaje (spec 010, RF-1): lo que el sistema sospecha."""
+
+    __tablename__ = "hypotheses"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    origin_data_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    case_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    favorable_cases: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    unfavorable_cases: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    confidence: Mapped[Decimal | None] = mapped_column(
+        Numeric(8, 6),
+        nullable=True,
+    )
+
+    observed_period_start: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    observed_period_finish: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    assets_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+    )
+
+    market_regime: Mapped[str | None] = mapped_column(
+        String(60),
+        nullable=True,
+    )
+
+    status: Mapped[HypothesisStatus] = mapped_column(
+        SqlEnum(HypothesisStatus),
+        default=HypothesisStatus.PROPOSED,
+        index=True,
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+    )
+
+    source: Mapped[str] = mapped_column(
+        String(20),
+        default="operator",
+    )
+
+    evaluation_note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    rejection_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
     )

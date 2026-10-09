@@ -107,4 +107,13 @@ describe("design system (spec 003 RF-6, design.json)", () => {
     it("sin !important (auditoría #11)", () => {
         expect(css).not.toContain("!important");
     });
+
+    it("marcadores de equity con tokens, sin hex sueltos (009 RF-7/RF-8)", () => {
+        const rule = css.match(/\.equity-marker\s*\{[^}]+\}/);
+        expect(rule).not.toBeNull();
+        expect(rule[0]).toContain("var(--orange)");
+        expect(rule[0]).toContain("var(--text-primary)");
+        expect(rule[0]).toContain("cursor: pointer");
+        expect(rule[0]).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+    });
 });

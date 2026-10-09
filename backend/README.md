@@ -116,6 +116,103 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 - Vars nuevas: `FEAR_GREED_URL`, `NEWS_RSS_FEEDS`, `DEPTH_CACHE_SECONDS`,
   `FEAR_GREED_CACHE_SECONDS`, `NEWS_CACHE_SECONDS`, `CANDIDATE_WEIGHTS`.
 
+## Analista IA (spec 007)
+
+- **Solo tier gratuito de Gemini (D-2)**: presupuesto duro `0` USD, cuota
+  diaria `GEMINI_DAILY_QUERY_LIMIT` (defecto 4) y 429 de Google ⇒ fallo
+  sin reintento. `GEMINI_API_KEY` vacía ⇒ estado `DISABLED` sin llamadas.
+  `GEMINI_MODEL` (defecto `gemini-2.5-flash`) se confirma con la
+  documentación oficial al crear la clave; nunca se habilita pago.
+- Estados: `OK | DISABLED | QUOTA_EXCEEDED | BUDGET_EXCEEDED |
+  BREAKER_OPEN | INVALID_RESPONSE | ERROR`. Cortes antes de consultar:
+  presupuesto, cuota del día UTC y breaker (3 fallos ⇒ abierto 900 s,
+  se cierra solo o con éxito). Caché de dictámenes `OK` 3600 s
+  (`force: true` la salta).
+- Contexto honesto (RF-1): snapshot 006 + features/score 006 + posiciones
+  abiertas (`PositionV2`) + `DailyRiskState` + límites; lo que falta se
+  marca en `data_quality`, nunca se inventa. I/O estricto (brief §6):
+  `decision ∈ BUY|SELL|WAIT`, `direction ∈ LONG|NEUTRAL` (spot sin
+  cortos); esquema Pydantic `extra="forbid"` con `SchemaViolation`.
+- Endpoints sin token (RF-7; 404 `symbol_not_in_universe`, nunca 500):
+  - `POST /api/bot/ai/analyze` `{symbol, force?}` → `{state, cached,
+    recommendation, evaluation}` (`coste_usd` como texto, `confidence`
+    como número, D-7).
+  - `GET /api/bot/ai/recommendations?symbol=&limit=` — últimos
+    dictámenes, `limit` acotado a 1…50 (defecto 20).
+- Pasada diaria opcional (RF-8): `GEMINI_AUTO_ANALYSIS=true` + clave ⇒
+  bucle horario que analiza el top-N de candidatos (`trigger: auto`) con
+  guard de 24 h y parada en el primer estado no `OK` (evento WARNING).
+  El loop de la 001 no importa IA (RF-5, `tests/test_ai_isolation.py`).
+- Persistencia y observabilidad (RF-6): tabla `ai_evaluations` (coste en
+  `Decimal`, tokens, latencia, `request_id`, contexto y respuesta), evento
+  `ai.consultation` (INFO ok / WARNING degradado / ERROR fallo) y fuente
+  `gemini` en `source_health` (módulo `gemini_client` sin SDK: REST con
+  `x-goog-api-key`, nunca en URL ni en mensajes de error).
+- Vars nuevas: `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_BASE_URL`,
+  `GEMINI_TIMEOUT_SECONDS`, `GEMINI_MAX_RETRIES`,
+  `GEMINI_DAILY_QUERY_LIMIT`, `GEMINI_CACHE_SECONDS`,
+  `GEMINI_BREAKER_FAILURES`, `GEMINI_BREAKER_SECONDS`,
+  `GEMINI_AUTO_ANALYSIS`, `GEMINI_AUTO_ANALYSIS_LIMIT`,
+  `GEMINI_DAILY_BUDGET_USD`, `GEMINI_PRICE_MTOK_INPUT`,
+  `GEMINI_PRICE_MTOK_OUTPUT`.
+
+## Risk engine v2 (spec 008)
+
+- **Envuelve `risk_guard.can_open` (D-1)**: `evaluate_open` delega las 4
+  razones de la 001 (`daily_loss_limit`, `daily_open_limit`, `cooldown`,
+  `position_error`) y añade `max_open_positions` (≤3),
+  `max_exposure` (tope total) y `correlated_exposure` (resize). El loop
+  evalúa **antes** de ordenar: `BLOCKED` ⇒ decisión `REJECTED` sin orden;
+  `RESIZED` ⇒ la orden sale con `allowed_quantity`.
+- **Exposición total (RF-4)**: `committed + requested ≤
+  RISK_MAX_TOTAL_EXPOSURE_PCT %` (75 por defecto) × `CONFIGURED_CAPITAL_USD`;
+  `committed = Σ quantity × average_entry_price` de las posiciones `OPEN`.
+- **Correlación y resize (D-2/D-3)**: Pearson sobre los últimos 60 cierres
+  15m ya descargados (≥30 retornos, varianza > 0; sin datos ⇒ `unknown` y no
+  actúa). Si `r ≥ RISK_CORRELATION_THRESHOLD` (0.7) ⇒ resize a
+  `min(pedido, 12.5 % × capital)` flooreado al `step_size`; si ese tamaño
+  queda por debajo de `min_notional` ⇒ se permite el original con
+  `resize_applied=false`.
+- **Auditoría (RF-7)**: cada evaluación emite el evento `risk.evaluated`
+  (servicio `risk_engine`; INFO en `allow`, WARNING en `resized`/`blocked`)
+  con motivo, importes, correlaciones, `resize_applied` y límites.
+- **Endpoint sin token (RF-6)**: `GET /api/bot/risk/exposure` → capital,
+  comprometido, disponible (`SimulationBalance` de
+  `SIMULATION_BOT_ACCOUNT_ID`), tope, % de uso, `headroom_usd`, posiciones,
+  por activo, por dirección (LONG/NEUTRAL) y límites; decimales como texto;
+  cuenta ausente ⇒ `available_usd: null` con 200 (nunca 500).
+- **Tabla 1 (reglas de test: precio ≈100, `min_notional` 5, stop 2 %)**:
+
+  | Capital | Pedido | Si correlacionada (r ≥ 0.7) |
+  |---|---|---|
+  | 10 USD | 5 | resize no ejecutable; 2ª apertura denegada por tope |
+  | 20 USD | 5 | resize no ejecutable ⇒ original (`resize_applied=false`) |
+  | 50 USD | 12.5 | RESIZED → 6.2 (qty 0.062) |
+  | 100 USD | 25 | RESIZED → 12.5 (qty 0.125) |
+  | 1000 USD | 50 | sin cambio (pedido ya ≤ mitad del share) |
+
+- Vars nuevas: `RISK_MAX_TOTAL_EXPOSURE_PCT`, `RISK_CORRELATION_THRESHOLD`.
+  Tests: `test_risk_engine`, `test_risk_capitals`, `test_risk_api`,
+  `test_portfolio_math` (+ defaults en `test_config`).
+
+## Consola de control (spec 009)
+
+- **4 endpoints nuevos (solo lectura)**: `GET /api/bot/ai/stats` (agregados
+  de `ai_evaluations` 24 h), `GET /api/bot/pipeline` (catálogo fijo de 22
+  nodos con estado derivado de `source_health` y eventos 005),
+  `GET /api/bot/decisions/{id}/why` y `GET /api/bot/decisions/{id}/replay`
+  (reconstrucción determinista sobre snapshot + eventos + IA + posición;
+  secciones sin dato en `unavailable` con motivo; 404 si la decisión no
+  existe).
+- **Enlace equity→decisión (D-10)**: `simulation_trades.decision_id`
+  (nullable, indexada) poblada en la entrada (`protection_after_fill`) y la
+  salida (`close_position`) del bot vía `link_fill_to_decision`
+  (`raw.simulation_trade_id`); expuesta en `TradeResponse` y
+  `TradeHistoryResponse`. Trades manuales quedan sin enlace.
+- Sin tablas nuevas de datos; sin SSE/WebSocket; sin dependencias nuevas.
+  Tests: `test_ai_stats_api`, `test_pipeline_api`, `test_why_api`,
+  `test_replay_api`, `test_trade_decision_link`.
+
 ## Fases y seguridad
 
 - Órdenes reales solo con `ALLOW_LIVE_TRADING=true` **y** `CONFIGURED_CAPITAL_USD>0`

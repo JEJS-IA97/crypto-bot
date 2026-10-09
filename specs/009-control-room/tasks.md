@@ -1,0 +1,14 @@
+# Tareas — Spec 009 (UI Control Room)
+
+Convención: TDD rojo→verde. Al final de cada tarea: suite completa (`cd backend; .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py"`), ruff y, si toca frontend, `npm run lint` + `npm test`. Reporte con RF cubiertos y **PÁRATE** esperando aprobación antes de pasar a la siguiente.
+
+- [x] **T1 · Tests rojos backend.** `tests/test_ai_stats_api.py`, `tests/test_pipeline_api.py`, `tests/test_why_api.py`, `tests/test_replay_api.py` escritos con los contratos de `spec.md`/`plan.md` (404, `unavailable`, catálogo de 22 nodos, reglas de estado, determinismo, ceros explícitos). Deben fallar por endpoints/servicios inexistentes (rojo inicial). RF-1/RF-2/RF-4/RF-5 (fase rojo).
+- [x] **T2 · Stats IA.** `ai_stats(db)` en `ai_advisor_service.py` + `GET /api/bot/ai/stats` en `routes/ai.py`; verdes `test_ai_stats_api` y resto sin regresiones. RF-1 (backend).
+- [x] **T3 · Pipeline de nodos.** `pipeline_state(db, now)` en `observability_service.py` con catálogo fijo y reglas de estado + `GET /api/bot/pipeline` en `routes/observability.py`; verdes `test_pipeline_api`. RF-2 (backend).
+- [x] **T4 · Why?.** `app/services/replay_service.py::why_payload` + `routes/decisions.py::GET /api/bot/decisions/{id}/why` (404, `unavailable` por sección) registrado en `main.py`; verdes `test_why_api`. RF-4 (backend).
+- [x] **T5 · Replay.** `replay_payload` (determinismo, orden temporal, retención, correlation_id ausente) + `GET /api/bot/decisions/{id}/replay`; verdes `test_replay_api`. RF-5/RF-6 (backend). **Suite backend completa en verde (434 + nuevos) + reporte + PÁRATE.**
+- [x] **T6 · Frontend: header, canvas y recorrido (TDD).** `api/observability.js` (`getPipeline/getEvents/getSources/getObservability`), `api/bot.js` (`getAiStats`), componentes `HeaderPanel` (RF-1), `PipelineCanvas` (RF-2), `EventStream` (RF-3) con sus vitest rojos primero; eslint + `npm test` en verde. RF-1/RF-2/RF-3 (frontend).
+- [x] **T7 · Frontend: Why?, replay, timeline y marcadores de equity (TDD).** `getDecisionWhy/getDecisionReplay`, `WhyPanel`, `ReplayView`, `Timeline` (desde historial/posiciones), marcadores seleccionables en `EquityChart` con `onSelectDecision`; vitest rojos primero → verdes. RF-4/RF-5/RF-6/RF-7 (frontend).
+- [x] **T8 · Sin humo, docs y validación.** Extender `designSystem.test.js`/`actionSystem.test.js`; verificación RF-9 (grep sin `EventSource|WebSocket`, `package.json` sin dependencias nuevas); estado `implementada` en `spec.md` con criterios ✅ y mapeo RF→tests con clases reales; sección 009 en `frontend/README.md`/`backend/README.md` si aplica; validación final: ruff + compileall + unittest backend completo + `npm run lint` + `npm test`; **reporte completo + PÁRATE**.
+
+Fuera de alcance acordado: agresividad 1-10 (spec propia), walk-forward (spec aparte), pestaña Learning (010), modos SHADOW/SOLO CIERRE (no existen en backend), SSE/WebSocket, nuevas tablas.

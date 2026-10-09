@@ -80,8 +80,11 @@ from app.services.order_lifecycle import (
     protection_after_fill,
 )
 from app.services.phase_service import get_phase
+from app.services.risk_engine_service import (
+    RiskAction,
+    evaluate_open,
+)
 from app.services.risk_guard_service import (
-    can_open,
     get_daily_state,
     get_runtime,
     record_cycle_failure,
@@ -269,6 +272,7 @@ def _try_open(
     *,
     symbol: str,
     candles: list[Candle],
+    candles_by_symbol: dict[str, list[Candle]],
     price: Decimal,
     rules: SymbolRules,
     state,
@@ -322,10 +326,30 @@ def _try_open(
         quantity = sizing.quantity
     decision.quantity = quantity
 
-    ok, reason = can_open(db, state, symbol, now)
-    if not ok:
-        mark_rejected(db, decision, reason)
+    # Spec 008, D-1: el motor envuelve risk_guard y añade los topes de
+    # posiciones/exposición y el resize por correlación (RF-1/RF-2).
+    assessment = evaluate_open(
+        db,
+        symbol=symbol,
+        now=now,
+        state=state,
+        account_id=account_id,
+        quantity=quantity,
+        price=price,
+        candles=candles_by_symbol.get(symbol, candles),
+        other_candles=candles_by_symbol,
+        step_size=rules.step_size,
+        min_notional_usd=rules.min_notional,
+        available_usd=balance.available_usd,
+        correlation_id=correlation_id,
+    )
+    if assessment.action == RiskAction.BLOCKED:
+        mark_rejected(db, decision, assessment.reason)
         return "rejected"
+    if assessment.action == RiskAction.RESIZED:
+        # RF-1: la orden usa la cantidad redimensionada (D-3).
+        quantity = assessment.allowed_quantity
+        decision.quantity = quantity
 
     if not _is_running(db):
         # RF-3: ni una orden nueva. La externa queda en cola (PENDING) para
@@ -641,6 +665,7 @@ def _execute_cycle(
                     db,
                     symbol=symbol,
                     candles=candles,
+                    candles_by_symbol=candles_by_symbol,
                     price=price,
                     rules=rules,
                     state=state,
@@ -668,6 +693,7 @@ def _execute_cycle(
                 db,
                 symbol=symbol,
                 candles=decision_candles,
+                candles_by_symbol=candles_by_symbol,
                 price=price,
                 rules=rules,
                 state=state,

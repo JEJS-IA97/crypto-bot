@@ -61,9 +61,10 @@ VALID_RESPONSE = {
 
 
 def _candles(count: int) -> list[Candle]:
+    start = BASE - timedelta(minutes=15 * (count - 1))
     return [
         Candle(
-            open_time=BASE + timedelta(minutes=15 * index),
+            open_time=start + timedelta(minutes=15 * index),
             open=Decimal(100 + index),
             high=Decimal(101 + index),
             low=Decimal(99 + index),
@@ -213,8 +214,9 @@ class AnalyzeEndpointTests(AiApiBase):
         self.assertGreater(evaluation["id"], 0)
 
     def test_second_call_is_cached(self) -> None:
-        first = self._post({"symbol": "BTCUSDT"})
-        second = self._post({"symbol": "BTCUSDT"})
+        with patch.object(settings, "gemini_cache_seconds", 3600):
+            first = self._post({"symbol": "BTCUSDT"})
+            second = self._post({"symbol": "BTCUSDT"})
 
         self.assertEqual(first.status_code, 200)
         self.assertEqual(second.status_code, 200)

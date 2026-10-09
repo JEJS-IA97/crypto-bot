@@ -73,6 +73,7 @@ class TradeResponse(BaseModel):
     fee_usd: Decimal
     realized_pnl_usd: Decimal
     executed_at: datetime
+    decision_id: int | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -89,6 +90,7 @@ class TradeHistoryResponse(BaseModel):
     fee_usd: Decimal
     realized_pnl_usd: Decimal
     executed_at: datetime
+    decision_id: int | None = None
 
     model_config = ConfigDict(
         from_attributes=True,

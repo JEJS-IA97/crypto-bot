@@ -122,6 +122,17 @@ class Settings(BaseSettings):
     gemini_price_mtok_input: Decimal = Decimal("0")
     gemini_price_mtok_output: Decimal = Decimal("0")
 
+    # Risk engine v2 (spec 008, D-6): tope de exposicion total sobre el
+    # capital aportado (75% = 3 posiciones x share 25%) y umbral de
+    # correlacion positiva que dispara el resize (D-2/D-3).
+    risk_max_total_exposure_pct: Decimal = Decimal("75")
+    risk_correlation_threshold: Decimal = Decimal("0.7")
+
+    # Learning (spec 010, D-5): umbrales de validacion estadistica.
+    learning_min_cases: int = 30
+    learning_min_favorable_ratio: Decimal = Decimal("0.60")
+    learning_window_days: int = 90
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

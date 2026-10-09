@@ -62,4 +62,11 @@ describe("action hierarchy (spec 003, RF-2)", () => {
       expect(source).not.toContain("execute-button");
     }
   });
+
+  it("los marcadores de equity no añaden tonos de acción (009 RF-7)", () => {
+    const rule = css.match(/\.equity-marker\s*\{[^}]+\}/);
+    expect(rule).not.toBeNull();
+    expect(rule[0]).not.toContain("--color-buy");
+    expect(rule[0]).not.toContain("--color-sell");
+  });
 });

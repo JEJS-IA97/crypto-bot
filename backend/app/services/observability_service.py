@@ -26,6 +26,7 @@ KNOWN_SOURCES: tuple[str, ...] = (
     "fear_greed",
     "news_rss",
     "database",
+    "gemini",
 )
 
 #: Limite duro de ``payload_json`` en bytes (RF-3, RNF-2).
@@ -238,3 +239,355 @@ def _sources_by_state(db: Session) -> dict[str, int]:
     for source in sources_state(db):
         counts[source["state"]] = counts.get(source["state"], 0) + 1
     return counts
+
+
+#: Catálogo fijo de nodos del canvas (spec 009, RF-2; brief §13). Cada
+#: nodo declara su backing: fuentes de ``source_health`` y/o servicios
+#: emisores de eventos. Los ``stub`` no tienen componente implementado y
+#: siempre salen DISABLED con motivo explícito (D-6, sin humo).
+PIPELINE_CATALOG: tuple[dict[str, Any], ...] = (
+    {
+        "id": "exchange",
+        "label": "EXCHANGE",
+        "kind": "source",
+        "sources": ("binance_exchange_info",),
+        "services": (),
+    },
+    {
+        "id": "market_data",
+        "label": "MARKET DATA",
+        "kind": "source",
+        "sources": ("binance_klines", "binance_ticker"),
+        "services": (),
+    },
+    {
+        "id": "order_book",
+        "label": "ORDER BOOK",
+        "kind": "source",
+        "sources": ("binance_depth",),
+        "services": (),
+    },
+    {
+        "id": "trades",
+        "label": "TRADES",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "derivatives",
+        "label": "DERIVATIVES",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "funding",
+        "label": "FUNDING",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "open_interest",
+        "label": "OPEN INTEREST",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "options",
+        "label": "OPTIONS",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "dex",
+        "label": "DEX",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "news",
+        "label": "NEWS",
+        "kind": "source",
+        "sources": ("news_rss",),
+        "services": (),
+    },
+    {
+        "id": "macro",
+        "label": "MACRO",
+        "kind": "source",
+        "sources": ("fear_greed",),
+        "services": (),
+    },
+    {
+        "id": "sentiment",
+        "label": "SENTIMENT",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin fuente de datos",
+    },
+    {
+        "id": "feature_engine",
+        "label": "FEATURE ENGINE",
+        "kind": "pipeline",
+        "sources": (),
+        "services": ("bot_loop",),
+    },
+    {
+        "id": "regime_detector",
+        "label": "REGIME DETECTOR",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin implementar",
+    },
+    {
+        "id": "candidate_filter",
+        "label": "CANDIDATE FILTER",
+        "kind": "pipeline",
+        "sources": (),
+        "services": ("candidate_service",),
+    },
+    {
+        "id": "portfolio_analyzer",
+        "label": "PORTFOLIO ANALYZER",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "sin componente propio (integrado en candidate_service)",
+    },
+    {
+        "id": "ai_analyst",
+        "label": "AI ANALYST",
+        "kind": "source",
+        "sources": ("gemini",),
+        "services": ("ai_advisor",),
+    },
+    {
+        "id": "risk_engine",
+        "label": "RISK ENGINE",
+        "kind": "pipeline",
+        "sources": (),
+        "services": ("risk_engine",),
+    },
+    {
+        "id": "execution",
+        "label": "EXECUTION",
+        "kind": "pipeline",
+        "sources": (),
+        "services": ("bot_loop", "order_lifecycle"),
+        "event_prefix": "order.",
+    },
+    {
+        "id": "position",
+        "label": "POSITION",
+        "kind": "pipeline",
+        "sources": (),
+        "services": ("order_lifecycle",),
+    },
+    {
+        "id": "learning",
+        "label": "LEARNING",
+        "kind": "stub",
+        "sources": (),
+        "services": (),
+        "reason": "pendiente de spec 010",
+    },
+    {
+        "id": "memory",
+        "label": "MEMORY",
+        "kind": "source",
+        "sources": ("database",),
+        "services": (),
+    },
+)
+
+#: Peor estado primero a la derecha (para combinar aportaciones).
+_WORST_STATE_ORDER: tuple[str, ...] = (
+    "HEALTHY",
+    "STALE",
+    "DEGRADED",
+    "ERROR",
+    "DISABLED",
+)
+
+
+def _worst_state(states: list[str]) -> str:
+    return max(states, key=lambda state: _WORST_STATE_ORDER.index(state))
+
+
+def _source_contribution(
+    rows: dict[str, SourceHealth],
+    names: tuple[str, ...],
+    moment: datetime,
+) -> tuple[str, datetime | None] | None:
+    """Estado de las fuentes CON registro; ``None`` si ninguna tiene fila."""
+    states: list[str] = []
+    updates: list[datetime] = []
+    for name in names:
+        row = rows.get(name)
+        if row is None:
+            continue
+        state = row.state
+        if (
+            state == "HEALTHY"
+            and row.last_success_at is not None
+            and (moment - row.last_success_at).total_seconds()
+            > STALE_AFTER_SECONDS
+        ):
+            state = "STALE"
+        states.append(state)
+        if row.updated_at is not None:
+            updates.append(row.updated_at)
+    if not states:
+        return None
+    return _worst_state(states), (max(updates) if updates else None)
+
+
+def _latest_event(
+    db: Session,
+    services: tuple[str, ...],
+    *,
+    event_prefix: str | None = None,
+) -> SystemEvent | None:
+    latest: SystemEvent | None = None
+    for service in services:
+        query = select(SystemEvent).where(SystemEvent.service == service)
+        if event_prefix:
+            query = query.where(
+                SystemEvent.event.like(f"{event_prefix}%")
+            )
+        row = db.scalars(
+            query.order_by(
+                SystemEvent.created_at.desc(),
+                SystemEvent.id.desc(),
+            ).limit(1)
+        ).first()
+        if row is not None and (
+            latest is None
+            or (row.created_at, row.id) > (latest.created_at, latest.id)
+        ):
+            latest = row
+    return latest
+
+
+def _event_state(row: SystemEvent, moment: datetime) -> str:
+    if row.level == "ERROR":
+        return "ERROR"
+    if row.level == "WARNING":
+        return "DEGRADED"
+    if (moment - row.created_at).total_seconds() > STALE_AFTER_SECONDS:
+        return "STALE"
+    return "HEALTHY"
+
+
+def _serialize_last_event(row: SystemEvent) -> dict[str, Any]:
+    return {
+        "service": row.service,
+        "event": row.event,
+        "result": row.result,
+        "latency_ms": row.latency_ms,
+        "correlation_id": row.correlation_id,
+        "created_at": row.created_at,
+    }
+
+
+def _disabled_node(entry: dict[str, Any], reason: str) -> dict[str, Any]:
+    sources: tuple[str, ...] = entry["sources"]
+    services: tuple[str, ...] = entry["services"]
+    return {
+        "id": entry["id"],
+        "label": entry["label"],
+        "kind": entry["kind"],
+        "state": "DISABLED",
+        "backing": list(sources) + list(services),
+        "last_update": None,
+        "reason": reason,
+        "last_event": None,
+    }
+
+
+def pipeline_state(
+    db: Session,
+    *,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Estado real de cada nodo del canvas (spec 009, RF-2).
+
+    Los nodos ``stub`` salen siempre DISABLED con motivo; los ``source``
+    combinan sus fuentes con registro (peor estado) y los ``pipeline``
+    dependen de su último evento de servicio (ERROR/DEGRADED/STALE por
+    nivel y antigüedad). Determinista: misma BD ⇒ misma respuesta.
+    """
+    moment = now if now is not None else utc_now()
+    source_rows = {
+        row.name: row
+        for row in db.scalars(select(SourceHealth)).all()
+    }
+
+    nodes: list[dict[str, Any]] = []
+    for entry in PIPELINE_CATALOG:
+        if entry["kind"] == "stub":
+            nodes.append(_disabled_node(entry, entry["reason"]))
+            continue
+
+        sources: tuple[str, ...] = entry["sources"]
+        services: tuple[str, ...] = entry["services"]
+        prefix: str | None = entry.get("event_prefix")
+
+        contributions: list[tuple[str, datetime | None]] = []
+        last_event: dict[str, Any] | None = None
+
+        if sources:
+            source_part = _source_contribution(
+                source_rows, sources, moment
+            )
+            if source_part is not None:
+                contributions.append(source_part)
+
+        if services:
+            latest = _latest_event(db, services, event_prefix=prefix)
+            if latest is not None:
+                contributions.append(
+                    (_event_state(latest, moment), latest.created_at)
+                )
+                last_event = _serialize_last_event(latest)
+
+        if not contributions:
+            reason = (
+                "sin registro de salud" if sources else "sin actividad"
+            )
+            nodes.append(_disabled_node(entry, reason))
+            continue
+
+        updates = [
+            updated
+            for _, updated in contributions
+            if updated is not None
+        ]
+        nodes.append(
+            {
+                "id": entry["id"],
+                "label": entry["label"],
+                "kind": entry["kind"],
+                "state": _worst_state(
+                    [state for state, _ in contributions]
+                ),
+                "backing": list(sources) + list(services),
+                "last_update": (max(updates) if updates else None),
+                "reason": "",
+                "last_event": last_event,
+            }
+        )
+    return nodes

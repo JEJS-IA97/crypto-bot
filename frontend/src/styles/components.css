@@ -541,6 +541,20 @@
     fill: var(--positive);
 }
 
+.equity-marker {
+    fill: var(--orange);
+    stroke: var(--text-primary);
+    stroke-width: 1.5;
+    cursor: pointer;
+}
+
+.equity-marker:hover,
+.equity-marker:focus-visible {
+    fill: var(--accent);
+    outline: none;
+    stroke: var(--accent);
+}
+
 .equity-axis-label {
     fill: var(--text-secondary);
     font-size: 11px;

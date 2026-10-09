@@ -2,6 +2,10 @@ import { useState } from "react";
 
 import TradingPanel from "../components/TradingPanel";
 import MetricsPanel from "../components/MetricsPanel";
+import HeaderPanel from "../components/HeaderPanel";
+import PipelineCanvas from "../components/PipelineCanvas";
+import EventStream from "../components/EventStream";
+import DecisionInspector from "../components/DecisionInspector";
 import EquityChart from "../components/EquityChart";
 import AccountSummary from "../components/AccountSummary";
 import OpenPositions from "../components/OpenPositions";
@@ -26,6 +30,8 @@ function Simulation() {
     } = useSimulationData();
 
     const [tab, setTab] = useState("operar");
+    const [selectedDecisionId, setSelectedDecisionId] =
+        useState(null);
 
     if (loading) {
         return (
@@ -90,6 +96,8 @@ function Simulation() {
                     balance={accountBalance}
                 />
 
+                <HeaderPanel />
+
                 <SectionTabs value={tab} onChange={setTab} />
 
                 <div
@@ -120,6 +128,10 @@ function Simulation() {
                                 currentTotal={
                                     accountBalance.total_balance_usd
                                 }
+                                onSelectDecision={(decisionId) => {
+                                    setSelectedDecisionId(decisionId);
+                                    setTab("consola");
+                                }}
                             />
                         </section>
 
@@ -142,6 +154,24 @@ function Simulation() {
                     tabIndex={0}
                 >
                     <MetricsPanel />
+                </div>
+
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-consola"
+                    aria-labelledby="tab-consola"
+                    hidden={tab !== "consola"}
+                    tabIndex={0}
+                >
+                    <div className="history-stack">
+                        <PipelineCanvas />
+                        <EventStream />
+                        <DecisionInspector
+                            selectedDecisionId={selectedDecisionId}
+                            onSelect={setSelectedDecisionId}
+                        />
+                    </div>
                 </div>
 
                 <div

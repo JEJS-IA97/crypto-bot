@@ -1,7 +1,7 @@
 # Spec 007 — Analista IA (Gemini, recomendación pura)
 
-Estado: borrador en revisión (pendiente de aprobación del usuario).
-Relación: complementa 001 (loop intacto, RF-9), 005 (eventos + `source_health`)
+Estado: implementada (T1-T7 completadas; aprobada por el propietario el
+2026-10-07). Relación: complementa 001 (loop intacto, RF-9), 005 (eventos + `source_health`)
 y 006 (contexto y candidatos como insumo). Fuente: brief §6, §7, §19, §24-§27
 y §Fase 5; `docs/fase0-diagnostico-brief-ia.md` §7/§10/§11/§19; decisiones
 del propietario del 2026-10-07 (D-B4 cerrada).
@@ -148,9 +148,24 @@ de **0 USD** — solo tier gratuito.
 - Pago a Google (tier gratuito únicamente, D-2) y shorts (D-B1 → 012).
 - Reutilización del LLM dentro del loop de decisiones → prohibida (D-1).
 
+## Requisitos → tests
+
+| RF | Tests |
+|---|---|
+| RF-1 | `test_ai_advisor_service.ContextTests` (5) |
+| RF-2 | `test_ai_schema.SchemaTests` (8) |
+| RF-3 | `test_ai_advisor_service.ConfigStateTests` (6) + `test_gemini_client.GeminiClientTests.test_quota_429_is_not_retried` |
+| RF-4 | `test_gemini_client.GeminiClientTests` (reintentos/429/401) + `test_ai_advisor_service.CacheBreakerTests` (5) |
+| RF-5 | `test_ai_isolation.IsolationTests` (4) |
+| RF-6 | `test_ai_advisor_service.SuccessPersistenceTests` (4) + evento/fuente en el test de éxito |
+| RF-7 | `test_ai_api.AnalyzeEndpointTests` (7) + `RecommendationsEndpointTests` (3) |
+| RF-8 | `test_ai_daily.DailyPassTests` (7) |
+| RF-9 | suite completa en verde (001-006 sin tocar aserciones) + `test_config.ConfigTests` (2 de 007) |
+
 ## Criterios de finalización
 
-1. RF-1…RF-9 con test rojo→verde y mapeados en `plan.md`.
-2. Suite backend completa en verde + `ruff check` limpio.
-3. `.env.example` y `backend/README.md` actualizados (vars de Gemini).
+1. RF-1…RF-9 con test rojo→verde y mapeados en `plan.md`. ✅
+2. Suite backend completa en verde + `ruff check` limpio. ✅
+3. `.env.example` y `backend/README.md` actualizados (vars de Gemini). ✅
 4. Aprobación explícita del usuario antes del paso a la siguiente spec.
+   (Pendiente: reporte de T7 entregado, esperando "si".)

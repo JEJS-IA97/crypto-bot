@@ -15,7 +15,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import SystemEvent
-from app.services.observability_service import aggregates_24h, sources_state
+from app.services.observability_service import (
+    aggregates_24h,
+    pipeline_state,
+    sources_state,
+)
 
 router = APIRouter(
     prefix="/api/bot",
@@ -92,3 +96,9 @@ def list_sources(db: Session = Depends(get_db)) -> dict:
 def observability_metrics(db: Session = Depends(get_db)) -> dict:
     """RF-7: agregados técnicos de las últimas 24 h."""
     return aggregates_24h(db)
+
+
+@router.get("/pipeline")
+def pipeline_nodes(db: Session = Depends(get_db)) -> dict:
+    """Spec 009 RF-2: canvas de nodos del pipeline (catálogo fijo)."""
+    return {"nodes": pipeline_state(db)}

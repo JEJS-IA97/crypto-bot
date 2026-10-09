@@ -6,10 +6,21 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import bot, candidates, health, observability, signals, simulation
+from app.api.routes import (
+    ai,
+    bot,
+    candidates,
+    decisions,
+    health,
+    observability,
+    risk,
+    signals,
+    simulation,
+)
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.services import bot_loop
+from app.services.ai_daily_analysis import daily_loop
 from app.services.keepalive_service import keepalive_loop, should_keepalive
 from app.services.observability_service import purge_old_events
 from app.services.phase_service import get_phase
@@ -74,10 +85,16 @@ async def lifespan(app: FastAPI):
     stop_event = asyncio.Event()
     bot_task = None
     keepalive_task = None
+    ai_task = None
 
     if settings.simulation_bot_enabled:
         bot_task = asyncio.create_task(
             bot_loop.run(stop_event=stop_event)
+        )
+
+    if settings.gemini_auto_analysis and settings.gemini_api_key.strip():
+        ai_task = asyncio.create_task(
+            daily_loop(stop_event=stop_event)
         )
 
     if should_keepalive(settings.keepalive_url):
@@ -96,6 +113,8 @@ async def lifespan(app: FastAPI):
         await bot_task
     if keepalive_task is not None:
         await keepalive_task
+    if ai_task is not None:
+        await ai_task
 
     try:
         with SessionLocal() as db:
@@ -132,6 +151,10 @@ app.include_router(
 )
 
 app.include_router(
+    risk.router
+)
+
+app.include_router(
     candidates.router
 )
 
@@ -145,4 +168,12 @@ app.include_router(
 
 app.include_router(
     simulation.router
+)
+
+app.include_router(
+    ai.router
+)
+
+app.include_router(
+    decisions.router
 )

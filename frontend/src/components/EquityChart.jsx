@@ -35,6 +35,7 @@ function EquityChart({
     currentTotal,
     loading = false,
     error = "",
+    onSelectDecision = null,
 }) {
     if (loading) {
         return (
@@ -81,6 +82,23 @@ function EquityChart({
     const gridRows = [0, 0.5, 1];
     const lastPoint = series[series.length - 1];
 
+    // RF-7: un marcador por cada operación cerrada enlazada a una
+    // decisión (misma posición que su punto en la serie).
+    const sortedTrades = [...trades].sort(
+        (left, right) =>
+            new Date(left.executed_at) - new Date(right.executed_at)
+    );
+    const markers = sortedTrades
+        .map((trade, index) => ({
+            trade,
+            seriesIndex: index + 1,
+        }))
+        .filter(
+            ({ trade }) =>
+                trade.decision_id !== null &&
+                trade.decision_id !== undefined
+        );
+
     return (
         <div className="equity-chart">
             <svg
@@ -126,6 +144,35 @@ function EquityChart({
                         cx={x(index)}
                         cy={y(point.value)}
                         r={index === series.length - 1 ? 5 : 3}
+                    />
+                ))}
+
+                {markers.map(({ trade, seriesIndex }) => (
+                    <circle
+                        key={`marker-${trade.id}`}
+                        className="equity-marker"
+                        data-decision-id={trade.decision_id}
+                        cx={x(seriesIndex)}
+                        cy={y(series[seriesIndex].value)}
+                        r={7}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Operación de la decisión ${trade.decision_id}`}
+                        onClick={() => {
+                            if (onSelectDecision) {
+                                onSelectDecision(trade.decision_id);
+                            }
+                        }}
+                        onKeyDown={(event) => {
+                            if (
+                                onSelectDecision &&
+                                (event.key === "Enter" ||
+                                    event.key === " ")
+                            ) {
+                                event.preventDefault();
+                                onSelectDecision(trade.decision_id);
+                            }
+                        }}
                     />
                 ))}
 

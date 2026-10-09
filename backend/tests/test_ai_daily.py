@@ -60,9 +60,10 @@ VALID_RESPONSE = {
 
 
 def _candles(count: int) -> list[Candle]:
+    start = BASE - timedelta(minutes=15 * (count - 1))
     return [
         Candle(
-            open_time=BASE + timedelta(minutes=15 * index),
+            open_time=start + timedelta(minutes=15 * index),
             open=Decimal(100 + index),
             high=Decimal(101 + index),
             low=Decimal(99 + index),
@@ -248,7 +249,8 @@ class DailyPassTests(DailyPassBase):
         )
         self.db.commit()
 
-        analyzed = self._run()
+        with patch.object(settings, "gemini_auto_analysis_limit", 1):
+            analyzed = self._run()
 
         self.assertEqual(analyzed, 1)
         self.assertEqual(self.gemini_instance.generate.call_count, 1)

@@ -190,6 +190,33 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(settings.gemini_daily_budget_usd, Decimal("1.5"))
         self.assertEqual(settings.gemini_price_mtok_input, Decimal("0.5"))
 
+    def test_risk_engine_settings_defaults(self) -> None:
+        """Spec 008 RF-4/RF-5/D-6: tope de exposición 75%, umbral 0.7."""
+        settings = _settings_without_env()
+        self.assertEqual(
+            settings.risk_max_total_exposure_pct, Decimal("75")
+        )
+        self.assertEqual(
+            settings.risk_correlation_threshold, Decimal("0.7")
+        )
+
+    def test_risk_engine_settings_from_env(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "RISK_MAX_TOTAL_EXPOSURE_PCT": "50",
+                "RISK_CORRELATION_THRESHOLD": "0.9",
+            },
+            clear=True,
+        ):
+            settings = Settings(_env_file=None)
+        self.assertEqual(
+            settings.risk_max_total_exposure_pct, Decimal("50")
+        )
+        self.assertEqual(
+            settings.risk_correlation_threshold, Decimal("0.9")
+        )
+
 
 class ForeignKeyTests(unittest.TestCase):
     def test_foreign_keys_on(self) -> None:

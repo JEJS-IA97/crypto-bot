@@ -61,9 +61,10 @@ VALID_RESPONSE = {
 
 
 def _candles(count: int) -> list[Candle]:
+    start = BASE - timedelta(minutes=15 * (count - 1))
     return [
         Candle(
-            open_time=BASE + timedelta(minutes=15 * index),
+            open_time=start + timedelta(minutes=15 * index),
             open=Decimal(100 + index),
             high=Decimal(101 + index),
             low=Decimal(99 + index),
@@ -318,15 +319,13 @@ class SuccessPersistenceTests(AdvisorBase):
         payload = json.loads(events[0].payload_json)
         self.assertEqual(payload["state"], "OK")
 
+        from app.models import SourceHealth
         from app.services.observability_service import KNOWN_SOURCES
-        from app.services.observability_service import sources_state
 
         self.assertIn("gemini", KNOWN_SOURCES)
-        health = {
-            item["name"]: item["state"]
-            for item in sources_state(self.db)
-        }
-        self.assertEqual(health.get("gemini"), "HEALTHY")
+        health = self.db.get(SourceHealth, "gemini")
+        self.assertIsNotNone(health)
+        self.assertEqual(health.state, "HEALTHY")
 
     def test_client_failure_persists_error_and_marks_source(self) -> None:
         from app.services.gemini_client import GeminiUnavailable
@@ -348,13 +347,11 @@ class SuccessPersistenceTests(AdvisorBase):
         self.assertEqual(events[0].level, "ERROR")
         self.assertEqual(events[0].result, "failed")
 
-        from app.services.observability_service import sources_state
+        from app.models import SourceHealth
 
-        health = {
-            item["name"]: item["state"]
-            for item in sources_state(self.db)
-        }
-        self.assertEqual(health.get("gemini"), "ERROR")
+        health = self.db.get(SourceHealth, "gemini")
+        self.assertIsNotNone(health)
+        self.assertEqual(health.state, "ERROR")
 
     def test_google_quota_maps_to_quota_state(self) -> None:
         from app.services.gemini_client import GeminiQuotaExceeded
@@ -374,7 +371,10 @@ class SuccessPersistenceTests(AdvisorBase):
         self.assertEqual(events[0].level, "WARNING")
 
     def test_non_json_answer_maps_to_invalid_response(self) -> None:
-        outcome = self._analyze(text="Comprar BTC ya.")
+        self.gemini_instance.generate.return_value = _reply(
+            text="Comprar BTC ya."
+        )
+        outcome = self._analyze()
 
         self.assertEqual(outcome.state, "INVALID_RESPONSE")
         rows = self._ai_rows()

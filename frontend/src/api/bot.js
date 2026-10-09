@@ -17,6 +17,25 @@ export const getDecisions = async (params = {}) => {
     return response.data;
 };
 
+export const getAiStats = async () => {
+    const response = await api.get("/api/bot/ai/stats");
+    return response.data;
+};
+
+export const getDecisionWhy = async (decisionId) => {
+    const response = await api.get(
+        `/api/bot/decisions/${decisionId}/why`
+    );
+    return response.data;
+};
+
+export const getDecisionReplay = async (decisionId) => {
+    const response = await api.get(
+        `/api/bot/decisions/${decisionId}/replay`
+    );
+    return response.data;
+};
+
 export const startBot = async () => {
     const response = await api.post("/api/bot/start");
     return response.data;

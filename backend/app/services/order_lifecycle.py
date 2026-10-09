@@ -29,10 +29,15 @@ from app.models import (
     PositionStatus,
     PositionV2,
     SignalDecision,
+    SimulationTrade,
     TradeIncident,
     utc_now,
 )
-from app.services.exchange_executor import ExchangeExecutor, OrderRequest
+from app.services.exchange_executor import (
+    ExchangeExecutor,
+    ExchangeOrderResult,
+    OrderRequest,
+)
 from app.services.simulation_service import QUANTITY_PLACES, money
 from app.services.structured_log import emit
 
@@ -50,6 +55,32 @@ _EXIT_STATUS = {
     "tp": PositionStatus.TAKE_PROFIT,
     "manual": PositionStatus.CLOSED,
 }
+
+
+def link_fill_to_decision(
+    db: Session,
+    fill: ExchangeOrderResult,
+    decision_id: int | None,
+) -> SimulationTrade | None:
+    """RF-7 (009): enlaza el trade de equity con su decisión.
+
+    Los fills del simulador traen ``simulation_trade_id`` en ``raw``;
+    los fills manuales o de otros adaptadores quedan sin enlazar
+    (``decision_id`` nulo en el historial de equity).
+    """
+    raw = fill.raw if isinstance(fill.raw, dict) else {}
+    trade_id = raw.get("simulation_trade_id")
+    if trade_id is None:
+        return None
+    try:
+        trade = db.get(SimulationTrade, int(trade_id))
+    except (TypeError, ValueError):
+        return None
+    if trade is None:
+        return None
+    trade.decision_id = decision_id
+    db.flush()
+    return trade
 
 
 def register_incident(
@@ -183,6 +214,8 @@ def protection_after_fill(
                 decision_id=decision.id,
                 position_id=position.id,
             )
+        # RF-7 (009): el trade de equity queda enlazado a la decisión.
+        link_fill_to_decision(db, fill, decision.id)
     if decision.filled_at is None:
         decision.filled_at = utc_now()
 
@@ -296,6 +329,8 @@ def close_position(
         if fill.average_price is not None
         else exit_price
     )
+    # RF-7 (009): la salida también queda enlazada a la decisión.
+    link_fill_to_decision(db, fill, decision.id)
     sold = (
         fill.executed_quantity
         if fill.executed_quantity > 0
