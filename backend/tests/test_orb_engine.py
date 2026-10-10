@@ -5,7 +5,7 @@ de rompimiento 9:30–10:00 AM NY. Módulo puro: sin red, sin BD, sin framework.
 """
 
 import unittest
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -78,6 +78,28 @@ def _session(
     return _build(day, list(RANGE_SPECS) + [breakout_spec] + list(extra_specs))
 
 
+def _trend_hourly(as_of: datetime, closes: list[str] | None = None) -> list[Candle]:
+    """Velas 1h horarias que cierran antes de ``as_of`` y dejan pasar el filtro."""
+    values = closes if closes is not None else ["100"] * 50
+    candles = []
+    for offset, close in enumerate(reversed(values)):
+        open_time = as_of.replace(minute=0, second=0, microsecond=0) - timedelta(
+            hours=offset + 1
+        )
+        value = Decimal(close)
+        candles.append(
+            Candle(
+                open_time=open_time,
+                open=value,
+                high=value,
+                low=value,
+                close=value,
+                volume=Decimal("100"),
+            )
+        )
+    return candles
+
+
 class OrbConfigTests(unittest.TestCase):
     def test_invalid_timezone_rejected(self) -> None:
         with self.assertRaises(ValueError):
@@ -103,8 +125,9 @@ class OrbConfigTests(unittest.TestCase):
 
 class OrbBreakoutTests(unittest.TestCase):
     def test_buy_on_breakout_above_range_high(self) -> None:
+        now = _now_ny(WINTER_DAY, 9, 32)
         result = evaluate_orb(
-            _session(WINTER_DAY), _now_ny(WINTER_DAY, 9, 32)
+            _session(WINTER_DAY), now, hourly_candles=_trend_hourly(now)
         )
         self.assertIsInstance(result, SignalResult)
         self.assertEqual(result.action, SignalAction.BUY)
@@ -134,13 +157,15 @@ class OrbBreakoutTests(unittest.TestCase):
 
     def test_breakout_on_later_candle_inside_window(self) -> None:
         # La vela de las 9:30 no rompió; la de las 9:35 sí.
+        now = _now_ny(WINTER_DAY, 9, 37)
         result = evaluate_orb(
             _session(
                 WINTER_DAY,
                 breakout_spec=NO_BREAKOUT_SPEC,
                 extra_specs=[(9, 35, "102", "108", "101", "106")],
             ),
-            _now_ny(WINTER_DAY, 9, 37),
+            now,
+            hourly_candles=_trend_hourly(now),
         )
         self.assertEqual(result.action, SignalAction.BUY)
         self.assertEqual(result.reason, "orb_breakout_up")
@@ -170,6 +195,75 @@ class OrbBreakoutTests(unittest.TestCase):
         result = evaluate_orb(candles, _now_ny(WINTER_DAY, 9, 32))
         self.assertEqual(result.action, SignalAction.HOLD)
         self.assertEqual(result.reason, "breakout_candle_missing")
+
+
+class OrbTrendFilterTests(unittest.TestCase):
+    """Spec 012 RF-1: el BUY exige breakout.close >= EMA(50) de 1h."""
+
+    @staticmethod
+    def _hourly(closes: list[str], as_of: datetime) -> list[Candle]:
+        """Velas 1h en punto, cerradas antes de ``as_of`` (9:00, 8:00, ...)."""
+        candles = []
+        for offset, close in enumerate(reversed(closes)):
+            open_time = as_of.replace(minute=0, second=0, microsecond=0) - timedelta(
+                hours=offset + 1
+            )
+            value = Decimal(close)
+            candles.append(
+                Candle(
+                    open_time=open_time,
+                    open=value,
+                    high=value,
+                    low=value,
+                    close=value,
+                    volume=Decimal("100"),
+                )
+            )
+        return candles
+
+    @staticmethod
+    def _session_with_trend(
+        day: date, trend_closes: list[str]
+    ) -> tuple[list[Candle], datetime, list[Candle]]:
+        now = _now_ny(day, 9, 32)
+        session = _session(day)
+        hourly = OrbTrendFilterTests._hourly(trend_closes, as_of=now)
+        return session, now, hourly
+
+    def test_buy_when_close_at_or_above_ema(self) -> None:
+        session, now, hourly = self._session_with_trend(
+            WINTER_DAY, ["100"] * 49 + ["100"]
+        )
+        result = evaluate_orb(session, now, hourly_candles=hourly)
+        self.assertEqual(result.action, SignalAction.BUY)
+        self.assertEqual(result.reason, "orb_breakout_up")
+        self.assertEqual(result.metrics["trend_filter_ema50"], "100")
+
+    def test_hold_when_close_below_ema(self) -> None:
+        # EMA ~106.04 (49 velas en 106 + una en 108); breakout cierra en 106.
+        session, now, hourly = self._session_with_trend(
+            WINTER_DAY, ["106"] * 49 + ["108"]
+        )
+        result = evaluate_orb(session, now, hourly_candles=hourly)
+        self.assertEqual(result.action, SignalAction.HOLD)
+        self.assertEqual(result.reason, "trend_filter_reject")
+        self.assertEqual(result.metrics["breakout_price"], "106")
+
+    def test_fail_closed_without_hourly_data(self) -> None:
+        result = evaluate_orb(
+            _session(WINTER_DAY), _now_ny(WINTER_DAY, 9, 32)
+        )
+        self.assertEqual(result.action, SignalAction.HOLD)
+        self.assertEqual(result.reason, "trend_filter_reject")
+
+    def test_fail_closed_with_fewer_than_50_closed_hours(self) -> None:
+        now = _now_ny(WINTER_DAY, 9, 32)
+        hourly = self._hourly(["100"] * 49, as_of=now)
+        result = evaluate_orb(
+            _session(WINTER_DAY), now, hourly_candles=hourly
+        )
+        self.assertEqual(result.action, SignalAction.HOLD)
+        self.assertEqual(result.reason, "trend_filter_reject")
 
 
 class OrbWindowTests(unittest.TestCase):
@@ -216,11 +310,15 @@ class OrbDstTests(unittest.TestCase):
     def test_same_logic_in_summer_time(self) -> None:
         # EDT (UTC-4): 9:32 AM NY = 13:32 UTC, una hora que en invierno
         # sería 14:32 UTC. Misma señal con la misma estructura de velas.
+        winter_now = _now_ny(WINTER_DAY, 9, 32)
+        summer_now = _now_ny(SUMMER_DAY, 9, 32)
         winter = evaluate_orb(
-            _session(WINTER_DAY), _now_ny(WINTER_DAY, 9, 32)
+            _session(WINTER_DAY), winter_now,
+            hourly_candles=_trend_hourly(winter_now),
         )
         summer = evaluate_orb(
-            _session(SUMMER_DAY), _now_ny(SUMMER_DAY, 9, 32)
+            _session(SUMMER_DAY), summer_now,
+            hourly_candles=_trend_hourly(summer_now),
         )
         self.assertEqual(winter.action, SignalAction.BUY)
         self.assertEqual(summer.action, SignalAction.BUY)

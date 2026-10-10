@@ -20,6 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from app.domain.signal_engine import Candle, SignalAction, SignalResult
+from app.domain.trend_filter import trend_allows
 
 NEW_YORK_TIMEZONE = "America/New_York"
 CANDLE_MINUTES = 5
@@ -162,10 +163,14 @@ def evaluate_orb(
     candles: list[Candle],
     now: datetime,
     config: OrbConfig | None = None,
+    hourly_candles: list[Candle] | None = None,
 ) -> SignalResult:
     """Return BUY/HOLD for the ORB window at ``now``, deterministically (RF-7).
 
     ``now`` is a naive or aware datetime; candles carry naive UTC open times.
+    ``hourly_candles`` (spec 012, RF-1) gates the BUY on the 1h trend: a BUY
+    requires ``breakout.close`` >= EMA(50) of the hourly candles closed before
+    ``now``. Fail-closed: missing/insufficient hourly data holds.
     """
     active = config if config is not None else OrbConfig()
     tz = ZoneInfo(active.timezone_name)
@@ -222,6 +227,16 @@ def evaluate_orb(
     metrics["breakout_price"] = str(breakout.close)
 
     if breakout.close > range_high:
+        allowed, trend_metrics = trend_allows(
+            close_price=breakout.close,
+            hourly_candles=hourly_candles,
+            as_of=_as_utc_naive(now),
+        )
+        metrics.update(trend_metrics)
+        if not allowed:
+            return SignalResult(
+                SignalAction.HOLD, "trend_filter_reject", metrics
+            )
         return SignalResult(SignalAction.BUY, "orb_breakout_up", metrics)
     if breakout.close < range_low:
         return SignalResult(SignalAction.HOLD, "breakdown_no_short", metrics)

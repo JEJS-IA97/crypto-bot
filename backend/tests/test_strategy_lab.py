@@ -426,6 +426,32 @@ def _orb_candle(
     )
 
 
+def _hourly_candles(
+    closes: tuple[str, ...] = ("100",),
+    end: datetime | None = None,
+) -> tuple[Candle, ...]:
+    """Velas 1h horarias alineadas a la hora que dejan pasar el filtro.
+
+    La EMA(50) de las velas cerradas queda por debajo del cierre de
+    rompimiento (100), así que la compuerta de tendencia permite entrar.
+    """
+    anchor = end if end is not None else datetime(2026, 10, 5, 13, 0)
+    candles: list[Candle] = []
+    for offset, close in enumerate(reversed(closes)):
+        value = Decimal(close)
+        candles.append(
+            Candle(
+                open_time=anchor - timedelta(hours=offset + 1),
+                open=value,
+                high=value,
+                low=value,
+                close=value,
+                volume=Decimal("100"),
+            )
+        )
+    return tuple(candles)
+
+
 def _range_candles(day: date, skip_minute: int | None = None) -> list[Candle]:
     """Rango 9:00–9:25 AM NY: alto 99.5, bajo 98.5."""
     candles = []
@@ -502,7 +528,9 @@ class OrbKlineBacktestTest(unittest.TestCase):
         result = backtest_orb(
             series,
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
         )
 

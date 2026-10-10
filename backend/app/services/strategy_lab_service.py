@@ -19,6 +19,7 @@ from app.domain.signal_engine import (
     StrategyConfig as SignalConfig,
     evaluate,
 )
+from app.domain.trend_filter import trend_allows
 from app.services.execution_price_service import (
     calculate_buy_execution,
     calculate_sell_execution,
@@ -693,6 +694,9 @@ class OrbBacktestConfig:
     stop_loss_pct: Decimal = Decimal("2.0")
     take_profit_pct: Decimal = Decimal("2.0")
     orb: OrbConfig = OrbConfig()
+    # Spec 012 RF-1: velas 1h para el filtro de tendencia (None ⇒ fail-closed,
+    # igual que en vivo: sin datos de 1h no hay entrada).
+    hourly_candles: tuple[Candle, ...] = ()
 
     def __post_init__(self) -> None:
         for name in (
@@ -717,6 +721,10 @@ class OrbBacktestConfig:
             raise ValueError("take_profit_pct must be > 0")
         if not isinstance(self.orb, OrbConfig):
             raise TypeError("orb must be an OrbConfig")
+        if not isinstance(self.hourly_candles, tuple):
+            raise TypeError("hourly_candles must be a tuple of Candle")
+        if any(not isinstance(c, Candle) for c in self.hourly_candles):
+            raise TypeError("hourly_candles must contain only Candle")
 
 
 def backtest_orb(
@@ -733,6 +741,11 @@ def backtest_orb(
     el cierre de la última vela de 9:55 AM NY. Sólo se usan velas abiertas
     dentro de la ventana: sin look-ahead. Costes: comisión ``fee_rate`` por
     lado y deslizamiento ``slippage_pct`` configurable en entrada y salida.
+
+    Filtro de tendencia (spec 012, RF-1): una entrada exige además que el
+    cierre de la vela de rompimiento sea >= EMA(50) de las velas 1h de
+    ``config.hourly_candles`` cerradas antes de esa vela. Sin datos
+    suficientes de 1h no hay entrada (fail-closed).
     """
     if not candles:
         raise ValueError("No klines supplied for backtest.")
@@ -797,6 +810,14 @@ def backtest_orb(
         ny_day = ny_datetime(candle.open_time, active.orb).date()
         by_day.setdefault(ny_day, []).append(candle)
 
+    def _trend_ok(close: Decimal, as_of: datetime) -> bool:
+        """RF-1 (spec 012): compuerta de tendencia 1h. Fail-closed."""
+        return trend_allows(
+            close_price=close,
+            hourly_candles=list(active.hourly_candles),
+            as_of=as_of.replace(tzinfo=None),
+        )[0]
+
     for ny_day in sorted(by_day):
         range_open, range_close, window_close = session_bounds(
             ny_day, active.orb
@@ -834,7 +855,11 @@ def backtest_orb(
             is_last_window_candle = index == len(session) - 1
 
             if open_position is None:
-                if not entered_today and candle.close > range_high:
+                if (
+                    not entered_today
+                    and candle.close > range_high
+                    and _trend_ok(candle.close, candle.open_time)
+                ):
                     entry_fill = candle.close * (Decimal("1") + slip)
                     quantity = capital / entry_fill
                     entry_cost = quantity * entry_fill
