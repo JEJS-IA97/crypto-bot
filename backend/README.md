@@ -31,6 +31,7 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
 | Descargar velas 15m (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbol BTCUSDT --interval 15m` |
 | Descargar velas 5m para ORB (RF-15) | `.\.venv\Scripts\python.exe collect_klines.py --symbols BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT --interval 5m --data-dir data\klines5m` |
 | Backtest ORB + comparativa con EMA/RSI | `.\.venv\Scripts\python.exe train_strategy.py --strategy both --klines-dir data\klines --klines-orb-dir data\klines5m --no-write-plan` |
+| Walk-forward ORB (spec 011, gate Fase B) | `.\.venv\Scripts\python.exe run_walk_forward.py [--symbols BTCUSDT,...] [--train-days 180] [--test-days 30] [--step-days 30]` |
 | Testnet (manual, T20) | `.\.venv\Scripts\python.exe check_binance_testnet.py` |
 | Informe diario manual | `.\.venv\Scripts\python.exe send_daily_report.py [--date YYYY-MM-DD]` |
 
@@ -237,6 +238,28 @@ mágico" y sin auto-modificación del bot (RF-5).
 - Tests: `test_learning_hypotheses`, `test_learning_evaluate`,
   `test_learning_knowledge`, `test_learning_api`,
   `test_learning_strategy_versions`, `test_learning_isolation`.
+
+## Evidencia walk-forward (spec 011)
+
+Gate de la Fase B: ORB con veredicto **fuera de muestras** antes de mirar
+dinero real. Corrida offline (`run_walk_forward.py`), sin BD, sin API y sin red.
+
+- **Dataset**: `data/klines/<SYMBOL>.jsonl` a **5m** del recolector
+  `collect_klines.py` (fail-closed si falta algo); símbolos por defecto los
+  4 pares ORB (`orb_symbols` de `config.py`).
+- **Folds rodantes** (D-3): train 180 d / test 30 d / paso 30 d
+  (configurables); dentro de cada train, el último 15 % valida al grid
+  SL×TP (constitución #9); candidatos con pérdida > 1 USD descartados.
+- **Costes**: comisión 0.10 % + slippage 0.05 % por lado (configurables),
+  en `Decimal`. Métricas por fold y agregadas: retorno, drawdown, Sharpe
+  (poblacional ×√252), profit factor y expectancy.
+- **Gate (D-7)**: `PASA` ⇔ suma de PnL neto de los tests > 0 tras costes
+  (ventanas aisladas de 20 USD); buy & hold solo informativo.
+- **Salida**: `backend/reports/walk-forward-<timestamp>.md`. Exit 0 =
+  corrida completada (PASA o NO PASA); exit 1 = error de entrada.
+- Servicio puro: `app/services/walk_forward_service.py`. Tests:
+  `test_walk_forward`, `test_wf_metrics`, `test_walk_forward_cli`,
+  `test_walk_forward_isolation`.
 
 ## Fases y seguridad
 

@@ -271,7 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         print(
             f"{symbol}: {stats['written']} velas nuevas "
-            f"({stats['requests']} peticiones) → {stats['path']}"
+            f"({stats['requests']} peticiones) -> {stats['path']}"
         )
     return 1 if failed else 0
 

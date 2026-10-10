@@ -438,6 +438,7 @@ class KlineBacktestResult:
     max_drawdown_pct: Decimal
     win_rate_pct: Decimal
     fees_usd: Decimal
+    trade_list: tuple[KlineTrade, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -451,6 +452,18 @@ class KlineBacktestResult:
                     )
                     for sub_key, sub_value in value.items()
                 }
+            elif key == "trade_list":
+                result[key] = [
+                    {
+                        sub_key: (
+                            str(sub_value)
+                            if isinstance(sub_value, Decimal)
+                            else sub_value
+                        )
+                        for sub_key, sub_value in trade.items()
+                    }
+                    for trade in value
+                ]
             elif isinstance(value, Decimal):
                 result[key] = str(value)
             else:
@@ -873,6 +886,7 @@ def backtest_orb(
             else Decimal("0")
         ).quantize(_PCT_QUANTUM),
         fees_usd=fees.quantize(_MONEY_QUANTUM),
+        trade_list=tuple(trades),
     )
 
 

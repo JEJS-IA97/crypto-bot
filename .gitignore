@@ -49,3 +49,12 @@ Thumbs.db
 
 # Guía local anti-vibecode (no se versiona)
 ANTI_VIBECODE_*
+
+# Reportes walk-forward (spec 011)
+backend/reports/
+
+# Datos locales de recolección (spec 011 / Fase A)
+backend/data/klines/
+backend/data/market_snapshots_6h.jsonl
+backend/data/*.log
+backend/data/*.cmd
