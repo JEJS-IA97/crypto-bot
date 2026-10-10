@@ -42,7 +42,7 @@ class Settings(BaseSettings):
         "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,DOGEUSDT,ADAUSDT,LINKUSDT"
     )
     # Pares con señal técnica ORB (spec 001, D-12); el resto solo externas.
-    orb_symbols: str = "BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT"
+    orb_symbols: str = "BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,ADAUSDT"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")

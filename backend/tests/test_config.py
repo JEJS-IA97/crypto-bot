@@ -43,13 +43,14 @@ class ConfigTests(unittest.TestCase):
         self.assertIn("LINKUSDT", symbols)
 
     def test_orb_symbols_default(self) -> None:
-        """D-12: los 4 pares ORB; el resto solo opera con señales externas."""
+        """D-12: los pares ORB; el resto solo opera con señales externas."""
         settings = _settings_without_env()
         symbols = [
             s.strip() for s in settings.orb_symbols.split(",") if s.strip()
         ]
         self.assertEqual(
-            symbols, ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]
+            symbols,
+            ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "ADAUSDT"],
         )
         trading = {
             s.strip()
