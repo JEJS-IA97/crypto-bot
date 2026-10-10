@@ -116,4 +116,31 @@ describe("design system (spec 003 RF-6, design.json)", () => {
         expect(rule[0]).toContain("cursor: pointer");
         expect(rule[0]).not.toMatch(/#[0-9a-fA-F]{3,8}/);
     });
+
+    it("tarjetas de learning con acentos y tokens, sin hex sueltos (010 RF-7)", () => {
+        const hypothesis = css.match(
+            /\.hypothesis-card\s*\{[^}]+\}/
+        );
+        expect(hypothesis).not.toBeNull();
+        expect(hypothesis[0]).toContain("var(--orange)");
+
+        const knowledge = css.match(/\.knowledge-card\s*\{[^}]+\}/);
+        expect(knowledge).not.toBeNull();
+        expect(knowledge[0]).toContain("var(--positive)");
+
+        for (const rule of [hypothesis[0], knowledge[0]]) {
+            expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+            expect(rule).not.toContain("!important");
+        }
+    });
+
+    it("las columnas de learning se apilan en responsive (010 RF-7)", () => {
+        const files = loadCssFiles();
+        const responsive = files.find(
+            (file) => file.name === "responsive.css"
+        );
+        expect(responsive.content).toMatch(
+            /\.learning-columns\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/
+        );
+    });
 });

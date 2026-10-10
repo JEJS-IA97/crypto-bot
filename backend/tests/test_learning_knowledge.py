@@ -5,6 +5,7 @@ evidencia e intervalo Wald; el rollback marca DEPRECATED sin borrar;
 el conocimiento degradado no vuelve a ACTIVE.
 """
 
+import json
 import unittest
 from decimal import Decimal
 
@@ -69,7 +70,7 @@ class KnowledgeTests(unittest.TestCase):
         self.assertEqual(knowledge.version, 1)
         self.assertIsNotNone(knowledge.validated_at)
 
-        interval = knowledge.confidence_interval_json
+        interval = json.loads(knowledge.confidence_interval_json)
         self.assertIsNotNone(interval)
         self.assertIn("low", interval)
         self.assertIn("high", interval)

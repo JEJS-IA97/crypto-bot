@@ -10,6 +10,7 @@ import EquityChart from "../components/EquityChart";
 import AccountSummary from "../components/AccountSummary";
 import OpenPositions from "../components/OpenPositions";
 import TradeHistory from "../components/TradeHistory";
+import LearningTab from "../components/LearningTab";
 import NavRail from "../components/NavRail";
 import SectionTabs from "../components/SectionTabs";
 import Sidebar from "../components/Sidebar";
@@ -172,6 +173,17 @@ function Simulation() {
                             onSelect={setSelectedDecisionId}
                         />
                     </div>
+                </div>
+
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-learning"
+                    aria-labelledby="tab-learning"
+                    hidden={tab !== "learning"}
+                    tabIndex={0}
+                >
+                    <LearningTab />
                 </div>
 
                 <div

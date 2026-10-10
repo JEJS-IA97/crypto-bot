@@ -54,6 +54,15 @@ vi.mock("../../api/observability", () => ({
     getSources: vi.fn(),
 }));
 
+vi.mock("../../api/learning", () => ({
+    getHypotheses: vi.fn(),
+    getKnowledge: vi.fn(),
+    createHypothesis: vi.fn(),
+    transitionHypothesis: vi.fn(),
+    evaluateHypothesis: vi.fn(),
+    getStrategyVersions: vi.fn(),
+}));
+
 const SUMMARY = {
     balance: {
         available_usd: "20.00",

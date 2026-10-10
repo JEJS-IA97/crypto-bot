@@ -12,6 +12,7 @@ from app.api.routes import (
     candidates,
     decisions,
     health,
+    learning,
     observability,
     risk,
     signals,
@@ -176,4 +177,8 @@ app.include_router(
 
 app.include_router(
     decisions.router
+)
+
+app.include_router(
+    learning.router
 )

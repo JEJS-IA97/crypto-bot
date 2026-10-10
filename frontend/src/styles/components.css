@@ -573,3 +573,121 @@
     font-size: var(--font-size-xs);
     line-height: 1.5;
 }
+
+/* ===== Learning (spec 010, RF-7) ===== */
+.learning-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    align-items: start;
+}
+
+.learning-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.learning-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.hypothesis-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+    border-left: 3px solid var(--orange);
+}
+
+.knowledge-card {
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    background: var(--surface-soft);
+    border-left: 3px solid var(--positive);
+}
+
+.hypothesis-card-header,
+.knowledge-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.hypothesis-source,
+.hypothesis-status,
+.knowledge-status {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.hypothesis-statement,
+.knowledge-statement {
+    margin: 0 0 var(--space-3);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+}
+
+.hypothesis-metrics,
+.knowledge-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: 0;
+}
+
+.hypothesis-metrics div,
+.knowledge-metrics div {
+    margin: 0;
+}
+
+.hypothesis-metrics dt,
+.knowledge-metrics dt {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.hypothesis-metrics dd,
+.knowledge-metrics dd {
+    margin: 0;
+    color: var(--text-value);
+    font-size: var(--font-size-md);
+}
+
+.hypothesis-missing {
+    margin: var(--space-2) 0 0;
+    color: var(--orange);
+    font-size: var(--font-size-sm);
+}
+
+.hypothesis-note {
+    margin: var(--space-2) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.hypothesis-card-footer,
+.knowledge-card-footer {
+    margin-top: var(--space-3);
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+}
+
+.knowledge-rollback {
+    margin: var(--space-2) 0 0;
+    color: var(--negative);
+    font-size: var(--font-size-sm);
+}
+
+.learning-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}

@@ -1,6 +1,6 @@
 # Spec 010 — Learning: hipótesis, conocimiento validado y memoria auditable
 
-Estado: borrador (2026-10-07) · pendiente de aprobación
+Estado: implementada (T1-T7 completadas; aprobada por el propietario el 2026-10-09)
 Depende de: 001 (decisiones/posiciones/closed trades), 005 (eventos + correlation_id), 007 (analista IA, recomendación-only), 009 (pestaña Consola y sistema de diseño del panel).
 Fuentes: brief §3 (Vista C — hipótesis vs conocimiento), §17 (estados PROPOSED→… y rollback), §29 (persistencia: hypotheses, knowledge, strategy_versions), §35; talos `view_03_learning_and_memory`; diagnóstico §8 (roadmap fase 9 → 010) y §16.6.
 
@@ -86,21 +86,21 @@ El brief exige una diferencia estricta entre lo que el sistema *sospecha* (hipó
 
 | RF | Tests (backend: `cd backend; .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py"` · frontend: `cd frontend; npm test`) |
 |----|----|
-| RF-1 | `tests/test_learning_hypotheses.py` (modelo, defaults, API lista/alta) |
-| RF-2 | `tests/test_learning_evaluate.py` (cruce con trades, umbrales, Wald, Decimal, determinismo) |
-| RF-3 | `tests/test_learning_knowledge.py` (promoción manual, rollback, versiones, append-only) |
-| RF-4 | `tests/test_learning_api.py` (endpoints, máquina de estados, 401/409/422) |
-| RF-5 | `tests/test_learning_isolation.py` (imports prohibidos, sin escritura en riesgo/ejecución) |
-| RF-6 | `tests/test_learning_strategy_versions.py` (registro, rollback marcado, sin aplicación) |
-| RF-7 | vitest `LearningTab.test.jsx`, `HypothesisCard.test.jsx`, `KnowledgeCard.test.jsx` + integración `Simulation.test.jsx` + `designSystem.test.js`/`actionSystem.test.js` extendidos (acentos ámbar/verde con tokens) |
-| RF-8 | aserciones de eventos en tests backend de RF-2/3/4/6 (payload y service `learning`) |
-| RF-9 | verificación estática en T-final (grep sin `EventSource|WebSocket`, package.json intacto) + suites completas |
+| RF-1 | `tests/test_learning_hypotheses.py::HypothesisModelTests` (modelo, defaults, máquina de estados) + `tests/test_learning_api.py::LearningEndpointsTests` (lista/alta) |
+| RF-2 | `tests/test_learning_evaluate.py::EvaluateHypothesisTests` (cruce con trades, umbrales, Wald, Decimal, determinismo) |
+| RF-3 | `tests/test_learning_knowledge.py::KnowledgeTests` (promoción manual, rollback, versiones, append-only) |
+| RF-4 | `tests/test_learning_api.py::LearningAuthTests` y `::LearningEndpointsTests` (endpoints, máquina de estados, 401/409/422) |
+| RF-5 | `tests/test_learning_isolation.py::LearningIsolationTests` (imports prohibidos, sin escritura en riesgo/ejecución) |
+| RF-6 | `tests/test_learning_strategy_versions.py::StrategyVersionTests` (registro, rollback marcado, sin aplicación) |
+| RF-7 | vitest `LearningTab.test.jsx` ("LearningTab (RF-7)"), `HypothesisCard.test.jsx` ("HypothesisCard (RF-7)"), `KnowledgeCard.test.jsx` ("KnowledgeCard (RF-7)") + `src/api/__tests__/learning.test.js` ("api learning (RF-4)") + integración `Simulation.test.jsx` + `designSystem.test.js`/`actionSystem.test.js` extendidos (acentos ámbar/verde con tokens) |
+| RF-8 | aserciones de eventos en `HypothesisModelTests`, `EvaluateHypothesisTests`, `KnowledgeTests` y `StrategyVersionTests` (payload y service `learning`) |
+| RF-9 | verificación estática en T7 (grep sin `EventSource\|WebSocket`, package.json/requirements intactos) + suites completas backend/frontend |
 
 ## Criterios de finalización
 
-1. Los 9 RF implementados y verificados con su test en verde.
-2. Máquina de estados completa probada (todas las transiciones legales e ilegales).
-3. Evaluación determinista probada con ≥3 escenarios (muestra insuficiente, validada, rechazada manualmente).
-4. `VALIDATED → ACTIVE` jamás alcanzable sin acción manual (test explícito).
-5. Suite backend completa en verde + `npm run lint` + `npm test` + ruff + `compileall`.
-6. `tasks.md` con todas las casillas marcadas y estado `implementada (T1-Tn completadas; aprobada por el propietario el <fecha>)`.
+1. ✅ Los 9 RF implementados y verificados con su test en verde.
+2. ✅ Máquina de estados completa probada (todas las transiciones legales e ilegales).
+3. ✅ Evaluación determinista probada con ≥3 escenarios (muestra insuficiente, validada, rechazada manualmente).
+4. ✅ `VALIDATED → ACTIVE` jamás alcanzable sin acción manual (test explícito).
+5. ✅ Suite backend completa en verde + `npm run lint` + `npm test` + ruff + `compileall`.
+6. ✅ `tasks.md` con todas las casillas marcadas y estado `implementada (T1-Tn completadas; aprobada por el propietario el <fecha>)`.

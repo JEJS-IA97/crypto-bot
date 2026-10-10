@@ -17,8 +17,10 @@ Panel de control del bot (React 19 + Vite). Comunicación con el backend FastAPI
 - `src/pages/` — `Simulation.jsx` (panel principal: estado, métricas, control y señales)
 - `src/components/` — `MetricsPanel` (estado y métricas, RF-17/RF-18),
   `KillSwitch` (arrancar/detener, RF-3/RF-19), `ExternalSignalForm`
-  (señal externa, RF-8/RF-19), `TradingPanel`, …
-- `src/api/` — clientes HTTP (`bot.js`, `signals.js`, `simulation.js`, `client.js`)
+  (señal externa, RF-8/RF-19), `TradingPanel`,
+  `LearningTab`/`HypothesisCard`/`KnowledgeCard` (spec 010), …
+- `src/api/` — clientes HTTP (`bot.js`, `signals.js`, `simulation.js`,
+  `learning.js`, `client.js`)
 - `src/test/setup.js` — arranque de vitest (jsdom + jest-dom)
 
 ## Consola de control (spec 009)
@@ -38,5 +40,23 @@ Pestaña **Consola** del panel (junto a Operar/Estado/Historial):
   (`decision_id`); el clic abre el inspector en Consola.
 
 Sin SSE/WebSocket ni dependencias nuevas (polling ≤5 s, D-7).
+
+## Learning (spec 010)
+
+Pestaña **Learning** del panel (junto a Consola), dos columnas del talos
+view_03 con polling ≤5 s:
+
+- `LearningTab` — "Lo que va aprendiendo" (hipótesis) y "Lo que ha
+  aprendido" (conocimiento); estados vacíos honestos; botones Evaluar y
+  transición que llaman los endpoints reales `/api/learning/*` con
+  confirmación (los pasos que exigen motivo lo piden antes de enviar).
+- `HypothesisCard` — acento `--orange`: source, statement, casos
+  fav/desfav, confianza ("sin confianza" si no hay), estado, nota de
+  evaluación y contador de casos faltantes exponiendo el umbral activo.
+- `KnowledgeCard` — acento `--positive`: afirmación, casos, intervalo
+  Wald, fechas de validación, efecto observado y rollback si existe.
+
+Sin SSE/WebSocket ni dependencias nuevas; acentos con tokens existentes
+(sin hex nuevos).
 
 Mensajes de UI y textos en español; los motivos de reacción en inglés vienen del backend.

@@ -213,6 +213,31 @@ cp .env.example .env   # valores por defecto seguros (live deshabilitado)
   Tests: `test_ai_stats_api`, `test_pipeline_api`, `test_why_api`,
   `test_replay_api`, `test_trade_decision_link`.
 
+## Learning (spec 010)
+
+Núcleo de memoria auditable: hipótesis (lo que el sistema sospecha) vs
+conocimiento confirmado (lo que superó criterios estadísticos). Sin "ML
+mágico" y sin auto-modificación del bot (RF-5).
+
+- **3 tablas nuevas** (§29): `hypotheses` (máquina de estados
+  `PROPOSED → TESTING → VALIDATED → ACTIVE → DEPRECATED` + `REJECTED`;
+  `VALIDATED → ACTIVE` solo manual), `knowledge` (append-only, rollback
+  con motivo obligatorio) y `strategy_versions` (append-only; la
+  aplicación de una versión siempre es manual).
+- **Servicio** `app/services/learning_service.py`: `evaluate_hypothesis`
+  cruza decisiones CLOSED (001) con la ventana/activos declarados;
+  umbrales por config (`LEARNING_MIN_CASES=30`,
+  `LEARNING_MIN_FAVORABLE_RATIO=0.60`, `LEARNING_WINDOW_DAYS=90`);
+  confianza e intervalo Wald en Decimal. Todo emite eventos 005 con
+  `service="learning"`.
+- **API** `/api/learning/*` con `require_control_token` (patrón 001
+  RF-20): hypotheses (lista/alta/transición/evaluate), knowledge
+  (lista/alta manual) y strategy-versions (lista/registro/rollback).
+  Sin endpoints que toquen órdenes ni riesgo.
+- Tests: `test_learning_hypotheses`, `test_learning_evaluate`,
+  `test_learning_knowledge`, `test_learning_api`,
+  `test_learning_strategy_versions`, `test_learning_isolation`.
+
 ## Fases y seguridad
 
 - Órdenes reales solo con `ALLOW_LIVE_TRADING=true` **y** `CONFIGURED_CAPITAL_USD>0`

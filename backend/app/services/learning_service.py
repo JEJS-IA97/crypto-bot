@@ -21,7 +21,10 @@ from app.models import (
     DecisionStatus,
     Hypothesis,
     HypothesisStatus,
+    Knowledge,
+    KnowledgeStatus,
     SignalDecision,
+    StrategyVersion,
     utc_now,
 )
 from app.services.structured_log import emit
@@ -141,7 +144,7 @@ def transition_hypothesis(
         if isinstance(to, HypothesisStatus)
         else HypothesisStatus(str(to))
     )
-    current = hypothesis.status
+    current = HypothesisStatus(hypothesis.status) if isinstance(hypothesis.status, str) else hypothesis.status
 
     allowed = ALLOWED_TRANSITIONS.get(current, frozenset())
     if target not in allowed:
@@ -154,6 +157,10 @@ def transition_hypothesis(
         raise ValueError(
             f"la transición a {target.value} exige un motivo."
         )
+
+    if target is HypothesisStatus.DEPRECATED:
+        # Rollback exige motivo solo si hay knowledge activa (RF-3).
+        _rollback_knowledge(db, hypothesis, clean_reason)
 
     hypothesis.status = target
     hypothesis.version = (hypothesis.version or 1) + 1
@@ -176,6 +183,9 @@ def transition_hypothesis(
         },
         db=db,
     )
+    if target is HypothesisStatus.ACTIVE:
+        _promote_to_knowledge(db, hypothesis)
+
     return hypothesis
 
 
@@ -298,3 +308,212 @@ def evaluate_hypothesis(
         )
 
     return hypothesis
+
+
+def _wald_interval(favorable: int, total: int) -> dict[str, str]:
+    """Intervalo de confianza Wald (z=1.96) para una proporción."""
+    if total <= 0:
+        return {"low": "0", "high": "0"}
+    p = Decimal(favorable) / Decimal(total)
+    se = (p * (Decimal(1) - p) / Decimal(total)).sqrt()
+    z = Decimal("1.96")
+    low = (p - z * se).quantize(Decimal("0.0001"))
+    high = (p + z * se).quantize(Decimal("0.0001"))
+    return {
+        "low": str(max(low, Decimal(0))),
+        "high": str(min(high, Decimal(1))),
+    }
+
+
+def _promote_to_knowledge(db: Session, hypothesis: Hypothesis) -> None:
+    """Crea la fila de knowledge al promover VALIDATED → ACTIVE (RF-3)."""
+    sample_size = hypothesis.case_count or 0
+    favorable = hypothesis.favorable_cases or 0
+    interval = _wald_interval(favorable, sample_size)
+
+    knowledge = Knowledge(
+        hypothesis_id=hypothesis.id,
+        statement=hypothesis.statement,
+        evidence_json=json.dumps(
+            {
+                "confidence": str(hypothesis.confidence) if hypothesis.confidence else "0",
+                "sample_size": sample_size,
+                "favorable": favorable,
+                "unfavorable": hypothesis.unfavorable_cases or 0,
+            },
+            ensure_ascii=False,
+        ),
+        sample_size=sample_size,
+        confidence_interval_json=json.dumps(interval, ensure_ascii=False),
+        validated_at=utc_now(),
+        version=1,
+        status=KnowledgeStatus.ACTIVE,
+    )
+    db.add(knowledge)
+    db.commit()
+    db.refresh(knowledge)
+    emit(
+        service="learning",
+        event="knowledge.promoted",
+        result="ok",
+        payload={
+            "knowledge_id": knowledge.id,
+            "hypothesis_id": hypothesis.id,
+            "version": knowledge.version,
+        },
+        db=db,
+    )
+
+
+def _rollback_knowledge(
+    db: Session, hypothesis: Hypothesis, reason: str
+) -> None:
+    """Marca DEPRECATED en el knowledge vinculado (RF-3, append-only)."""
+    knowledge = db.scalars(
+        select(Knowledge).where(
+            Knowledge.hypothesis_id == hypothesis.id,
+            Knowledge.status == KnowledgeStatus.ACTIVE,
+        )
+    ).first()
+    if knowledge is None:
+        return
+    if not reason or not str(reason).strip():
+        raise ValueError("rollback exige un motivo.")
+    knowledge.status = KnowledgeStatus.DEPRECATED
+    knowledge.deprecated_at = utc_now()
+    knowledge.rollback_reason = str(reason).strip()
+    db.commit()
+
+    emit(
+        service="learning",
+        event="knowledge.rolled_back",
+        result="ok",
+        payload={
+            "knowledge_id": knowledge.id,
+            "hypothesis_id": hypothesis.id,
+            "reason": reason,
+        },
+        db=db,
+    )
+
+
+def create_manual_knowledge(
+    db: Session,
+    *,
+    statement: str,
+    evidence: dict[str, Any] | None = None,
+    works_when: Any = None,
+    fails_when: Any = None,
+) -> Knowledge:
+    """Conocimiento manual sin hipótesis (RF-3); evidencia obligatoria."""
+    if not str(statement).strip():
+        raise ValueError("statement no puede estar vacío.")
+    if not evidence:
+        raise ValueError("la evidencia es obligatoria.")
+
+    knowledge = Knowledge(
+        hypothesis_id=None,
+        statement=str(statement).strip(),
+        evidence_json=json.dumps(evidence, ensure_ascii=False),
+        sample_size=int(evidence.get("sample_size", 0)),
+        confidence_interval_json=(
+            json.dumps(evidence["confidence_interval"])
+            if "confidence_interval" in evidence
+            else None
+        ),
+        works_when_json=_json_text(works_when, "[]"),
+        fails_when_json=_json_text(fails_when, "[]"),
+        validated_at=utc_now(),
+        version=1,
+        status=KnowledgeStatus.ACTIVE,
+    )
+    db.add(knowledge)
+    db.commit()
+    db.refresh(knowledge)
+    return knowledge
+
+
+def list_knowledge(
+    db: Session,
+    *,
+    status: str | KnowledgeStatus | None = None,
+) -> list[Knowledge]:
+    """Lista conocimiento, opcionalmente filtrado por estado (RF-3/RF-4)."""
+    query = select(Knowledge).order_by(Knowledge.id.desc())
+    if status is not None:
+        value = (
+            status
+            if isinstance(status, KnowledgeStatus)
+            else KnowledgeStatus(str(status))
+        )
+        query = query.where(Knowledge.status == value)
+    return list(db.scalars(query).all())
+
+
+def register_strategy_version(
+    db: Session,
+    *,
+    version: str,
+    config_json: Any = None,
+    motive: str,
+    evidence_json: Any = None,
+    backtest_ref: str | None = None,
+    paper_results_ref: str | None = None,
+) -> StrategyVersion:
+    """Registra una versión de estrategia (RF-6, append-only)."""
+    if not str(version).strip():
+        raise ValueError("version no puede estar vacío.")
+    if not str(motive).strip():
+        raise ValueError("motive no puede estar vacío.")
+
+    row = StrategyVersion(
+        version=str(version).strip(),
+        config_json=_json_text(config_json, "{}"),
+        evidence_json=_json_text(evidence_json, "[]"),
+        backtest_ref=backtest_ref,
+        paper_results_ref=paper_results_ref,
+        motive=str(motive).strip(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    emit(
+        service="learning",
+        event="strategy_version.registered",
+        result="ok",
+        payload={
+            "strategy_version_id": row.id,
+            "version": row.version,
+        },
+        db=db,
+    )
+    return row
+
+
+def list_strategy_versions(db: Session) -> list[StrategyVersion]:
+    """Lista versiones de estrategia registradas (RF-6/RF-4)."""
+    return list(
+        db.scalars(
+            select(StrategyVersion).order_by(StrategyVersion.id.asc())
+        ).all()
+    )
+
+
+def mark_rollback(
+    db: Session,
+    row: StrategyVersion,
+    *,
+    reason: str,
+) -> StrategyVersion:
+    """Marca rollback en una versión (RF-6); no altera config actual."""
+    if not str(reason).strip():
+        raise ValueError("rollback exige un motivo.")
+    if row.rolled_back_at is not None:
+        raise ValueError("esta versión ya fue marcada como rollback.")
+
+    row.rolled_back_at = utc_now()
+    row.rollback_reason = str(reason).strip()
+    db.commit()
+    db.refresh(row)
+    return row

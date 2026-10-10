@@ -1038,3 +1038,145 @@ class Hypothesis(Base):
         DateTime,
         default=utc_now,
     )
+
+
+class KnowledgeStatus(str, Enum):
+    """Estados del conocimiento confirmado (spec 010, RF-3)."""
+
+    ACTIVE = "ACTIVE"
+    DEPRECATED = "DEPRECATED"
+
+
+class Knowledge(Base):
+    """Conocimiento validado (spec 010, RF-3): lo que superó criterios."""
+
+    __tablename__ = "knowledge"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    hypothesis_id: Mapped[int | None] = mapped_column(
+        ForeignKey("hypotheses.id"),
+        nullable=True,
+    )
+
+    statement: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    evidence_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    sample_size: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    confidence_interval_json: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    works_when_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+    )
+
+    fails_when_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+    )
+
+    validated_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    version: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+    )
+
+    observed_impact: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    status: Mapped[KnowledgeStatus] = mapped_column(
+        SqlEnum(KnowledgeStatus),
+        default=KnowledgeStatus.ACTIVE,
+        index=True,
+    )
+
+    rollback_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    deprecated_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+    )
+
+
+class StrategyVersion(Base):
+    """Registro append-only de versiones de estrategia (spec 010, RF-6)."""
+
+    __tablename__ = "strategy_versions"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    version: Mapped[str] = mapped_column(
+        String(60),
+    )
+
+    config_json: Mapped[str] = mapped_column(
+        Text,
+        default="{}",
+    )
+
+    evidence_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+    )
+
+    backtest_ref: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    paper_results_ref: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+
+    motive: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    rolled_back_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    rollback_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+    )

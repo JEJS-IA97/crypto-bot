@@ -41,6 +41,10 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
+    .learning-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
     .trading-panel-content {
         grid-template-columns: minmax(0, 1fr);
     }

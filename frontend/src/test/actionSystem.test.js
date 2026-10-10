@@ -69,4 +69,25 @@ describe("action hierarchy (spec 003, RF-2)", () => {
     expect(rule[0]).not.toContain("--color-buy");
     expect(rule[0]).not.toContain("--color-sell");
   });
+
+  it("las acciones de learning usan la jerarquía de botones existente (010 RF-7)", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/LearningTab.jsx"),
+      "utf8"
+    );
+    expect(source).toMatch(/btn btn-(utility|secondary)/);
+    expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}/);
+
+    for (const selector of [
+      ".hypothesis-card",
+      ".knowledge-card",
+    ]) {
+      const rule = css.match(
+        new RegExp(`${selector}\\s*\\{[^}]+\\}`)
+      );
+      expect(rule).not.toBeNull();
+      expect(rule[0]).not.toContain("--color-buy");
+      expect(rule[0]).not.toContain("--color-sell");
+    }
+  });
 });
