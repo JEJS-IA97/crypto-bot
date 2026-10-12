@@ -25,6 +25,7 @@ function Simulation() {
         positions,
         trades,
         marketPrices,
+        priceHistory,
         loading,
         error,
         reload,
@@ -205,6 +206,7 @@ function Simulation() {
             <Sidebar
                 balance={accountBalance}
                 marketPrices={marketPrices}
+                priceHistory={priceHistory}
                 onReload={reload}
                 onOperar={() => setTab("operar")}
             />

@@ -2,13 +2,24 @@ import KillSwitch from "./KillSwitch";
 import ExternalSignalForm from "./ExternalSignalForm";
 import TokenField from "./TokenField";
 import LivePrices from "./LivePrices";
+import PriceChart from "./PriceChart";
 import { formatMoney } from "../utils/format";
 
-function Sidebar({ balance, marketPrices, onReload, onOperar }) {
+function Sidebar({
+    balance,
+    marketPrices,
+    priceHistory = {},
+    onReload,
+    onOperar,
+}) {
     const totalBalance = balance.total_balance_usd || 0;
     const realizedPnl = Number(balance.realized_pnl_usd || 0);
     const realizedClass =
         realizedPnl >= 0 ? "value-positive" : "value-negative";
+    const mainSymbol =
+        Array.isArray(marketPrices) && marketPrices.length > 0
+            ? marketPrices[0].symbol
+            : "BTCUSDT";
 
     return (
         <aside className="sidebar" aria-label="Panel lateral">
@@ -57,7 +68,12 @@ function Sidebar({ balance, marketPrices, onReload, onOperar }) {
 
             <TokenField />
 
-            <LivePrices prices={marketPrices} />
+            <PriceChart
+                points={priceHistory[mainSymbol] || []}
+                symbol={mainSymbol}
+            />
+
+            <LivePrices prices={marketPrices} priceHistory={priceHistory} />
         </aside>
     );
 }

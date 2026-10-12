@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
     createAccount,
@@ -30,6 +30,8 @@ function normalizeArray(data, propertyNames = []) {
 
 const PRICE_REFRESH_MS = 1000;
 const SUMMARY_REFRESH_MS = 5000;
+// Ventana de la sparkline/curva de precio en memoria (2 min a 1 tick/s).
+const PRICE_HISTORY_LIMIT = 120;
 
 export default function useSimulationData() {
     const [account, setAccount] = useState(null);
@@ -38,6 +40,8 @@ export default function useSimulationData() {
     const [positions, setPositions] = useState([]);
     const [trades, setTrades] = useState([]);
     const [marketPrices, setMarketPrices] = useState([]);
+    const [priceHistory, setPriceHistory] = useState({});
+    const historyRef = useRef({});
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -45,14 +49,33 @@ export default function useSimulationData() {
     const loadMarketPrices = useCallback(async () => {
         const data = await getMarketPrices();
 
-        setMarketPrices(
-            normalizeArray(data, [
-                "prices",
-                "market_prices",
-                "data",
-                "items",
-            ])
-        );
+        const list = normalizeArray(data, [
+            "prices",
+            "market_prices",
+            "data",
+            "items",
+        ]);
+
+        setMarketPrices(list);
+
+        const history = { ...historyRef.current };
+
+        for (const item of list) {
+            const price = Number(item?.price_usd);
+
+            if (!item?.symbol || !Number.isFinite(price)) {
+                continue;
+            }
+
+            const points = history[item.symbol] || [];
+
+            history[item.symbol] = points
+                .concat(price)
+                .slice(-PRICE_HISTORY_LIMIT);
+        }
+
+        historyRef.current = history;
+        setPriceHistory(history);
     }, []);
 
     const loadAccountData = useCallback(async (accountId) => {
@@ -205,6 +228,7 @@ export default function useSimulationData() {
         positions,
         trades,
         marketPrices,
+        priceHistory,
         loading,
         error,
         reload,

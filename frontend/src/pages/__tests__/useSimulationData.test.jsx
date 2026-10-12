@@ -65,4 +65,27 @@ describe("useSimulationData: precios en vivo", () => {
 
         expect(getMarketPrices).toHaveBeenCalledTimes(2);
     });
+
+    it("acumula el historial de precios por símbolo", async () => {
+        getMarketPrices
+            .mockResolvedValueOnce([
+                { symbol: "BTCUSDT", price_usd: "100.00" },
+            ])
+            .mockResolvedValue([
+                { symbol: "BTCUSDT", price_usd: "110.00" },
+            ]);
+
+        const { result } = renderHook(() => useSimulationData());
+        await flush();
+
+        expect(result.current.priceHistory.BTCUSDT).toEqual([100]);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000);
+        });
+
+        expect(result.current.priceHistory.BTCUSDT).toEqual([
+            100, 110,
+        ]);
+    });
 });

@@ -1,7 +1,7 @@
 import { formatMoney } from "../utils/format";
 
 /* Tonos por activo (design.json live_prices: un color por cripto).
-   Sin sparkline: no existe serie por activo → sería dato falso. */
+   Los datos de la sparkline vienen del historial real del panel. */
 const COIN_TONES = {
     BTC: "coin-orange",
     ETH: "coin-cyan",
@@ -14,11 +14,63 @@ const COIN_TONES = {
     LTC: "coin-blue",
 };
 
+// % respecto al precio de hace un minuto (60 ticks de 1 s).
+const CHANGE_WINDOW = 60;
+
 function baseSymbol(symbol) {
     return symbol.replace(/USDT$/, "");
 }
 
-function LivePrices({ prices }) {
+function priceChange(points) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return null;
+    }
+
+    const current = points[points.length - 1];
+    const reference =
+        points[Math.max(0, points.length - 1 - CHANGE_WINDOW)];
+
+    if (!Number.isFinite(current) || !reference) {
+        return null;
+    }
+
+    return ((current - reference) / reference) * 100;
+}
+
+function Sparkline({ points }) {
+    if (!Array.isArray(points) || points.length < 2) {
+        return <span className="price-spark" aria-hidden="true" />;
+    }
+
+    const min = Math.min(...points);
+    const max = Math.max(...points);
+    const span = max - min || 1;
+    const width = 64;
+    const height = 20;
+    const step =
+        points.length > 1 ? width / (points.length - 1) : 0;
+    const rising = points[points.length - 1] >= points[0];
+
+    const coords = points
+        .map(
+            (value, index) =>
+                `${index * step},${((max - value) / span) * (height - 2) + 1}`
+        )
+        .join(" ");
+
+    return (
+        <svg
+            className={`price-spark ${rising ? "price-spark-up" : "price-spark-down"}`}
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+        >
+            <polyline points={coords} fill="none" />
+        </svg>
+    );
+}
+
+function LivePrices({ prices, priceHistory = {} }) {
     const rows = Array.isArray(prices) ? prices : [];
 
     return (
@@ -42,6 +94,9 @@ function LivePrices({ prices }) {
                 <ul className="price-list">
                     {rows.map((price) => {
                         const base = baseSymbol(price.symbol);
+                        const points = priceHistory[price.symbol] || [];
+                        const change = priceChange(points);
+                        const rising = (change ?? 0) >= 0;
 
                         return (
                             <li
@@ -65,8 +120,24 @@ function LivePrices({ prices }) {
                                     </span>
                                 </div>
 
-                                <span className="price-value">
+                                <Sparkline points={points} />
+
+                                <span
+                                    className={`price-value ${
+                                        rising
+                                            ? "value-positive"
+                                            : "value-negative"
+                                    }`}
+                                >
                                     ${formatMoney(price.price_usd)}
+
+                                    {change !== null && (
+                                        <span className="price-delta">
+                                            {rising ? "▲" : "▼"}{" "}
+                                            {Math.abs(change).toFixed(2)}
+                                            %
+                                        </span>
+                                    )}
                                 </span>
                             </li>
                         );
