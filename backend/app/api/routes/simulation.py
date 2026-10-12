@@ -36,6 +36,9 @@ from app.services.exchange_market_service import (
 from app.services.execution_price_service import (
     select_best_execution,
 )
+from app.services.live_prices_service import (
+    live_market_prices,
+)
 from app.services.market_sync_service import (
     synchronize_market_prices,
 )
@@ -45,7 +48,6 @@ from app.services.simulation_service import (
     execute_order,
     get_accounts,
     get_balance,
-    get_market_prices,
     get_positions,
     get_summary,
     get_trades,
@@ -239,9 +241,9 @@ def update_price(
 def market_prices(
     db: Session = Depends(get_db),
 ) -> list[MarketPriceResponse]:
-    return get_market_prices(
-        db
-    )
+    # Precios vivos (Binance con caché de 2 s): la tabla de la BD sola
+    # queda congelada y el panel no veía cambios nunca.
+    return live_market_prices(db)
 
 
 @router.post(

@@ -28,6 +28,9 @@ function normalizeArray(data, propertyNames = []) {
     return [];
 }
 
+const PRICE_REFRESH_MS = 1000;
+const SUMMARY_REFRESH_MS = 5000;
+
 export default function useSimulationData() {
     const [account, setAccount] = useState(null);
     const [summary, setSummary] = useState(null);
@@ -160,6 +163,18 @@ export default function useSimulationData() {
         loadSimulation();
     }, [loadSimulation]);
 
+    useEffect(() => {
+        // Precios por segundo: el backend cachea 2 s, así que cada tick
+        // trae cambio real en lugar de la tabla congelada.
+        const timer = setInterval(() => {
+            loadMarketPrices().catch(() => {
+                // red caída: el siguiente tick reintenta
+            });
+        }, PRICE_REFRESH_MS);
+
+        return () => clearInterval(timer);
+    }, [loadMarketPrices]);
+
     const reload = useCallback(async () => {
         if (!account) {
             return;
@@ -167,6 +182,21 @@ export default function useSimulationData() {
 
         await loadAccountData(account.id);
     }, [account, loadAccountData]);
+
+    useEffect(() => {
+        if (!account) {
+            return undefined;
+        }
+
+        // Equity/posiciones: mark-to-market con los precios vivos.
+        const timer = setInterval(() => {
+            reload().catch(() => {
+                // red caída: el siguiente tick reintenta
+            });
+        }, SUMMARY_REFRESH_MS);
+
+        return () => clearInterval(timer);
+    }, [account, reload]);
 
     return {
         account,
