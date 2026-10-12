@@ -35,6 +35,7 @@ from app.services.risk_guard_service import (
     get_daily_state,
 )
 from app.services.simulation_service import create_simulation_account
+from fixtures_klines import trend_hourly_flat
 
 NY = ZoneInfo("America/New_York")
 SESSION_DAY = date(2026, 10, 5)
@@ -150,6 +151,8 @@ class FakeMarketData:
     ) -> list[Candle]:
         if interval == "5m":
             return list(self._candles_5m.get(symbol, []))
+        if interval == "1h":
+            return trend_hourly_flat()
         return list(self._candles_15m[symbol])
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:

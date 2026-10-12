@@ -101,7 +101,7 @@ class ExposureEndpointTests(ExposureEndpointBase):
         response = self.client.get("/api/bot/risk/exposure")
         self.assertEqual(response.status_code, 200)
         body = response.json()
-        self.assertEqual(body["capital_usd"], "20")
+        self.assertEqual(body["capital_usd"], "40")
         self.assertEqual(body["committed_usd"], "0")
         self.assertEqual(body["available_usd"], "1000")
         self.assertEqual(body["open_positions"], 0)
@@ -129,9 +129,9 @@ class ExposureEndpointTests(ExposureEndpointBase):
         self.assertEqual(body["by_asset"], {"ETHUSDT": "5"})
         self.assertEqual(body["by_direction"]["LONG"], "5")
         self.assertEqual(body["by_direction"]["NEUTRAL"], "0")
-        self.assertEqual(body["exposure_cap_usd"], "15")
-        self.assertEqual(body["headroom_usd"], "10")
-        self.assertEqual(Decimal(body["exposure_pct"]), Decimal("25"))
+        self.assertEqual(body["exposure_cap_usd"], "30")
+        self.assertEqual(body["headroom_usd"], "25")
+        self.assertEqual(Decimal(body["exposure_pct"]), Decimal("12.5"))
 
     def test_limits_are_reported(self) -> None:
         body = self.client.get("/api/bot/risk/exposure").json()

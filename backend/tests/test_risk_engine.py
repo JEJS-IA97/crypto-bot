@@ -43,6 +43,7 @@ from app.services.risk_engine_service import (
 )
 from app.services.risk_guard_service import get_daily_state
 from app.services.simulation_service import create_simulation_account
+from fixtures_klines import trend_hourly_flat
 
 NY = ZoneInfo("America/New_York")
 SESSION_DAY = date(2026, 10, 5)
@@ -147,6 +148,8 @@ class FakeMarketData:
     ) -> list[Candle]:
         if interval == "5m":
             return list(self._candles_5m.get(symbol, []))
+        if interval == "1h":
+            return trend_hourly_flat()
         return list(self._candles_15m[symbol])
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:
@@ -356,28 +359,35 @@ class ExposureTests(RiskEngineBase):
 
     def test_cap_is_75pct_of_configured_capital(self) -> None:
         assessment = self._evaluate()
-        self.assertEqual(assessment.exposure_cap_usd, Decimal("15"))
+        self.assertEqual(assessment.exposure_cap_usd, Decimal("30"))
 
     def test_allowed_exactly_at_cap(self) -> None:
-        # committed 10 (2 × 5) + requested 5 = 15 == tope ⇒ permitido.
-        self._open_position("ETHUSDT")
-        self._open_position("SOLUSDT")
+        # Fijamos capital 20 → tope 15: committed 10 (2 × 5) + requested
+        # 5 = 15 == tope ⇒ permitido.
+        with patch.object(
+            settings, "configured_capital_usd", Decimal("20")
+        ):
+            self._open_position("ETHUSDT")
+            self._open_position("SOLUSDT")
 
-        assessment = self._evaluate()
-        self.assertEqual(assessment.action, RiskAction.ALLOW)
-        self.assertEqual(
-            assessment.committed_usd + assessment.requested_usd,
-            Decimal("15"),
-        )
+            assessment = self._evaluate()
+            self.assertEqual(assessment.action, RiskAction.ALLOW)
+            self.assertEqual(
+                assessment.committed_usd + assessment.requested_usd,
+                Decimal("15"),
+            )
 
     def test_one_cent_over_cap_blocks(self) -> None:
-        self._open_position("ETHUSDT")
-        self._open_position("SOLUSDT")
+        with patch.object(
+            settings, "configured_capital_usd", Decimal("20")
+        ):
+            self._open_position("ETHUSDT")
+            self._open_position("SOLUSDT")
 
-        assessment = self._evaluate(quantity=Decimal("0.055"))
-        self.assertEqual(assessment.action, RiskAction.BLOCKED)
-        self.assertEqual(assessment.reason, REASON_MAX_EXPOSURE)
-        self.assertEqual(assessment.allowed_usd, Decimal("0"))
+            assessment = self._evaluate(quantity=Decimal("0.055"))
+            self.assertEqual(assessment.action, RiskAction.BLOCKED)
+            self.assertEqual(assessment.reason, REASON_MAX_EXPOSURE)
+            self.assertEqual(assessment.allowed_usd, Decimal("0"))
 
     def test_cap_follows_configured_capital(self) -> None:
         self._open_position("ETHUSDT", quantity="0.25")

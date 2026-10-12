@@ -17,6 +17,7 @@ from app.models import (
     DecisionStatus,
     SignalDecision,
     TradeSide,
+    WalkForwardRun,
     utc_now,
 )
 from app.services.phase_service import (
@@ -76,10 +77,13 @@ class PhaseServiceTestCase(unittest.TestCase):
         self.db.commit()
 
     def _add_drawdown_ops(self) -> None:
-        """15 ops, 31 días, PnL total >0 pero drawdown >10% (D-9)."""
+        """15 ops, 31 días, PnL total >0 pero drawdown >10% (D-9).
+
+        Con el capital configurado (40 USD) la caída de 42 → 37 es 11,90%.
+        """
         now = utc_now()
         created = now - timedelta(days=31)
-        pnls = [Decimal("2"), Decimal("-3")] + [Decimal("0.3")] * 13
+        pnls = [Decimal("2"), Decimal("-5")] + [Decimal("0.3")] * 13
         for index, pnl in enumerate(pnls):
             self.db.add(
                 SignalDecision(
@@ -100,6 +104,21 @@ class PhaseServiceTestCase(unittest.TestCase):
     @staticmethod
     def _criteria(result: dict) -> list[str]:
         return [item["criterion"] for item in result["missing"]]
+
+    def _add_walk_forward_run(self, verdict: str = "PASA") -> int:
+        """Persiste una corrida walk-forward (spec 012, RF-4)."""
+        run = WalkForwardRun(
+            verdict=verdict,
+            net_pnl_usd="1.5",
+            return_pct="7.5",
+            max_drawdown_pct="2.0",
+            expectancy_usd="0.1",
+            trades=10,
+            folds=1,
+        )
+        self.db.add(run)
+        self.db.commit()
+        return run.id
 
     def test_requires_30d_15ops_drawdown(self) -> None:
         # Pocos días y pocas operaciones → bloquea con el detalle (RF-16).
@@ -135,6 +154,7 @@ class PhaseServiceTestCase(unittest.TestCase):
     def test_promotes_when_criteria_met(self) -> None:
         # Todo el criterio D-9 cumplido → la fase cambia y guarda la evidencia.
         self._add_ops(15, created_days_ago=31, pnl_each=Decimal("0.1"))
+        self._add_walk_forward_run("PASA")
         result = request_phase_change(
             self.db,
             new_phase=BotPhaseName.TESTNET,
@@ -145,6 +165,40 @@ class PhaseServiceTestCase(unittest.TestCase):
         self.assertEqual(phase.phase, BotPhaseName.TESTNET)
         self.assertIn("paper_days", phase.evidence_json)
         self.assertIn("backtest_test_net_pnl", phase.evidence_json)
+
+    def test_blocks_testnet_without_walk_forward_run(self) -> None:
+        # Spec 012, RF-4: sin corrida walk-forward persistida no se pasa
+        # a TESTNET aunque el resto del criterio D-9 se cumpla.
+        self._add_ops(15, created_days_ago=31, pnl_each=Decimal("0.1"))
+        result = request_phase_change(
+            self.db,
+            new_phase=BotPhaseName.TESTNET,
+            evidence=BACKTEST_EVIDENCE,
+        )
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason"], "criteria_not_met")
+        self.assertIn("walk_forward_run", self._criteria(result))
+        self.assertEqual(get_phase(self.db).phase, BotPhaseName.SIMULATION)
+
+    def test_blocks_testnet_when_last_walk_forward_fails(self) -> None:
+        # Spec 012, RF-4: última corrida NO PASA → bloquea con el detalle.
+        self._add_ops(15, created_days_ago=31, pnl_each=Decimal("0.1"))
+        run_id = self._add_walk_forward_run("NO PASA")
+        result = request_phase_change(
+            self.db,
+            new_phase=BotPhaseName.TESTNET,
+            evidence=BACKTEST_EVIDENCE,
+        )
+        self.assertFalse(result["ok"])
+        self.assertIn("walk_forward_run", self._criteria(result))
+        detail = next(
+            item["detail"]
+            for item in result["missing"]
+            if item["criterion"] == "walk_forward_run"
+        )
+        self.assertIn(f"id={run_id}", detail)
+        self.assertIn("NO PASA", detail)
+        self.assertEqual(get_phase(self.db).phase, BotPhaseName.SIMULATION)
 
     def test_refuses_live_without_capital(self) -> None:
         # Fase no real con ALLOW_LIVE_TRADING=true → rechazo visible (RF-2).
@@ -176,8 +230,10 @@ class PhaseServiceTestCase(unittest.TestCase):
             self.assertEqual(live_trading_blockers(self.db), [])
 
     def test_live_requires_profitable_testnet(self) -> None:
-        # Entra en TESTNET con métricas de papel cumplidas.
-        self._add_ops(15, created_days_ago=31, pnl_each=Decimal("0.1"))
+        # Entra en TESTNET con métricas de papel cumplidas (27 ops; con
+        # las 3 de testnet = 30, umbral del gate RF-5).
+        self._add_ops(27, created_days_ago=31, pnl_each=Decimal("0.1"))
+        self._add_walk_forward_run("PASA")
         result = request_phase_change(
             self.db,
             new_phase=BotPhaseName.TESTNET,
@@ -235,6 +291,127 @@ class PhaseServiceTestCase(unittest.TestCase):
             db_phase_count(self.db),
             1,
         )
+
+
+class PaperGateTests(unittest.TestCase):
+    """Spec 012, RF-5: gate de paper para TESTNET→LIVE."""
+
+    def setUp(self) -> None:
+        self.session_factory = _session_factory()
+        self.db = self.session_factory()
+
+    def tearDown(self) -> None:
+        self.db.close()
+
+    @staticmethod
+    def _criteria(result: dict) -> list[str]:
+        return [item["criterion"] for item in result["missing"]]
+
+    def _add_trades(self, count: int, pnl_each: Decimal) -> None:
+        now = utc_now()
+        for index in range(count):
+            self.db.add(
+                SignalDecision(
+                    client_order_id=f"paper-gate-{pnl_each}-{index}",
+                    symbol="BTCUSDT",
+                    side=TradeSide.BUY,
+                    origin=DecisionOrigin.TECHNICAL,
+                    config_json="{}",
+                    market_snapshot_json="{}",
+                    status=DecisionStatus.CLOSED,
+                    pnl_usd=pnl_each,
+                    created_at=now - timedelta(days=31),
+                    closed_at=now,
+                )
+            )
+        self.db.commit()
+
+    def test_blocked_below_thirty_trades(self) -> None:
+        from app.services.phase_service import compute_paper_gate
+
+        self._add_trades(29, Decimal("0.1"))
+        gate = compute_paper_gate(self.db)
+
+        self.assertFalse(gate["allowed"])
+        self.assertEqual(gate["trades"], 29)
+        self.assertTrue(any("30" in r for r in gate["reasons"]))
+
+    def test_allowed_with_thirty_trades_and_positive_metrics(self) -> None:
+        from app.services.phase_service import compute_paper_gate
+
+        self._add_trades(30, Decimal("0.1"))
+        gate = compute_paper_gate(self.db)
+
+        self.assertTrue(gate["allowed"], gate)
+        self.assertEqual(gate["trades"], 30)
+        self.assertGreaterEqual(gate["expectancy_usd"], Decimal("0"))
+        self.assertLessEqual(
+            gate["drawdown_pct"], Decimal("5")
+        )
+
+    def test_blocked_when_expectancy_negative(self) -> None:
+        from app.services.phase_service import compute_paper_gate
+
+        # 29 con +0.1 y 31 con -0.1 → expectancy < 0, 60 trades.
+        self._add_trades(29, Decimal("0.1"))
+        self._add_trades(31, Decimal("-0.1"))
+        gate = compute_paper_gate(self.db)
+
+        self.assertFalse(gate["allowed"])
+        self.assertLess(gate["expectancy_usd"], Decimal("0"))
+        self.assertTrue(
+            any("expectancy" in r for r in gate["reasons"])
+        )
+
+    def test_live_transition_requires_paper_gate(self) -> None:
+        """El blocker LIVE exige el gate aunque testnet sea rentable."""
+        from app.services.phase_service import request_phase_change
+
+        now = utc_now()
+        # Paper completo para SIMULATION→TESTNET.
+        for index in range(15):
+            self.db.add(
+                SignalDecision(
+                    client_order_id=f"gate-paper-{index}",
+                    symbol="BTCUSDT",
+                    side=TradeSide.BUY,
+                    origin=DecisionOrigin.TECHNICAL,
+                    config_json="{}",
+                    market_snapshot_json="{}",
+                    status=DecisionStatus.CLOSED,
+                    pnl_usd=Decimal("0.1"),
+                    created_at=now - timedelta(days=31),
+                    closed_at=now,
+                )
+            )
+        self.db.add(
+            WalkForwardRun(
+                verdict="PASA",
+                net_pnl_usd="1.5",
+                return_pct="7.5",
+                max_drawdown_pct="2.0",
+                expectancy_usd="0.1",
+                trades=10,
+                folds=1,
+            )
+        )
+        self.db.commit()
+
+        result = request_phase_change(
+            self.db,
+            new_phase=BotPhaseName.TESTNET,
+            evidence=BACKTEST_EVIDENCE,
+        )
+        self.assertTrue(result["ok"], result)
+
+        # Ahora a LIVE: solo 15 trades de paper → bloquea por el gate.
+        result = request_phase_change(
+            self.db,
+            new_phase=BotPhaseName.LIVE,
+            evidence=BACKTEST_EVIDENCE,
+        )
+        self.assertFalse(result["ok"])
+        self.assertIn("paper_gate", self._criteria(result))
 
 
 def db_phase_count(db) -> int:

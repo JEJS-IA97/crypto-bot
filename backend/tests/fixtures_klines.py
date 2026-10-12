@@ -50,6 +50,30 @@ def range_candles(day: date) -> list[Candle]:
     ]
 
 
+def trend_hourly_flat(
+    count: int = 55, close: str = "100", end: datetime | None = None
+) -> list[Candle]:
+    """Velas 1h horarias de cierre plano (EMA≈close) para el filtro ORB.
+
+    Con close=100 deja pasar rompimientos que cierran en 106 (spec 012).
+    Las velas terminan en ``end`` (por defecto 2026-10-05 13:00 UTC = 9:00
+    AM NY, EDT) y todas están cerradas antes de las ventanas de test.
+    """
+    anchor = end if end is not None else datetime(2026, 10, 5, 13, 0)
+    value = Decimal(close)
+    return [
+        Candle(
+            open_time=anchor - timedelta(hours=offset + 1),
+            open=value,
+            high=value,
+            low=value,
+            close=value,
+            volume=Decimal("100"),
+        )
+        for offset in range(count)
+    ]
+
+
 def breakout_day(day: date, *, pump: bool = False) -> list[Candle]:
     """Día con sesión ORB completa y entrada en largo.
 

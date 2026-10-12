@@ -103,11 +103,11 @@ class TtlAndPriceDistanceTests(unittest.TestCase):
         self.assertTrue(self._validate(near).accepted)
 
     def test_quantity_computed_via_risk_math_when_missing(self) -> None:
-        # Sin cantidad → tamaño por defecto: max(5, 25% de 20) = 5 USD.
+        # Sin cantidad → tamaño por defecto: max(5, 25% de 40) = 10 USD.
         auto = _signal(quantity=None, quantity_quote=None)
         result = self._validate(auto)
         self.assertTrue(result.accepted, result.reason)
-        self.assertEqual(result.quantity, Decimal("0.05"))
+        self.assertEqual(result.quantity, Decimal("0.1"))
 
         # Con quantity_quote → importe objetivo (capital = quote / 25%).
         quoted = _signal(quantity=None, quantity_quote=Decimal("10"))

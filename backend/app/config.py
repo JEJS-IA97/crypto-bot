@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./crypto_bot.db"
 
-    simulation_initial_balance: float = 20.0
+    simulation_initial_balance: float = 40.0
     simulation_fee_rate: float = 0.001
 
     simulation_bot_enabled: bool = False
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # Phase 1: Binance Spot single-exchange trading (spec 001, RF-1/RF-2/RF-8/RF-13).
     allow_live_trading: bool = False
-    configured_capital_usd: Decimal = Decimal("20")
+    configured_capital_usd: Decimal = Decimal("40")
     api_token: str = ""
 
     trading_symbols: str = (

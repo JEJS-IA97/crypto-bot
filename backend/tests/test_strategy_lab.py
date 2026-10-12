@@ -427,29 +427,28 @@ def _orb_candle(
 
 
 def _hourly_candles(
-    closes: tuple[str, ...] = ("100",),
+    close: str = "100",
+    count: int = 55,
     end: datetime | None = None,
 ) -> tuple[Candle, ...]:
-    """Velas 1h horarias alineadas a la hora que dejan pasar el filtro.
+    """Velas 1h horarias de cierre plano (EMA≈close) para el filtro ORB.
 
-    La EMA(50) de las velas cerradas queda por debajo del cierre de
-    rompimiento (100), así que la compuerta de tendencia permite entrar.
+    close=100 deja pasar el rompimiento (cierre 106); close=200 lo
+    bloquea (spec 012 RF-3). Todas cierran antes de las ventanas de test.
     """
     anchor = end if end is not None else datetime(2026, 10, 5, 13, 0)
-    candles: list[Candle] = []
-    for offset, close in enumerate(reversed(closes)):
-        value = Decimal(close)
-        candles.append(
-            Candle(
-                open_time=anchor - timedelta(hours=offset + 1),
-                open=value,
-                high=value,
-                low=value,
-                close=value,
-                volume=Decimal("100"),
-            )
+    value = Decimal(close)
+    return tuple(
+        Candle(
+            open_time=anchor - timedelta(hours=offset + 1),
+            open=value,
+            high=value,
+            low=value,
+            close=value,
+            volume=Decimal("100"),
         )
-    return tuple(candles)
+        for offset in range(count)
+    )
 
 
 def _range_candles(day: date, skip_minute: int | None = None) -> list[Candle]:
@@ -549,13 +548,17 @@ class OrbKlineBacktestTest(unittest.TestCase):
         charged = backtest_orb(
             series,
             OrbBacktestConfig(
-                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0.001"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
         )
         slipped = backtest_orb(
             series,
             OrbBacktestConfig(
-                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0.5")
+                fee_rate=Decimal("0.001"),
+                slippage_pct=Decimal("0.5"),
+                hourly_candles=_hourly_candles(),
             ),
         )
 
@@ -577,7 +580,9 @@ class OrbKlineBacktestTest(unittest.TestCase):
         result = backtest_orb(
             candles,
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
         )
 
@@ -598,7 +603,9 @@ class OrbKlineBacktestTest(unittest.TestCase):
         result = backtest_orb(
             candles,
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
         )
 
@@ -635,7 +642,9 @@ class OrbKlineBacktestTest(unittest.TestCase):
         result = backtest_orb(
             candles,
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
         )
 
@@ -651,7 +660,11 @@ class OrbKlineBacktestTest(unittest.TestCase):
         result = backtest_orb(
             candles,
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(
+                    end=datetime(2026, 1, 15, 14, 0)
+                ),
             ),
         )
 
@@ -687,10 +700,14 @@ class OrbKlineBacktestTest(unittest.TestCase):
     def test_grid_search_orb_is_ranked_by_net(self) -> None:
         configs = [
             OrbBacktestConfig(
-                fee_rate=Decimal("0"), slippage_pct=Decimal("0")
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(),
             ),
             OrbBacktestConfig(
-                fee_rate=Decimal("0.001"), slippage_pct=Decimal("0.5")
+                fee_rate=Decimal("0.001"),
+                slippage_pct=Decimal("0.5"),
+                hourly_candles=_hourly_candles(),
             ),
         ]
 
@@ -700,6 +717,41 @@ class OrbKlineBacktestTest(unittest.TestCase):
         nets = [result.net_pnl_usd for result in results]
         self.assertEqual(nets, sorted(nets, reverse=True))
         self.assertEqual(results[0].trades, 3)
+
+    def test_trend_filter_blocks_entries_when_ema_above_close(self) -> None:
+        # Spec 012 RF-3: con la EMA(50) de las 1h por encima del cierre
+        # de rompimiento no hay entradas; sin hourly el backtest también
+        # es fail-closed (RF-2).
+        series = _orb_series()
+        blocked = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(close="200"),
+            ),
+        )
+        allowed = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+                hourly_candles=_hourly_candles(close="100"),
+            ),
+        )
+        no_hourly = backtest_orb(
+            series,
+            OrbBacktestConfig(
+                fee_rate=Decimal("0"),
+                slippage_pct=Decimal("0"),
+            ),
+        )
+
+        self.assertEqual(blocked.trades, 0)
+        self.assertEqual(blocked.net_pnl_usd, Decimal("0"))
+        self.assertEqual(allowed.trades, 3)
+        self.assertEqual(allowed.net_pnl_usd, Decimal("0.1"))
+        self.assertEqual(no_hourly.trades, 0)
 
     def test_orb_split_is_chronological(self) -> None:
         train, validation, test = split_candles(_orb_series())

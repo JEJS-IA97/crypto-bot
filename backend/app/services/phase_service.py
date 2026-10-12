@@ -28,6 +28,7 @@ from app.models import (
     BotPhaseName,
     DecisionStatus,
     SignalDecision,
+    WalkForwardRun,
     utc_now,
 )
 from app.services.structured_log import emit
@@ -35,6 +36,10 @@ from app.services.structured_log import emit
 MIN_PAPER_DAYS = 30
 MIN_PAPER_OPERATIONS = 15
 MAX_DRAWDOWN_PCT = Decimal("10")
+
+# Spec 012, RF-5 / D-11: gate de paper para TESTNET→LIVE (sin plazo).
+PAPER_GATE_MIN_TRADES = 30
+PAPER_GATE_MAX_DRAWDOWN_PCT = Decimal("5")
 
 VALIDATION_EVIDENCE_KEY = "backtest_validation_net_pnl"
 TEST_EVIDENCE_KEY = "backtest_test_net_pnl"
@@ -108,15 +113,55 @@ def paper_metrics(db: Session) -> dict[str, Any]:
             if drop > drawdown_worst:
                 drawdown_worst = drop
 
+    expectancy = (
+        (realized / len(closed)) if closed else Decimal("0")
+    ).quantize(Decimal("0.00000001"), rounding=ROUND_HALF_UP)
+
     return {
         "paper_days": paper_days,
         "operations": operations,
         "realized_pnl_usd": realized.quantize(
             Decimal("0.00000001"), rounding=ROUND_HALF_UP
         ),
+        "expectancy_usd": expectancy,
         "drawdown_pct": drawdown_worst.quantize(
             _DRAWDOWN_PLACES, rounding=ROUND_HALF_UP
         ),
+    }
+
+
+def compute_paper_gate(db: Session) -> dict[str, Any]:
+    """Gate de paper para TESTNET→LIVE (spec 012, RF-5, D-11).
+
+    Exige ≥30 trades cerrados con expectancy ≥ 0 y drawdown ≤ 5% del
+    capital aportado. Automático (D-10): sin evidencia manual.
+    """
+    metrics = paper_metrics(db)
+    trades = metrics["operations"]
+    expectancy = metrics["expectancy_usd"]
+    drawdown = metrics["drawdown_pct"]
+
+    reasons: list[str] = []
+    if trades < PAPER_GATE_MIN_TRADES:
+        reasons.append(
+            f"{trades} trades cerrados; se exigen ≥{PAPER_GATE_MIN_TRADES}"
+        )
+    if expectancy < 0:
+        reasons.append(
+            f"expectancy {expectancy} USD; debe ser ≥ 0"
+        )
+    if drawdown > PAPER_GATE_MAX_DRAWDOWN_PCT:
+        reasons.append(
+            f"drawdown {drawdown}%; el máximo es"
+            f" {PAPER_GATE_MAX_DRAWDOWN_PCT}%"
+        )
+
+    return {
+        "allowed": not reasons,
+        "trades": trades,
+        "expectancy_usd": expectancy,
+        "drawdown_pct": drawdown,
+        "reasons": reasons,
     }
 
 
@@ -242,7 +287,55 @@ def _missing_criteria(
         "backtest_test_net_pnl": str(test) if test is not None else None,
     }
 
+    # Spec 012, RF-4 (D-10): SIMULATION→TESTNET exige que la última
+    # corrida walk-forward persistida haya sido PASA (automático, sin
+    # evidencia manual en el payload).
+    if new_phase is BotPhaseName.TESTNET:
+        last_run = db.scalars(
+            select(WalkForwardRun)
+            .order_by(WalkForwardRun.id.desc())
+            .limit(1)
+        ).first()
+        if last_run is None:
+            missing.append(
+                {
+                    "criterion": "walk_forward_run",
+                    "detail": (
+                        "no hay ninguna corrida walk-forward persistida; "
+                        "ejecuta run_walk_forward.py antes de pasar a "
+                        "TESTNET"
+                    ),
+                }
+            )
+        elif last_run.verdict != "PASA":
+            missing.append(
+                {
+                    "criterion": "walk_forward_run",
+                    "detail": (
+                        f"última corrida walk-forward (id={last_run.id}) "
+                        f"con veredicto {last_run.verdict}; se exige PASA"
+                    ),
+                }
+            )
+        evidence_values["last_walk_forward_run_id"] = (
+            last_run.id if last_run is not None else None
+        )
+        evidence_values["last_walk_forward_verdict"] = (
+            last_run.verdict if last_run is not None else None
+        )
+
     if new_phase is BotPhaseName.LIVE:
+        # Spec 012, RF-5 (D-10/D-11): gate de paper automático.
+        gate = compute_paper_gate(db)
+        evidence_values["paper_gate"] = gate
+        if not gate["allowed"]:
+            missing.append(
+                {
+                    "criterion": "paper_gate",
+                    "detail": "; ".join(gate["reasons"]),
+                }
+            )
+
         tn = testnet_metrics(db, phase)
         metrics.update(tn)
         evidence_values.update(

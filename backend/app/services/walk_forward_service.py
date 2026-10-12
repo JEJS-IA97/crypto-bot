@@ -6,7 +6,7 @@ de backtest ORB de ``strategy_lab_service`` sin modificar su lógica.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -53,12 +53,19 @@ class WalkForwardConfig:
         Decimal("2.0"),
     )
     data_dir: Path = Path("data/klines")
+    # Spec 012, D-8: velas 1h para el filtro de tendencia del backtest
+    # (RF-2/RF-3). Sin archivos aquí el filtro es fail-closed.
+    hourly_dir: Path = Path("data/klines_1h")
 
     def __post_init__(self) -> None:
         if not self.symbols or any(not s for s in self.symbols):
             raise ValueError("symbols must be a non-empty tuple")
         if self.interval != "5m":
             raise ValueError("interval must be '5m' for ORB (D-2)")
+        if not isinstance(self.data_dir, Path) or not isinstance(
+            self.hourly_dir, Path
+        ):
+            raise TypeError("data_dir and hourly_dir must be Path")
         for name in ("train_days", "test_days", "step_days"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool):
@@ -221,15 +228,18 @@ def select_params(
     train: Sequence[Candle],
     validation: Sequence[Candle],
     config: WalkForwardConfig,
+    hourly: Sequence[Candle] | None = None,
 ) -> tuple[Decimal, Decimal]:
     """Mejor (SL, TP) por PnL de validación; empate ⇒ menor SL, luego TP."""
     scored = list(validation) if validation else list(train)
     if not scored:
         raise ValueError("no candles to score the grid")
+    hourly_by_symbol = {"_single_": list(hourly)} if hourly is not None else None
     return select_params_by_symbol(
         {"_single_": list(train)},
         {"_single_": scored},
         config,
+        hourly_by_symbol=hourly_by_symbol,
     )
 
 
@@ -237,6 +247,7 @@ def select_params_by_symbol(
     train_by_symbol: Mapping[str, Sequence[Candle]],
     validation_by_symbol: Mapping[str, Sequence[Candle]],
     config: WalkForwardConfig,
+    hourly_by_symbol: Mapping[str, Sequence[Candle]] | None = None,
 ) -> tuple[Decimal, Decimal]:
     """Selección global: suma el PnL de validación de todos los símbolos."""
     pairs = [
@@ -250,12 +261,17 @@ def select_params_by_symbol(
     if not pairs:
         raise ValueError("no candles to score the grid")
 
+    hourly_map = hourly_by_symbol or {}
     best: OrbBacktestConfig | None = None
     best_key: tuple[Decimal, Decimal, Decimal] | None = None
     for candidate in iter_grid(config):
         total = Decimal("0")
-        for scored, _symbol in pairs:
-            total += backtest_orb(list(scored), candidate).net_pnl_usd
+        for scored, symbol in pairs:
+            scored_config = replace(
+                candidate,
+                hourly_candles=tuple(hourly_map.get(symbol, ())),
+            )
+            total += backtest_orb(list(scored), scored_config).net_pnl_usd
         key = (
             total,
             -candidate.stop_loss_pct,
@@ -500,6 +516,26 @@ def load_dataset(config: WalkForwardConfig) -> dict[str, list[Candle]]:
     return dataset
 
 
+def load_hourly_dataset(
+    config: WalkForwardConfig,
+) -> dict[str, list[Candle]]:
+    """Carga las velas 1h de ``config.hourly_dir`` (spec 012, D-8).
+
+    Falta el archivo ⇒ error claro (fail-closed): sin 1h el filtro de
+    tendencia no puede evaluar y una corrida con el filtro apagado daría
+    un veredicto engañoso.
+    """
+    dataset: dict[str, list[Candle]] = {}
+    for symbol in config.symbols:
+        path = config.hourly_dir / f"{symbol}.jsonl"
+        if not path.exists():
+            raise ValueError(f"missing hourly klines file: {path}")
+        candles = load_klines_jsonl(path)
+        validate_candles(candles)
+        dataset[symbol] = candles
+    return dataset
+
+
 def _orb_config(
     config: WalkForwardConfig,
     stop_loss: Decimal,
@@ -518,7 +554,9 @@ def _pooled_test_trades(
     dataset: Mapping[str, Sequence[Candle]],
     fold: FoldWindow,
     orb_config: OrbBacktestConfig,
+    hourly_by_symbol: Mapping[str, Sequence[Candle]] | None = None,
 ) -> list[KlineTrade]:
+    hourly_map = hourly_by_symbol or {}
     trades: list[KlineTrade] = []
     for symbol in sorted(dataset):
         sliced = candles_in_range(
@@ -526,7 +564,10 @@ def _pooled_test_trades(
         )
         if not sliced:
             continue
-        result = backtest_orb(list(sliced), orb_config)
+        symbol_config = replace(
+            orb_config, hourly_candles=tuple(hourly_map.get(symbol, ()))
+        )
+        result = backtest_orb(list(sliced), symbol_config)
         trades.extend(result.trade_list)
     return trades
 
@@ -534,6 +575,7 @@ def _pooled_test_trades(
 def run_walk_forward(config: WalkForwardConfig) -> WalkForwardResult:
     """Corrida completa (RF-2 a RF-6): folds, selección, gate y agregado."""
     dataset = load_dataset(config)
+    hourly_dataset = load_hourly_dataset(config)
     folds = build_folds(dataset, config)
 
     fold_results: list[FoldResult] = []
@@ -554,23 +596,34 @@ def run_walk_forward(config: WalkForwardConfig) -> WalkForwardResult:
             validation_by_symbol[symbol] = validation
 
         stop_loss, take_profit = select_params_by_symbol(
-            train_by_symbol, validation_by_symbol, config
+            train_by_symbol,
+            validation_by_symbol,
+            config,
+            hourly_by_symbol=hourly_dataset,
         )
         orb_config = _orb_config(config, stop_loss, take_profit)
 
         validation_pnl = Decimal("0")
         train_trades = 0
         for symbol in sorted(dataset):
+            symbol_config = replace(
+                orb_config,
+                hourly_candles=tuple(hourly_dataset[symbol]),
+            )
             validation_result = backtest_orb(
-                list(validation_by_symbol[symbol]), orb_config
+                list(validation_by_symbol[symbol]), symbol_config
             )
             validation_pnl += validation_result.net_pnl_usd
             train_slice = candles_in_range(
                 dataset[symbol], fold.train_start, fold.train_end
             )
-            train_trades += backtest_orb(train_slice, orb_config).trades
+            train_trades += backtest_orb(
+                train_slice, symbol_config
+            ).trades
 
-        test_trades = _pooled_test_trades(dataset, fold, orb_config)
+        test_trades = _pooled_test_trades(
+            dataset, fold, orb_config, hourly_by_symbol=hourly_dataset
+        )
         metrics = compute_fold_metrics(
             test_trades,
             config.capital_usd,

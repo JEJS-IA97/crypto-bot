@@ -29,6 +29,7 @@ from app.schemas import SimulationAccountCreate
 from app.services.binance_market_data_client import SymbolRules
 from app.services.bot_loop import run_once
 from app.services.simulation_service import create_simulation_account
+from fixtures_klines import trend_hourly_flat
 
 NY = ZoneInfo("America/New_York")
 SESSION_DAY = date(2026, 10, 5)  # EDT (UTC-4)
@@ -92,9 +93,11 @@ class FakeMarketData:
         self,
         candles_15m_by_symbol: dict,
         candles_5m_by_symbol: dict | None = None,
+        candles_1h_by_symbol: dict | None = None,
     ) -> None:
         self._candles_15m = candles_15m_by_symbol
         self._candles_5m = candles_5m_by_symbol or {}
+        self._candles_1h = candles_1h_by_symbol or {}
         self.kline_calls: list[tuple[str, str]] = []
 
     def get_klines(
@@ -103,6 +106,10 @@ class FakeMarketData:
         self.kline_calls.append((symbol, interval))
         if interval == "5m":
             return list(self._candles_5m.get(symbol, []))
+        if interval == "1h":
+            if symbol in self._candles_1h:
+                return list(self._candles_1h[symbol])
+            return trend_hourly_flat()
         return list(self._candles_15m[symbol])
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:
@@ -187,10 +194,14 @@ class OrbBreakoutLoopTests(OrbLoopTestCase):
 
         self.assertEqual(report.status, "ok")
         self.assertEqual(report.opened, 1)
-        # RF-6: 15m siempre; 5m solo en la ventana ORB para el par ORB.
+        # RF-6: 15m siempre; 5m y 1h solo en la ventana ORB para el par ORB.
         self.assertEqual(
             market.kline_calls,
-            [("BTCUSDT", "15m"), ("BTCUSDT", "5m")],
+            [
+                ("BTCUSDT", "15m"),
+                ("BTCUSDT", "5m"),
+                ("BTCUSDT", "1h"),
+            ],
         )
 
         decisions = self._decisions()
@@ -292,7 +303,11 @@ class OrbBreakoutLoopTests(OrbLoopTestCase):
         self.assertEqual(self._decisions(), [])
         self.assertEqual(
             market.kline_calls,
-            [("BTCUSDT", "15m"), ("BTCUSDT", "5m")],
+            [
+                ("BTCUSDT", "15m"),
+                ("BTCUSDT", "5m"),
+                ("BTCUSDT", "1h"),
+            ],
         )
 
 
@@ -329,6 +344,36 @@ class OrbWindowAndScopeTests(OrbLoopTestCase):
 
         self.assertEqual(report.status, "failed")
         self.assertIn("Empty ORB klines", report.error)
+        self.assertEqual(self._decisions(), [])
+        self.assertEqual(self.db.scalars(select(PositionV2)).all(), [])
+
+    def test_empty_hourly_klines_fails_the_cycle(self) -> None:
+        # Spec 012 RF-1: sin velas 1h en ventana → ciclo fallido (RNF-6),
+        # sin órdenes: el filtro de tendencia es fail-closed.
+        market = FakeMarketData(
+            {"BTCUSDT": candles_15m()},
+            {"BTCUSDT": range_candles()},
+            {"BTCUSDT": []},
+        )
+        report = self._run(market, now=NOW_IN_WINDOW)
+
+        self.assertEqual(report.status, "failed")
+        self.assertIn("Empty ORB hourly klines", report.error)
+        self.assertEqual(self._decisions(), [])
+        self.assertEqual(self.db.scalars(select(PositionV2)).all(), [])
+
+    def test_trend_filter_reject_holds_without_opening(self) -> None:
+        # Spec 012 RF-1: EMA(50) de las 1h en 200 > cierre 106 → la
+        # compuerta rechaza y el ciclo no abre ni persiste decisión.
+        market = FakeMarketData(
+            {"BTCUSDT": candles_15m()},
+            {"BTCUSDT": range_candles()},
+            {"BTCUSDT": trend_hourly_flat(close="200")},
+        )
+        report = self._run(market, now=NOW_IN_WINDOW)
+
+        self.assertEqual(report.status, "ok")
+        self.assertEqual(report.opened, 0)
         self.assertEqual(self._decisions(), [])
         self.assertEqual(self.db.scalars(select(PositionV2)).all(), [])
 

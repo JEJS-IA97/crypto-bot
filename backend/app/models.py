@@ -1180,3 +1180,75 @@ class StrategyVersion(Base):
         DateTime,
         default=utc_now,
     )
+
+
+class WalkForwardRun(Base):
+    """Corrida walk-forward persistida (spec 012, RF-4).
+
+    Una fila por corrida del CLI ``run_walk_forward``: guarda el veredicto
+    PASA/NO PASA, el PnL agregado y la ventana de fechas para que
+    ``phase_service`` pueda exigir la última corrida al cambiar de fase.
+    """
+
+    __tablename__ = "walk_forward_runs"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=utc_now,
+        index=True,
+    )
+
+    symbols_json: Mapped[str] = mapped_column(
+        Text,
+        default="[]",
+    )
+
+    verdict: Mapped[str] = mapped_column(
+        String(20),
+    )
+
+    net_pnl_usd: Mapped[str] = mapped_column(
+        String(40),
+    )
+
+    return_pct: Mapped[str] = mapped_column(
+        String(40),
+    )
+
+    max_drawdown_pct: Mapped[str] = mapped_column(
+        String(40),
+    )
+
+    expectancy_usd: Mapped[str] = mapped_column(
+        String(40),
+    )
+
+    trades: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    folds: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+    )
+
+    hold_start: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    hold_end: Mapped[str | None] = mapped_column(
+        String(10),
+        nullable=True,
+    )
+
+    report_path: Mapped[str | None] = mapped_column(
+        String(300),
+        nullable=True,
+    )

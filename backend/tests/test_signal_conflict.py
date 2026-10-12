@@ -23,6 +23,7 @@ from app.services.exchange_executor import OrderRequest
 from app.services.external_signal_service import EXTERNAL_CONFLICT_REASON
 from app.services.simulation_executor import SimulationExecutor
 from app.services.simulation_service import create_simulation_account
+from fixtures_klines import trend_hourly_flat
 
 NY = ZoneInfo("America/New_York")
 SESSION_DAY = date(2026, 10, 5)  # EDT (UTC-4)
@@ -102,6 +103,8 @@ class FakeMarketData:
         self.kline_calls.append((symbol, interval))
         if interval == "5m":
             return list(self._candles_5m)
+        if interval == "1h":
+            return trend_hourly_flat()
         return list(self._candles_15m[symbol])
 
     def get_exchange_info(self, symbol: str) -> SymbolRules:

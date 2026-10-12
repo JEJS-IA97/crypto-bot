@@ -114,6 +114,10 @@ REASON_ORB_SKIPPED = "orb_not_evaluated"
 # margen para reinicios y caché): 50 velas = ~4 h de historial.
 ORB_KLINE_LIMIT = 50
 
+# Velas 1h para el filtro de tendencia del ORB (spec 012, RF-1): la
+# EMA(50) necesita 50 velas cerradas; 55 deja margen de holgura.
+ORB_HOURLY_KLINE_LIMIT = 55
+
 # Spec 005, RF-8: purga de eventos viejos como máximo una vez cada 24 h
 # (además de la purga al arrancar en el lifespan de main).
 PURGE_INTERVAL_SECONDS = 86400
@@ -501,6 +505,7 @@ def _execute_cycle(
         symbol for symbol in symbols if symbol in active_orb_symbols
     ]
     orb_candles_by_symbol: dict[str, list[Candle]] = {}
+    orb_hourly_by_symbol: dict[str, list[Candle]] = {}
     if orb_symbols and in_orb_window(now, orb_config):
         since = ny_day_start_utc(now, orb_config)
         for symbol in orb_symbols:
@@ -515,7 +520,17 @@ def _execute_cycle(
                 raise MarketDataUnavailable(
                     f"Empty ORB klines for {symbol}"
                 )
+            # Spec 012, RF-1: el filtro de tendencia exige velas 1h;
+            # sin ellas no hay entrada (fail-closed).
+            candles_1h = market_data.get_klines(
+                symbol, interval="1h", limit=ORB_HOURLY_KLINE_LIMIT
+            )
+            if not candles_1h:
+                raise MarketDataUnavailable(
+                    f"Empty ORB hourly klines for {symbol}"
+                )
             orb_candles_by_symbol[symbol] = candles_5m
+            orb_hourly_by_symbol[symbol] = candles_1h
 
     active_executor = (
         executor
@@ -600,7 +615,12 @@ def _execute_cycle(
 
         orb_candles = orb_candles_by_symbol.get(symbol)
         if orb_candles is not None:
-            technical = evaluate_orb(orb_candles, now, orb_config)
+            technical = evaluate_orb(
+                orb_candles,
+                now,
+                orb_config,
+                hourly_candles=orb_hourly_by_symbol.get(symbol),
+            )
         elif symbol not in active_orb_symbols:
             technical = SignalResult(
                 SignalAction.HOLD, REASON_NON_ORB, {}

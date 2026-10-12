@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from app.services.walk_forward_service import (
@@ -19,10 +19,16 @@ from fixtures_klines import (
     breakout_day,
     orb_candle,
     ranging_win_day,
+    trend_hourly_flat,
     walk_forward_dataset,
 )
 
 _START = date(2026, 1, 1)
+
+
+def _hourly() -> list:
+    """Velas 1h que dejan pasar el filtro ORB en enero (spec 012)."""
+    return trend_hourly_flat(count=24 * 20, end=datetime(2026, 1, 12, 0))
 
 
 def _config(**overrides: object) -> WalkForwardConfig:
@@ -211,7 +217,7 @@ class SelectParamsTest(unittest.TestCase):
             candles += ranging_win_day(_START + timedelta(days=offset))
         config = self._zero_cost_config()
         train_part, validation = split_train_validation(candles, 0.15)
-        best = select_params(train_part, validation, config)
+        best = select_params(train_part, validation, config, hourly=_hourly())
         # TP=1 gana en validación; SL irrelevante ⇒ empate ⇒ menor SL.
         self.assertEqual(best, (Decimal("1.0"), Decimal("1.0")))
 
@@ -245,8 +251,8 @@ class SelectParamsTest(unittest.TestCase):
         split_base = split_train_validation(train_base, config.validation_ratio)
         split_pump = split_train_validation(train_pump, config.validation_ratio)
         self.assertEqual(
-            select_params(*split_base, config),
-            select_params(*split_pump, config),
+            select_params(*split_base, config, hourly=_hourly()),
+            select_params(*split_pump, config, hourly=_hourly()),
         )
 
     def test_missing_score_candles_raises(self) -> None:

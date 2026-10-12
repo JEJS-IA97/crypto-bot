@@ -21,7 +21,8 @@ class ConfigTests(unittest.TestCase):
     def test_live_trading_disabled_by_default(self) -> None:
         settings = _settings_without_env()
         self.assertIs(settings.allow_live_trading, False)
-        self.assertEqual(settings.configured_capital_usd, Decimal("20"))
+        self.assertEqual(settings.configured_capital_usd, Decimal("40"))
+        self.assertEqual(settings.simulation_initial_balance, 40.0)
         self.assertEqual(settings.api_token, "")
 
     def test_live_trading_enabled_by_env(self) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,7 +13,12 @@ from app.services.walk_forward_service import (
     render_report,
     run_walk_forward,
 )
-from fixtures_klines import ranging_win_day, sl_loss_day, write_klines_jsonl
+from fixtures_klines import (
+    ranging_win_day,
+    sl_loss_day,
+    trend_hourly_flat,
+    write_klines_jsonl,
+)
 from run_walk_forward import main
 
 _START = date(2026, 4, 1)
@@ -26,6 +31,16 @@ def _write_dataset(root: Path, days: int, day_factory) -> None:
     write_klines_jsonl(root / "BTCUSDT.jsonl", candles)
 
 
+def _write_hourly(root: Path, symbols: tuple[str, ...] = ("BTCUSDT",)) -> None:
+    # Spec 012, D-8: el walk-forward exige velas 1h para el filtro.
+    hourly_dir = root / "hourly"
+    hourly_dir.mkdir(parents=True, exist_ok=True)
+    end = datetime.combine(_START + timedelta(days=20), datetime.min.time())
+    candles = trend_hourly_flat(count=24 * 20, end=end)
+    for symbol in symbols:
+        write_klines_jsonl(hourly_dir / f"{symbol}.jsonl", candles)
+
+
 def _config(data_dir: Path, **overrides: object) -> WalkForwardConfig:
     defaults: dict[str, object] = {
         "symbols": ("BTCUSDT",),
@@ -33,6 +48,7 @@ def _config(data_dir: Path, **overrides: object) -> WalkForwardConfig:
         "test_days": 5,
         "step_days": 5,
         "data_dir": data_dir,
+        "hourly_dir": data_dir / "hourly",
     }
     defaults.update(overrides)
     return WalkForwardConfig(**defaults)  # type: ignore[arg-type]
@@ -45,6 +61,7 @@ class RunWalkForwardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write_dataset(root, 15, ranging_win_day)
+            _write_hourly(root)
             result = run_walk_forward(_config(root))
 
         self.assertEqual(result.verdict, "PASA")
@@ -61,6 +78,7 @@ class RunWalkForwardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write_dataset(root, 15, sl_loss_day)
+            _write_hourly(root)
             result = run_walk_forward(_config(root))
 
         self.assertEqual(result.verdict, "NO PASA")
@@ -74,6 +92,7 @@ class RunWalkForwardTest(unittest.TestCase):
                 for offset in range(15):
                     candles += ranging_win_day(_START + timedelta(days=offset))
                 write_klines_jsonl(root / f"{symbol}.jsonl", candles)
+            _write_hourly(root, symbols=("BTCUSDT", "ETHUSDT"))
             result = run_walk_forward(
                 _config(root, symbols=("BTCUSDT", "ETHUSDT"))
             )
@@ -91,6 +110,7 @@ class RunWalkForwardTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write_dataset(root, 15, ranging_win_day)
+            _write_hourly(root)
             first = run_walk_forward(_config(root))
             second = run_walk_forward(_config(root))
         self.assertEqual(first, second)
@@ -104,6 +124,7 @@ class RenderReportTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write_dataset(root, 15, ranging_win_day)
+            _write_hourly(root)
             result = run_walk_forward(_config(root))
             report = render_report(result)
 
@@ -123,6 +144,7 @@ class CliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             _write_dataset(root, 15, ranging_win_day)
+            _write_hourly(root)
             out = root / "reports"
             code = main(
                 [
@@ -136,6 +158,8 @@ class CliTest(unittest.TestCase):
                     "5",
                     "--data-dir",
                     str(root),
+                    "--hourly-dir",
+                    str(root / "hourly"),
                     "--output-dir",
                     str(out),
                 ]
@@ -150,6 +174,56 @@ class CliTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             code = main(["--data-dir", tmp, "--symbols", "BTCUSDT"])
         self.assertEqual(code, 1)
+
+
+class PersistRunTest(unittest.TestCase):
+    """Spec 012, RF-4: la corrida queda persistida con veredicto y pnl."""
+
+    def setUp(self) -> None:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from app.database import Base, _enable_sqlite_foreign_keys
+
+        self.engine = create_engine("sqlite://")
+        _enable_sqlite_foreign_keys(self.engine)
+        Base.metadata.create_all(self.engine)
+        self.factory = sessionmaker(bind=self.engine)
+
+    def tearDown(self) -> None:
+        self.engine.dispose()
+
+    def test_run_is_persisted_with_verdict_and_pnl(self) -> None:
+        from app.models import WalkForwardRun
+
+        from run_walk_forward import persist_run
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write_dataset(root, 15, ranging_win_day)
+            _write_hourly(root)
+            result = run_walk_forward(_config(root))
+            report = root / "report.md"
+            report.write_text("x", encoding="utf-8")
+
+            run_id = persist_run(result, self.factory, report_path=report)
+
+        session = self.factory()
+        try:
+            run = session.get(WalkForwardRun, run_id)
+            self.assertIsNotNone(run)
+            assert run is not None
+            self.assertEqual(run.verdict, result.verdict)
+            self.assertEqual(
+                run.net_pnl_usd, str(result.aggregate.net_pnl_usd)
+            )
+            self.assertEqual(run.trades, result.aggregate.trades)
+            self.assertEqual(run.folds, len(result.folds))
+            self.assertEqual(run.symbols_json, '["BTCUSDT"]')
+            self.assertEqual(run.report_path, str(report))
+            self.assertIsNotNone(run.created_at)
+        finally:
+            session.close()
 
 
 if __name__ == "__main__":

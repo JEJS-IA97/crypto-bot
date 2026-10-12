@@ -20,7 +20,7 @@ from app.services.walk_forward_service import (
     daily_sharpe,
     max_drawdown,
 )
-from fixtures_klines import walk_forward_dataset
+from fixtures_klines import trend_hourly_flat, walk_forward_dataset
 
 _CAPITAL = Decimal("20")
 _DAY0 = date(2026, 3, 1)
@@ -195,6 +195,9 @@ class EngineTradeListTest(unittest.TestCase):
                 fee_rate=Decimal("0.001"),
                 slippage_pct=Decimal("0.05"),
                 capital_usd=_CAPITAL,
+                hourly_candles=tuple(
+                    trend_hourly_flat(count=24 * 8, end=datetime(2026, 3, 8))
+                ),
             ),
         )
         self.assertGreater(result.trades, 0)
