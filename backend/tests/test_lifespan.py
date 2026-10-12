@@ -4,9 +4,10 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, inspect, text
 
 from app.config import settings
-from app.main import app
+from app.main import add_missing_columns, app
 
 
 class LifespanBotStartTests(unittest.TestCase):
@@ -41,6 +42,35 @@ class LifespanBotStartTests(unittest.TestCase):
                 pass
 
         self.assertEqual(started, [])
+
+
+class AddMissingColumnsTests(unittest.TestCase):
+    """`create_all` no añade columnas: el drift rompía los fills (10/10)."""
+
+    def test_adds_missing_columns_and_is_idempotent(self) -> None:
+        engine = create_engine("sqlite://")
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE TABLE simulation_trades"
+                    " (id INTEGER PRIMARY KEY)"
+                )
+            )
+
+        add_missing_columns(engine)
+        add_missing_columns(engine)
+
+        columns = {
+            column["name"]
+            for column in inspect(engine).get_columns("simulation_trades")
+        }
+        self.assertIn("decision_id", columns)
+        self.assertIn("symbol", columns)
+
+    def test_missing_tables_are_left_to_create_all(self) -> None:
+        engine = create_engine("sqlite://")
+
+        add_missing_columns(engine)
 
 
 if __name__ == "__main__":

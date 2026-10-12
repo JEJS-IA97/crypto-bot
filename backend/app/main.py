@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import Engine, inspect, text
 
 from app.api.routes import (
     ai,
@@ -57,11 +58,45 @@ def _cors_kwargs(origins_csv: str) -> dict[str, object]:
     }
 
 
+def add_missing_columns(bind: Engine) -> None:
+    """Sincroniza columnas del modelo con las tablas existentes.
+
+    `create_all` solo crea tablas ausentes: si el modelo gana una columna
+    (p.ej. `simulation_trades.decision_id`), la BD vieja sigue sin ella y
+    cada INSERT/SELECT del ORM revienta (bug del 10/10: sin fill de orden).
+    """
+    inspector = inspect(bind)
+    preparer = bind.dialect.identifier_preparer
+    with bind.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if not inspector.has_table(table.name):
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                # shortcut: solo la columna (sin índices/unique); migrar con
+                # Alembic cuando haga falta replicar constraints.
+                conn.execute(
+                    text(
+                        f"ALTER TABLE {preparer.quote(table.name)}"
+                        f" ADD COLUMN {preparer.quote(column.name)}"
+                        f" {column.type.compile(bind.dialect)}"
+                    )
+                )
+                logger.warning(
+                    "schema drift fixed: added %s.%s",
+                    table.name,
+                    column.name,
+                )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(
         bind=engine
     )
+    add_missing_columns(engine)
 
     # Spec 005, RF-1/RF-8: log JSON + purga inicial de eventos viejos.
     log_handler = configure_logging()
