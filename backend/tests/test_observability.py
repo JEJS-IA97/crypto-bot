@@ -11,6 +11,7 @@ import json
 import logging
 import re
 import unittest
+from unittest.mock import patch
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -458,6 +459,7 @@ class AggregatesTests(unittest.TestCase):
         )
 
 
+@patch.object(settings, "orb_enabled", True)  # ORB en reposo por defecto
 class CorrelationIdTests(unittest.TestCase):
     """RF-2: un correlation_id por ciclo une evento y decisión."""
 

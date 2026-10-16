@@ -1,5 +1,7 @@
 # Spec 012 — Estrategia ORB v2 con filtro de tendencia
 
+> **Estado: NO VALIDADA — en reposo (2026-10-16).** ORB v1 no pasó su walk-forward (−14.1 % neto, 0/6 folds, PnL bruto negativo) y ORB v2 nunca se evaluó (T10 sin hacer). Por constitución #2 el código se conserva, pero el loop no evalúa ORB: `orb_enabled=False` por defecto en `app/config.py`. Reactivarlo exige spec nueva aprobada. Contexto: `docs/contexto-2026-10-16/README.md`.
+
 ## Contexto
 
 La spec 011 construyó el walk-forward ORB y su gate estadístico. Ejecutado con datos

@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     )
     # Pares con señal técnica ORB (spec 001, D-12); el resto solo externas.
     orb_symbols: str = "BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,ADAUSDT"
+    # ORB en reposo (constitución #2): v1 NO PASA su walk-forward y v2 no se
+    # validó (spec 012). El código queda; el loop no lo evalúa salvo opt-in.
+    orb_enabled: bool = False
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")
@@ -86,6 +89,8 @@ class Settings(BaseSettings):
     # nivel de log y version de estrategia que viaja en cada evento.
     event_retention_days: int = 30
     log_level: str = "INFO"
+    # Vacío = log a stderr; con ruta = archivo rotado 5×5 MB (iniciar_bot.bat).
+    log_file: str = ""
     strategy_version: str = "orb-001-v3"
 
     # Datos y contexto (spec 006, D-2): fuentes declaradas. URL vacia =

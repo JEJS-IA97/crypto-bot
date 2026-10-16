@@ -1,5 +1,7 @@
 # Tareas — spec 012: estrategia ORB v2
 
+> **Estado: NO VALIDADA — en reposo (2026-10-16).** ORB v1 no pasó su walk-forward (−14.1 % neto, 0/6 folds, PnL bruto negativo) y ORB v2 nunca se evaluó (T10 sin hacer). Por constitución #2 el código se conserva, pero el loop no evalúa ORB: `orb_enabled=False` por defecto en `app/config.py`. Reactivarlo exige spec nueva aprobada. Contexto: `docs/contexto-2026-10-16/README.md`.
+
 Orden por dependencia. Cada tarea <30 min, tests primero.
 
 - [x] **T1** `app/domain/trend_filter.py` + `tests/test_trend_filter.py` — RF-1, RF-2 parcial, RF-8.
@@ -26,11 +28,11 @@ Orden por dependencia. Cada tarea <30 min, tests primero.
 - [x] **T8** Capital 40: `config.py`, `.env`, `.env.example`, `docs/constitution.md` punto 3, reset cuenta paper vía `reset_simulation_account` — RF-6.
   Hecho cuando: `Settings(_env_file=None).configured_capital_usd == 40` y `simulation_initial_balance == 40`; test actualizado en verde; cuenta reiniciada a 40 USD.
 
-- [ ] **T9** `bot_loop` descarga klines 1h (55 velas) en ventana ORB y las pasa a `evaluate_orb` — RF-1, RF-2, RF-7.
+- [x] **T9** `bot_loop` descarga klines 1h (55 velas) en ventana ORB y las pasa a `evaluate_orb` — RF-1, RF-2, RF-7.
   Hecho cuando: test con cliente mockeado verifica que pide intervalo `1h` y que el HOLD `trend_filter_reject` persiste en la decisión; suite en verde.
 
-- [ ] **T10** Operativa: descargar 1h reales de los 5 pares a `data/klines_1h` y ejecutar walk-forward v2 — RF-2, RF-3, finalización 1.
+- [ ] ~~**T10**~~ (cancelada: spec no validada) Operativa: descargar 1h reales de los 5 pares a `data/klines_1h` y ejecutar walk-forward v2 — RF-2, RF-3, finalización 1.
   Hecho cuando: informe `reports/walk-forward-*.md` con veredicto mostrado al propietario y fila persistida.
 
-- [ ] **T11** Validación RF por RF + docs (README: sección v2) — cierre.
+- [ ] ~~**T11**~~ (cancelada: spec no validada) Validación RF por RF + docs (README: sección v2) — cierre.
   Hecho cuando: checklist RF→test→resultado completo y suite global en verde.

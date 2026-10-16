@@ -32,6 +32,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app import database
@@ -118,6 +119,11 @@ ORB_KLINE_LIMIT = 50
 # EMA(50) necesita 50 velas cerradas; 55 deja margen de holgura.
 ORB_HOURLY_KLINE_LIMIT = 55
 
+# Neon (tier gratuito) corta conexiones: ante OperationalError el ciclo se
+# reintenta tras estas esperas. Reintentar equivale a adelantar el siguiente
+# ciclo: cada ciclo relee el estado de la BD.
+DB_RETRY_DELAYS_SECONDS = (2, 5, 10)
+
 # Spec 005, RF-8: purga de eventos viejos como máximo una vez cada 24 h
 # (además de la purga al arrancar en el lifespan de main).
 PURGE_INTERVAL_SECONDS = 86400
@@ -142,6 +148,28 @@ def _mark_source_quiet(
         mark_source(db, name, ok=ok, error=error)
     except Exception:
         logger.exception("could not mark source %s", name)
+
+
+def _rollback_quiet(db: Session) -> None:
+    """Deja la sesión usable tras un fallo; sin esto todo lo que sigue en
+    el ciclo (marcar fuente, fase, breaker) falla en cascada."""
+    try:
+        db.rollback()
+    except Exception:
+        logger.exception("could not roll back session")
+
+
+def _execute_cycle_with_db_retry(db: Session, **kwargs) -> "CycleReport":
+    """``_execute_cycle`` con reintento y backoff ante caídas de la BD."""
+    for delay in DB_RETRY_DELAYS_SECONDS:
+        try:
+            return _execute_cycle(db, **kwargs)
+        except OperationalError:
+            _rollback_quiet(db)
+            logger.warning("database unavailable, retrying cycle in %ss", delay)
+            # shortcut: bloquea el event loop hasta 17 s (como el propio ciclo síncrono); pasar a asyncio.to_thread si la API debe responder durante caídas de Neon.
+            time.sleep(delay)
+    return _execute_cycle(db, **kwargs)
 
 
 def _current_mode(db: Session) -> str:
@@ -207,7 +235,9 @@ def _trading_symbols() -> list[str]:
 
 
 def _orb_symbols() -> set[str]:
-    """Pares con señal técnica ORB (spec 001, D-12)."""
+    """Pares con señal técnica ORB (spec 001, D-12); vacío si está en reposo."""
+    if not settings.orb_enabled:
+        return set()
     return {
         part.strip().upper()
         for part in settings.orb_symbols.split(",")
@@ -774,7 +804,7 @@ def run_once(
     active_now = now if now is not None else utc_now()
 
     try:
-        report = _execute_cycle(
+        report = _execute_cycle_with_db_retry(
             db,
             market_data=market_data,
             symbols=active_symbols,
@@ -786,6 +816,7 @@ def run_once(
         )
     except Exception as exc:
         logger.exception("bot cycle failed")
+        _rollback_quiet(db)
         report = CycleReport(status="failed", error=str(exc))
         # Spec 005, RF-5: el fallo marca la fuente implicada (fail-open).
         if isinstance(exc, MarketDataUnavailable):
@@ -878,6 +909,7 @@ async def run(
                     )
             except Exception:
                 logger.exception("bot loop cycle failed")
+                _rollback_quiet(db)
                 try:
                     record_cycle_failure(db)
                 except Exception:

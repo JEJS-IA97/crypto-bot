@@ -15,9 +15,15 @@ import json
 import logging
 import sys
 from datetime import datetime, timezone
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Any
 
 from app.config import settings
+
+#: Rotación del log en archivo: 5 archivos × 5 MB (Paso 0c).
+LOG_FILE_MAX_BYTES = 5 * 1024 * 1024
+LOG_FILE_BACKUPS = 5
 
 #: Sustituto para valores de campos prohibidos (RF-4).
 REDACTED = "[REDACTED]"
@@ -123,17 +129,30 @@ class JsonFormatter(logging.Formatter):
             )
 
 
-def configure_logging() -> logging.StreamHandler | None:
+def configure_logging() -> logging.Handler | None:
     """Instala el ``JsonFormatter`` en la raíz; idempotente (RF-1).
 
-    Devuelve el handler que creó (``None`` si ya estaba configurado) para
-    que el lifespan pueda retirarlo al apagar.
+    Con ``settings.log_file`` escribe a un archivo rotado (5 × 5 MB);
+    si no, a stderr. Devuelve el handler que creó (``None`` si ya estaba
+    configurado) para que el lifespan pueda retirarlo al apagar.
     """
     root = logging.getLogger()
     for handler in root.handlers:
         if isinstance(handler.formatter, JsonFormatter):
             return None
-    handler = logging.StreamHandler(sys.stderr)
+    # httpx loguea cada request a INFO: era ~90% del log.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    handler: logging.Handler
+    if settings.log_file:
+        Path(settings.log_file).parent.mkdir(parents=True, exist_ok=True)
+        handler = RotatingFileHandler(
+            settings.log_file,
+            maxBytes=LOG_FILE_MAX_BYTES,
+            backupCount=LOG_FILE_BACKUPS,
+            encoding="utf-8",
+        )
+    else:
+        handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(JsonFormatter())
     root.addHandler(handler)
     level = str(settings.log_level).upper()
