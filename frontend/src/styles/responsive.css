@@ -124,3 +124,13 @@
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Tarjeta de tendencia: en móvil se ocultan las distancias a las SMA */
+@media (max-width: 640px) {
+    .trend-table thead th:nth-child(4),
+    .trend-table thead th:nth-child(5),
+    .trend-table tbody td:nth-child(4),
+    .trend-table tbody td:nth-child(5) {
+        display: none;
+    }
+}

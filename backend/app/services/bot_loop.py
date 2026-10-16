@@ -43,12 +43,13 @@ from app.domain.orb_engine import (
     in_orb_window,
     ny_day_start_utc,
 )
-from app.domain.risk_math import calculate_order_size
+from app.domain.risk_math import allocation_order_size, calculate_order_size
 from app.domain.signal_engine import (
     Candle,
     SignalAction,
     SignalResult,
 )
+from app.domain.trend_engine import TrendConfig, evaluate_trend
 from app.models import (
     BotRuntime,
     DecisionOrigin,
@@ -110,6 +111,12 @@ REASON_SUPERSEDED = "superseded_by_external_signal"
 REASON_NOT_TRADING = "symbol_not_trading"
 REASON_NON_ORB = "non_orb_symbol"
 REASON_ORB_SKIPPED = "orb_not_evaluated"
+REASON_TREND_OUTSIDE = "trend_outside_in_usdt"
+REASON_TREND_DECIDED = "trend_buy_already_tried_today"
+
+# Velas 1d para el núcleo de tendencia: SMA200 necesita 200 cerradas; se
+# piden 210 (la del día en curso se descarta y queda margen).
+TREND_KLINE_LIMIT = 210
 
 # Velas 5m para la ventana ORB (6 del rango + 6 del rompimiento, con
 # margen para reinicios y caché): 50 velas = ~4 h de historial.
@@ -245,6 +252,21 @@ def _orb_symbols() -> set[str]:
     }
 
 
+def _trend_symbols() -> set[str]:
+    """Pares del núcleo de tendencia; vacío si está desactivado."""
+    if not settings.trend_enabled:
+        return set()
+    return {
+        part.strip().upper()
+        for part in settings.trend_symbols.split(",")
+        if part.strip()
+    }
+
+
+def _utc_day_start(now: datetime) -> datetime:
+    return datetime.combine(now.date(), datetime.min.time())
+
+
 def _is_running(db: Session) -> bool:
     """Kill switch leído del registro persistido (visible entre hilos)."""
     value = db.execute(
@@ -318,15 +340,28 @@ def _try_open(
     decision: SignalDecision | None = None,
     technical: SignalResult | None = None,
     correlation_id: str | None = None,
+    trend: bool = False,
 ) -> str:
-    """Riesgo → orden idempotente → stop/tp. Devuelve opened/rejected/stopped."""
+    """Riesgo → orden idempotente → stop/tp. Devuelve opened/rejected/stopped.
+
+    ``trend=True`` (núcleo de tendencia): tamaño por asignación del capital,
+    sin resize por correlación y sin stop/tp.
+    """
     if decision is None:
         decision = record_decision(
             db,
             symbol=symbol,
             side=TradeSide.BUY,
             origin=DecisionOrigin.TECHNICAL,
-            config=asdict(orb_config),
+            config=(
+                {
+                    "strategy": settings.strategy_version,
+                    **asdict(TrendConfig()),
+                    "allocation_pct": str(settings.trend_allocation_pct),
+                }
+                if trend
+                else asdict(orb_config)
+            ),
             snapshot={
                 **_snapshot(
                     candles=candles,
@@ -345,7 +380,25 @@ def _try_open(
         return "rejected"
 
     quantity = decision.quantity
-    if quantity is None:
+    if quantity is None and trend:
+        sizing = allocation_order_size(
+            price=price,
+            target_usd=settings.configured_capital_usd
+            * settings.trend_allocation_pct
+            / Decimal(100),
+            available_usd=balance.available_usd,
+            min_notional_usd=rules.min_notional,
+            step_size=rules.step_size,
+            # Comisión + slippage máximo: sin margen, la 2.ª compra del día
+            # supera el saldo y el simulador rechaza la orden.
+            cost_reserve_pct=Decimal(str(settings.simulation_fee_rate)) * 100
+            + settings.simulation_bot_max_slippage_percent,
+        )
+        if sizing.discarded:
+            mark_rejected(db, decision, sizing.reason)
+            return "rejected"
+        quantity = sizing.quantity
+    elif quantity is None:
         sizing = calculate_order_size(
             price=price,
             capital_usd=settings.configured_capital_usd,
@@ -376,6 +429,7 @@ def _try_open(
         min_notional_usd=rules.min_notional,
         available_usd=balance.available_usd,
         correlation_id=correlation_id,
+        check_correlation=not trend,
     )
     if assessment.action == RiskAction.BLOCKED:
         mark_rejected(db, decision, assessment.reason)
@@ -454,6 +508,7 @@ def _try_open(
         decision=decision,
         fill=fill,
         tick_size=rules.tick_size,
+        protect=not trend,
     )
     if position.status == PositionStatus.OPEN:
         register_open(db, state, symbol)
@@ -562,6 +617,22 @@ def _execute_cycle(
             orb_candles_by_symbol[symbol] = candles_5m
             orb_hourly_by_symbol[symbol] = candles_1h
 
+    # Núcleo de tendencia: la señal sale de velas 1d cerradas; se evalúa en
+    # cada ciclo (es idempotente: solo opera si posición y señal difieren),
+    # así un PC apagado se pone al día en el primer ciclo.
+    daily_by_symbol: dict[str, list[Candle]] = {}
+    trend_by_symbol: dict[str, SignalResult] = {}
+    for symbol in symbols:
+        if symbol not in _trend_symbols():
+            continue
+        daily = market_data.get_klines(
+            symbol, interval="1d", limit=TREND_KLINE_LIMIT
+        )
+        if not daily:
+            raise MarketDataUnavailable(f"Empty daily klines for {symbol}")
+        daily_by_symbol[symbol] = daily
+        trend_by_symbol[symbol] = evaluate_trend(daily, now)
+
     active_executor = (
         executor
         if executor is not None
@@ -629,6 +700,36 @@ def _execute_cycle(
                 rejected += 1
                 continue
 
+            trend = trend_by_symbol.get(symbol)
+            if (
+                trend is not None
+                and trend.action == SignalAction.SELL
+                and decision.origin == DecisionOrigin.TECHNICAL
+            ):
+                # shortcut: se guarda como cierre "manual" (el enum de BD no
+                # tiene valor propio); el motivo real va en trend.exit.
+                close_position(
+                    db,
+                    position=position,
+                    decision=decision,
+                    executor=active_executor,
+                    exit_price=price,
+                    expected_price=price,
+                    reason="manual",
+                )
+                closed += 1
+                _record_close_pnl(db, state, decision)
+                emit(
+                    service="bot_loop",
+                    event="trend.exit",
+                    result="ok",
+                    asset=symbol,
+                    correlation_id=correlation_id,
+                    payload=dict(trend.metrics),
+                    db=db,
+                )
+                continue
+
             closed_position = check_exits(
                 db,
                 position=position,
@@ -644,7 +745,25 @@ def _execute_cycle(
             continue
 
         orb_candles = orb_candles_by_symbol.get(symbol)
-        if orb_candles is not None:
+        trend = trend_by_symbol.get(symbol)
+        if trend is not None:
+            technical = trend
+            if trend.action == SignalAction.SELL:
+                # Fuera de tendencia y sin posición: ya está en USDT.
+                technical = SignalResult(
+                    SignalAction.HOLD, REASON_TREND_OUTSIDE, trend.metrics
+                )
+            elif trend.action == SignalAction.BUY and (
+                has_technical_decision_since(
+                    db, symbol=symbol, since=_utc_day_start(now)
+                )
+            ):
+                # Un intento de compra por día UTC: un rechazo no se repite
+                # en cada ciclo.
+                technical = SignalResult(
+                    SignalAction.HOLD, REASON_TREND_DECIDED, trend.metrics
+                )
+        elif orb_candles is not None:
             technical = evaluate_orb(
                 orb_candles,
                 now,
@@ -661,7 +780,9 @@ def _execute_cycle(
                 SignalAction.HOLD, REASON_ORB_SKIPPED, {}
             )
         # Snapshot de la decisión técnica: las velas con las que se evaluó.
-        decision_candles = orb_candles if orb_candles is not None else candles
+        decision_candles = (
+            daily_by_symbol.get(symbol) or orb_candles or candles
+        )
 
         if external is not None:
             age_seconds = (now - external.created_at).total_seconds()
@@ -754,6 +875,7 @@ def _execute_cycle(
                 account_id=account_id,
                 technical=technical,
                 correlation_id=correlation_id,
+                trend=symbol in trend_by_symbol,
             )
             if outcome == "opened":
                 opened += 1

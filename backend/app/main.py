@@ -13,6 +13,7 @@ from app.api.routes import (
     candidates,
     decisions,
     health,
+    lab,
     learning,
     observability,
     risk,
@@ -21,6 +22,8 @@ from app.api.routes import (
 )
 from app.config import settings
 from app.database import Base, SessionLocal, engine
+from app.lab import live as lab_live
+from app.lab import models as lab_models  # noqa: F401 — registra las tablas del laboratorio
 from app.services import bot_loop
 from app.services.ai_daily_analysis import daily_loop
 from app.services.keepalive_service import keepalive_loop, should_keepalive
@@ -128,6 +131,11 @@ async def lifespan(app: FastAPI):
             bot_loop.run(stop_event=stop_event)
         )
 
+    lab_task = None
+    if settings.lab_enabled:
+        lab_live.runner = lab_live.LabRunner()
+        lab_task = asyncio.create_task(lab_live.runner.run(stop_event))
+
     if settings.gemini_auto_analysis and settings.gemini_api_key.strip():
         ai_task = asyncio.create_task(
             daily_loop(stop_event=stop_event)
@@ -149,6 +157,8 @@ async def lifespan(app: FastAPI):
         await bot_task
     if keepalive_task is not None:
         await keepalive_task
+    if lab_task is not None:
+        await lab_task
     if ai_task is not None:
         await ai_task
 
@@ -216,4 +226,7 @@ app.include_router(
 
 app.include_router(
     learning.router
+)
+app.include_router(
+    lab.router
 )

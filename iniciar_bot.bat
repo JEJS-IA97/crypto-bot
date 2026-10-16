@@ -15,6 +15,14 @@ if %errorlevel%==0 (
 
 rem Log de la app en archivo rotado (5x5 MB); stderr queda solo para uvicorn.
 set "LOG_FILE=%CD%\logs\bot.log"
+rem Nucleo de tendencia diaria (SMA50 y SMA200, 50 %% del capital por par).
+rem Va aqui y no en .env: los tests leen el .env y esperan los valores por defecto.
+set "TREND_ENABLED=true"
+set "TRADING_SYMBOLS=BTCUSDT,ETHUSDT"
+set "RISK_MAX_TOTAL_EXPOSURE_PCT=100"
+set "STRATEGY_VERSION=trend-001"
+rem Laboratorio: torneo de 10 estrategias x 20/50/100 USD en paper (longs y shorts), en vivo por WebSocket.
+set "LAB_ENABLED=true"
 powershell -NoProfile -Command "(Start-Process -PassThru -WindowStyle Hidden -FilePath '%CD%\.venv\Scripts\python.exe' -ArgumentList '-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000','--no-access-log' -WorkingDirectory '%CD%' -RedirectStandardOutput '%CD%\logs\bot.out.log' -RedirectStandardError '%CD%\logs\bot.err.log').Id | Set-Content -Encoding ascii '%CD%\logs\bot.pid'"
 
 echo Bot arrancado en 2a plana. Logs: backend\logs\bot.log (app) y bot.err.log (uvicorn)

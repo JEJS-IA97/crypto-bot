@@ -170,6 +170,7 @@ def evaluate_open(
     min_notional_usd: Decimal,
     available_usd: Decimal,
     correlation_id: str | None = None,
+    check_correlation: bool = True,
 ) -> RiskAssessment:
     """Evalúa una apertura (D-1): delega la 001 y añade topes nuevos.
 
@@ -225,7 +226,8 @@ def evaluate_open(
         reason = REASON_MAX_EXPOSURE
         allowed_quantity = None
         allowed_usd = Decimal(0)
-    else:
+    elif check_correlation:
+        # El núcleo de tendencia asume la correlación BTC/ETH en su 50/50.
         correlations, max_correlation = _correlations(
             positions,
             symbol=symbol,

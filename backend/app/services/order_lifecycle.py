@@ -179,8 +179,12 @@ def protection_after_fill(
     stop_loss_pct: Decimal | None = None,
     take_profit_pct: Decimal | None = None,
     placer: ExitPlacer | None = None,
+    protect: bool = True,
 ) -> PositionV2:
     """RF-13: right after a buy fills, protect it with stop + take-profit.
+
+    ``protect=False`` (trend core) records the fill but places no stop/tp:
+    the position only exits on the daily signal.
 
     If the stop cannot be placed the position goes to `ERROR`, an
     incident is registered and `can_open` refuses new positions until
@@ -218,6 +222,12 @@ def protection_after_fill(
         link_fill_to_decision(db, fill, decision.id)
     if decision.filled_at is None:
         decision.filled_at = utc_now()
+
+    if not protect:
+        position.status = PositionStatus.OPEN
+        decision.status = DecisionStatus.OPENED
+        db.commit()
+        return position
 
     stop_price, take_profit_price = stop_take_prices(
         entry_price=position.average_entry_price,
