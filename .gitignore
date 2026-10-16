@@ -61,3 +61,6 @@ backend/data/*.cmd
 
 # Pidfile del bot (iniciar_bot.bat)
 *.pid
+
+# Estado interno del cerebro (marca de la ultima corrida)
+docs/brain/.ultima-corrida

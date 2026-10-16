@@ -20,6 +20,7 @@ from app.api.routes import (
     signals,
     simulation,
 )
+from app.brain.analyst import brain_loop
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.lab import live as lab_live
@@ -135,6 +136,9 @@ async def lifespan(app: FastAPI):
     if settings.lab_enabled:
         lab_live.runner = lab_live.LabRunner()
         lab_task = asyncio.create_task(lab_live.runner.run(stop_event))
+    brain_task = (
+        asyncio.create_task(brain_loop(stop_event)) if settings.brain_enabled else None
+    )
 
     if settings.gemini_auto_analysis and settings.gemini_api_key.strip():
         ai_task = asyncio.create_task(
@@ -159,6 +163,8 @@ async def lifespan(app: FastAPI):
         await keepalive_task
     if lab_task is not None:
         await lab_task
+    if brain_task is not None:
+        await brain_task
     if ai_task is not None:
         await ai_task
 

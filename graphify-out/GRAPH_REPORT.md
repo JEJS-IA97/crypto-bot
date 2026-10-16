@@ -1,136 +1,136 @@
-# Graph Report - crypto-bot  (2026-10-15)
+# Graph Report - crypto-bot  (2026-10-16)
 
 ## Corpus Check
-- 427 files · ~495,156 words
+- 455 files · ~511,078 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 126 file(s) not represented in the graph (top: .ttf 54, .csv 53, (none) 9)
+- Unclassified: 130 file(s) not represented in the graph (top: .ttf 54, .csv 53, (none) 9)
 
 ## Summary
-- 6389 nodes · 13534 edges · 368 communities (294 shown, 74 thin omitted)
-- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 1209 edges (avg confidence: 0.93)
+- 6707 nodes · 14516 edges · 380 communities (306 shown, 74 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 1297 edges (avg confidence: 0.93)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a50e3c46`
+- Built from commit: `917fdf92`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Base
+- unittest
 - SystemEvent
 - ._analyze
-- get_phase
-- SignalDecision
+- phase_service.py
+- bot_loop.py
 - PositionV2
 - scripts/core.py
 - ShadcnInstaller
 - risk_math.py
 - create_hypothesis
-- exchange_executor.py
-- test_circuit_breaker.py
+- bot.py
+- SignalDecision
 - gray
 - Settings
 - design_system.py
 - train_strategy.py
 - evaluate_orb
-- build_daily_report_html
+- test_lab.py
 - bot.js
 - validate_data.py
 - simulation.py
-- SimulationAccountCreate
+- Base
 - BinanceSpotClient
 - BinanceExecutor
 - ._evaluate
-- test_orb_engine.py
+- OrbConfig
 - test_portfolio_math.py
 - Simulation.jsx
 - shutil
-- keepalive_loop
+- ai_daily_analysis.py
 - OKXDemoClient
-- decimal
+- DepthBook
 - bot_engine.py
-- test_core.py
+- TestDomainDetection
 - replay_service.py
-- Candle
+- strategies.py
 - FakeDepthTickerMarket
-- _handle_signal
+- BinanceMarketDataClient
 - package.json
 - react
 - html-token-validator.py
-- send_email
+- send_daily_report.py
 - backtest_orb
 - ai_advisor_service.py
-- test_data_contracts.py
+- read_rows
 - strategy_lab_service.py
 - DailyReportWorkflowTests
 - logo/generate.py
 - DesignSystemGenerator
 - walk_forward_service.py
-- ai_analyze
+- AiEvaluation
 - observability.js
-- sys
+- json
 - FakeMarketData
-- csv
-- vitest
+- cip/core.py
+- client.js
 - test_walk_forward.py
 - ._nodes
 - candidate_service.py
 - bot_runner_service.py
-- re
+- argparse
 - generate-slide.py
 - object
 - spacing
 - TestTailwindConfigGenerator
-- signal_engine.py
+- SignalAction
 - _palette_is_dark
 - Tailwind CSS Utility Reference
 - Brand Guidelines v1.0
 - .from_json
-- OrderRejectedError
+- test_order_rules.py
 - Design
 - risk_engine_service.py
-- fetch-background.py
+- csv
 - slide_search_core.py
 - TailwindConfigGenerator
-- json
+- collect_klines.py
 - color
-- record_event
-- test_risk_engine.py
-- Spec 005 — Observabilidad estructurada
+- CorrelationIdTests
+- test_risk_capitals.py
+- vitest
 - .test_node_check_parses_generated_config
 - TestWebStackFreshness
-- OKXDemoClientTest
+- record_event
 - cip/generate.py
-- exchange_market_service.py
+- typing
 - LoopIntegrationTests
 - fontSize
-- test_native_desktop_stack_freshness.py
+- TestNativeDesktopStackFreshness
 - utc_now
 - extract-colors.cjs
 - CatalogRefreshTest
 - score_candidate
-- test_observability.py
+- emit
 - devDependencies
 - Simulation.test.jsx
 - sync-brand-to-tokens.cjs
 - validate-asset.cjs
 - radius
-- test_style_taxonomy.py
-- candidates.py
+- formatMoney
+- market_context_service.py
 - Crypto Market State, mid-October 2026 (snapshot dated 2026-10-15/16 UTC)
 - compute_features
-- EventTests
+- store.py
 - Canvas Design System
 - @testing-library/react
 - design-tokens-starter.json
 - learning.py
-- test_text_layout_resilience.py
+- test_observability.py
 - claude_master_brief_ai_trading_bot.md
 - DailyPassTests
 - embed-tokens.cjs
 - validate-tokens.cjs
 - card
-- test_design_system_mode.py
+- TestStyleTaxonomy
 - Form & Input Components
 - Tailwind CSS Responsive Design
 - WhyApiBase
@@ -141,7 +141,7 @@
 - duration
 - main
 - arbitrage_service.py
-- Requisitos → tests
+- Spec 007 — Analista IA (Gemini, recomendación pura)
 - AiStatsApiBase
 - ExecutionModeTests
 - BM25
@@ -149,19 +149,19 @@
 - Typography Specifications
 - Accessibility Principles — Color, Contrast, Perception & Interaction
 - BotLoopController
-- report_service.py
+- evaluate_trend
 - RiskAction
 - simulation_service.py
 - 3. The 30 Laws
-- Tareas 001 — Bot de trading Binance Spot con 20 USD (fase 1)
+- .test_chunk_download_and_resume
 - CredentialsGuardTests
-- DuplicateAndSymbolTests
+- TrendLoopTests
 - register_strategy_version
 - trend_allows
 - input
 - logo/search.py
 - Logo Usage Rules
-- run_daily_pass
+- test_core_data_quality.py
 - Component Specifications
 - shadcn/ui Accessibility Patterns
 - TestThresholdGate
@@ -169,11 +169,11 @@
 - select_best_execution
 - live_market_prices
 - GeminiUnavailable
-- validate_candles
-- Requisitos → tests
-- CatalogSummaryLineEndingsTest
+- Candle
+- Account
+- test_catalog_summary_line_endings.py
 - Crypto trading bots and AI/LLM trading systems: credibility, real results, lessons for a solo Python bot (as of Oct 2026)
-- generate_design_system
+- .handle
 - Plan maestro crypto-bot — continuidad entre chats
 - find_best_opportunity
 - anti-vibecode-guide.md
@@ -183,7 +183,7 @@
 - radius
 - lg
 - sm
-- TestMetricMath
+- indicators.py
 - risk_exposure
 - Asset Approval Checklist
 - Logo AI Prompt Engineering
@@ -194,8 +194,8 @@
 - none
 - TestFixtureValidation
 - Color Palette Management
-- DialectGuardTests
-- EngineOptionsTests
+- test_database_postgres.py
+- logo/core.py
 - CIP Deliverable Guide
 - 16
 - 1
@@ -209,34 +209,34 @@
 - secondary-foreground
 - States and Variants
 - Spacing Principles
-- ranging_win_day
+- run_walk_forward
 - Workflow
 - Design System
 - Tailwind CSS Customization
-- _now_ny
+- orb_engine.py
 - Fase 0 — Diagnóstico del brief "AI Trading Intelligence System"
 - 0.1 Non-negotiable component & surface rules
 - Decisiones justificadas
 - Routing by Task Type
 - shadcn/ui Theming & Customization
-- format_ascii_box
+- test_design_system_mode.py
 - Asset Organization Guide
 - Primary Color Meanings
 - Core Logo Types
-- _collect_report
+- report_service.py
 - Brand Consistency Checklist
 - CIP Mockup Prompt Engineering
 - Color Semantics
 - Button & Control States
 - UI/UX Pro Max - Design Intelligence
 - Spec 001 — Bot de trading Binance Spot con 20 USD (fase 1) — v3 (ORB)
-- external_signal_service.py
+- signals.py
 - crypto-bot — backend
 - AnalyzeEndpointTests
 - Design Principles
 - Design Principles
 - 9. The five stages of design thinking
-- Contratos
+- BM25
 - evaluate_hypothesis
 - Spec 010 — Learning: hipótesis, conocimiento validado y memoria auditable
 - CIP Design Reference
@@ -265,9 +265,9 @@
 - Pre-Delivery Checklist (canonical — the only one)
 - Quick Reference
 - TestSearchDomains
-- list_events
+- LabTab.jsx
 - Primitive Tokens
-- build_daily_report
+- validate
 - LearningEndpointsTests
 - backtest_tendencia_diaria.py
 - Anti-vibecode SDD
@@ -276,9 +276,9 @@
 - CIP Design Style Guide
 - 2.3 Hierarchy through emphasis and de-emphasis
 - Pillar 6 — Depth & Visual Polish
-- test_ai_isolation.py
-- TtlAndPriceDistanceTests
-- OrbTrendFilterTests
+- IsolationTests
+- Mapeo RF → módulo → test
+- metrics.py
 - Cambia el ORB por tendencia diaria, José
 - Contexto completo para Claude Code — sesión 2026-10-16
 - 7. SEO AND DISCOVERABILITY — WEB
@@ -287,18 +287,18 @@
 - Slide Strategies
 - Pillar 8 — Responsive & Adaptive Thinking
 - Plan de implementación — Spec 009 (UI Control Room)
-- resolve_signal_conflict
+- Spec 005 — Observabilidad estructurada
 - 31. DEFINITION OF DONE
 - typography-principles.md
 - Pillar 1 — Type System Foundations
 - Pillar 4 — Accessibility
 - Pillar 4 — Typography Principles
-- parse_decision_rules
+- Spec 013 — Núcleo de tendencia diaria (BTC + ETH, SMA50 & SMA200)
 - Spec 003 — Panel UI: rediseño con estándar anti-vibecode
 - AGENTS.md — crypto-bot
-- EventTests
+- BM25
 - Checklist de Producción para Apps Generadas con IA
-- TradingPanel.jsx
+- _check_typography_contract
 - 4. Color as Information — SC 1.4.1 (A)
 - 0.1 Non-negotiable layout & control rules
 - Pillar 5 — Responsive & Cross-Platform Typography
@@ -321,18 +321,18 @@
 - Slides
 - Pillar 5 — Color Principles
 - Spec 002 — Bot en la nube gratis (Render) + informe diario por correo
-- Plan — Spec 007 (Analista IA, Gemini)
-- CliSendTests
+- Plan — Spec 011 (Evidencia: walk-forward ORB)
+- trades
 - 39. API/key checklist inicial
 - Diagnóstico del bot crypto-bot del usuario + backtest propio (2026-10-16)
 - Walk-forward ORB — reporte de evidencia
 - Research agent
 - 1. AI-SPECIFIC ANTI-PATTERNS
 - 3. Vertical spacing
-- Plan — Spec 005 (Observabilidad estructurada)
+- purge_old_events
 - Plan — spec 012: estrategia ORB v2 con filtro de tendencia
 - inventory_service.py
-- should_keepalive
+- DbRetryTests
 - Strategy Lab
 - .test_execute_market_is_serialized
 - LifespanTests
@@ -375,18 +375,28 @@
 - create.md
 - LICENSE.md
 - 004-informe-html/tasks.md
+- AlwaysLong
+- TestTokenizer
+- split_values
+- Plan — Spec 006 (Data & context)
+- 14:45 UTC
+- TestBm25CoreBehavior
+- TestStackFlagWithDesignSystem
+- LabApiTests
+- contrast_ratio
+- brain/README.md
 
 ## God Nodes (most connected - your core abstractions)
-1. `Candle` - 130 edges
-2. `SignalDecision` - 110 edges
-3. `Base` - 100 edges
-4. `utc_now()` - 75 edges
-5. `DecisionStatus` - 73 edges
-6. `PositionV2` - 73 edges
-7. `TradeSide` - 72 edges
-8. `_enable_sqlite_foreign_keys()` - 67 edges
-9. `TailwindConfigGenerator` - 60 edges
-10. `DecisionOrigin` - 56 edges
+1. `Candle` - 140 edges
+2. `Base` - 112 edges
+3. `SignalDecision` - 112 edges
+4. `PositionV2` - 81 edges
+5. `utc_now()` - 80 edges
+6. `DecisionStatus` - 75 edges
+7. `TradeSide` - 74 edges
+8. `_enable_sqlite_foreign_keys()` - 71 edges
+9. `SimulationAccountCreate` - 61 edges
+10. `TailwindConfigGenerator` - 60 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `CLI (`backend/run_walk_forward.py`)` --references--> `Settings`  [INFERRED]
@@ -403,31 +413,31 @@
 ## Import Cycles
 - None detected.
 
-## Communities (368 total, 74 thin omitted)
+## Communities (380 total, 74 thin omitted)
 
-### Community 0 - "Base"
-Cohesion: 0.04
-Nodes (25): _serialize_list_item(), _serialize_recommendation(), health_check(), Base, _enable_sqlite_foreign_keys(), _engine_options(), get_db(), AiEvaluation (+17 more)
+### Community 0 - "unittest"
+Cohesion: 0.06
+Nodes (3): health_check(), _engine_options(), get_db()
 
 ### Community 1 - "SystemEvent"
-Cohesion: 0.13
-Nodes (16): SourceHealth, SystemEvent, aggregates_24h(), _disabled_node(), _event_state(), _latest_event(), mark_source(), pipeline_state() (+8 more)
+Cohesion: 0.12
+Nodes (16): clamp_limit(), _event_payload(), list_events(), list_sources(), observability_metrics(), pipeline_nodes(), SystemEvent, aggregates_24h() (+8 more)
 
 ### Community 2 - "._analyze"
-Cohesion: 0.19
-Nodes (5): AdvisorBase, CacheBreakerTests, ConfigStateTests, ContextTests, SuccessPersistenceTests
+Cohesion: 0.17
+Nodes (6): AdvisorBase, CacheBreakerTests, ConfigStateTests, ContextTests, _reply(), SuccessPersistenceTests
 
-### Community 3 - "get_phase"
-Cohesion: 0.07
-Nodes (15): bot_metrics(), bot_status(), change_bot_phase(), get_bot_phase(), start_bot(), stop_bot(), compute_paper_gate(), _evidence_decimal() (+7 more)
+### Community 3 - "phase_service.py"
+Cohesion: 0.08
+Nodes (11): bot_status(), compute_paper_gate(), _evidence_decimal(), get_phase(), live_trading_blockers(), _missing_criteria(), paper_metrics(), request_phase_change() (+3 more)
 
-### Community 4 - "SignalDecision"
-Cohesion: 0.06
-Nodes (32): DecisionOrigin, DecisionStatus, SignalDecision, _current_mode(), CycleReport, _execute_cycle(), _is_running(), _mark_external_closed() (+24 more)
+### Community 4 - "bot_loop.py"
+Cohesion: 0.05
+Nodes (32): start_bot(), BotRuntime, MarketDataUnavailable, SymbolRules, _current_mode(), CycleReport, _execute_cycle(), _execute_cycle_with_db_retry() (+24 more)
 
 ### Community 5 - "PositionV2"
-Cohesion: 0.07
-Nodes (32): HypothesisStatus, KnowledgeStatus, PositionStatus, PositionV2, TradeIncident, TradeSide, SimulationOrderRequest, TradeHistoryResponse (+24 more)
+Cohesion: 0.05
+Nodes (38): PositionStatus, PositionV2, TradeIncident, TradeSide, SimulationOrderRequest, TradeHistoryResponse, TradeResponse, ExchangeBalance (+30 more)
 
 ### Community 6 - "scripts/core.py"
 Cohesion: 0.06
@@ -438,20 +448,20 @@ Cohesion: 0.05
 Nodes (3): main(), ShadcnInstaller, TestShadcnInstaller
 
 ### Community 8 - "risk_math.py"
-Cohesion: 0.18
-Nodes (11): calculate_order_size(), can_open_position(), _ceil_to_step(), estimated_loss_usd(), _floor_to_step(), _require_decimal(), SizingResult, stop_take_prices() (+3 more)
+Cohesion: 0.17
+Nodes (12): allocation_order_size(), calculate_order_size(), can_open_position(), _ceil_to_step(), estimated_loss_usd(), _floor_to_step(), _require_decimal(), SizingResult (+4 more)
 
 ### Community 9 - "create_hypothesis"
-Cohesion: 0.19
-Nodes (4): create_hypothesis(), _json_text(), _parse_dt(), HypothesisModelTests
+Cohesion: 0.20
+Nodes (3): create_hypothesis(), _parse_dt(), HypothesisModelTests
 
-### Community 10 - "exchange_executor.py"
-Cohesion: 0.15
-Nodes (5): ExchangeExecutor, ExchangeOrderStatus, SymbolMetadata, _decimal_string(), Módulos
+### Community 10 - "bot.py"
+Cohesion: 0.08
+Nodes (14): bot_metrics(), change_bot_phase(), get_bot_phase(), stop_bot(), trend_status(), PhaseChangeRequest, _decision_correlation(), get_metrics() (+6 more)
 
-### Community 11 - "test_circuit_breaker.py"
+### Community 11 - "SignalDecision"
 Cohesion: 0.06
-Nodes (20): BotRuntime, can_open(), get_daily_state(), get_runtime(), _last_opened_buy_at(), record_cycle_failure(), record_cycle_success(), record_realized_pnl() (+12 more)
+Nodes (16): DailyRiskState, SignalDecision, can_open(), get_daily_state(), _last_opened_buy_at(), record_realized_pnl(), register_open(), _require_decimal() (+8 more)
 
 ### Community 12 - "gray"
 Cohesion: 0.05
@@ -462,131 +472,127 @@ Cohesion: 0.09
 Nodes (5): Settings, ConfigTests, _settings_without_env(), CorsSettingsTests, DatabaseUrlEnvTests
 
 ### Community 14 - "design_system.py"
-Cohesion: 0.10
-Nodes (11): _button_outline_text_color(), _contrast_ratio(), _derive_dark_palette(), _detect_page_type(), format_master_md(), format_page_override_md(), _generate_intelligent_overrides(), persist_design_system() (+3 more)
+Cohesion: 0.05
+Nodes (17): FrozenZoneTest, _sha256(), _detect_page_type(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides(), persist_design_system(), safe_slug() (+9 more)
 
 ### Community 15 - "train_strategy.py"
 Cohesion: 0.11
-Nodes (20): backtest_candles(), _close_position(), final_parameters_section(), grid_search_candles(), KlineBacktestConfig, load_klines_jsonl(), write_final_parameters(), _build_series() (+12 more)
+Nodes (21): StrategyConfig, backtest_candles(), final_parameters_section(), grid_search_candles(), KlineBacktestConfig, KlineBacktestResult, load_klines_jsonl(), write_final_parameters() (+13 more)
 
 ### Community 16 - "evaluate_orb"
-Cohesion: 0.14
-Nodes (11): _as_utc_naive(), evaluate_orb(), ny_datetime(), _ny_window(), _to_ny(), _build(), DeterminismTests, OrbBreakoutTests (+3 more)
+Cohesion: 0.12
+Nodes (14): evaluate_orb(), _build(), DeterminismTests, _now_ny(), _ny(), OrbBreakoutTests, OrbDstTests, OrbRangeTests (+6 more)
 
-### Community 17 - "build_daily_report_html"
-Cohesion: 0.15
-Nodes (5): build_daily_report_html(), build_parser(), main(), _report_moment(), ReportHtmlTests
+### Community 17 - "test_lab.py"
+Cohesion: 0.10
+Nodes (14): main(), render_markdown(), run(), run_strategy(), Bar, load_jsonl(), _merge(), resample() (+6 more)
 
 ### Community 18 - "bot.js"
 Cohesion: 0.11
-Nodes (29): getAiStats(), getBotMetrics(), getBotStatus(), getDecisions(), startBot(), stopBot(), getSources(), deriveOperationalState() (+21 more)
+Nodes (29): getAiStats(), getBotMetrics(), getBotStatus(), getDecisions(), startBot(), stopBot(), deriveOperationalState(), HeaderPanel() (+21 more)
 
 ### Community 19 - "validate_data.py"
-Cohesion: 0.07
-Nodes (42): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, _catalog_date(), _check_app_interface_contract(), _check_catalog_contract() (+34 more)
+Cohesion: 0.17
+Nodes (20): _catalog_date(), _check_app_interface_contract(), _check_catalog_contract(), _check_catalog_summary(), _check_chart_contract(), _check_color_contract(), _check_core_data_contract(), _check_file() (+12 more)
 
 ### Community 20 - "simulation.py"
-Cohesion: 0.16
-Nodes (26): account_arbitrages(), account_balance(), account_positions(), account_summary(), account_trades(), accounts(), bot_cycles(), bot_status() (+18 more)
+Cohesion: 0.15
+Nodes (27): account_arbitrages(), account_balance(), account_positions(), account_summary(), account_trades(), accounts(), aggregate_market_prices(), bot_cycles() (+19 more)
 
-### Community 21 - "SimulationAccountCreate"
+### Community 21 - "Base"
 Cohesion: 0.06
-Nodes (18): DailyRiskState, SimulationAccountCreate, create_simulation_account(), Analista IA (spec 007), ApiResponsiveDuringLoopTests, BotApiTestBase, ForeignKeyTests, _session_factory() (+10 more)
+Nodes (37): Base, _enable_sqlite_foreign_keys(), BotPhase, BotPhaseName, DecisionOrigin, DecisionStatus, HypothesisStatus, KnowledgeStatus (+29 more)
 
 ### Community 22 - "BinanceSpotClient"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (4): BinanceAPIError, BinanceSpotClient, main(), BinanceSpotClientTest
 
 ### Community 23 - "BinanceExecutor"
-Cohesion: 0.14
-Nodes (5): BinanceExecutor, _points_to_production(), _to_decimal(), ExchangeBalance, ExchangeOrderResult
+Cohesion: 0.18
+Nodes (3): BinanceExecutor, _to_decimal(), ExchangeOrderStatus
 
 ### Community 24 - "._evaluate"
-Cohesion: 0.10
-Nodes (8): CorrelationTests, DelegationTests, ExposureTests, _falling_candles(), _flat_candles(), PositionLimitTests, _varied_candles(), Riesgos y mitigaciones
+Cohesion: 0.08
+Nodes (10): CorrelationTests, DelegationTests, EventTests, ExposureTests, _falling_candles(), _flat_candles(), IsolationTests, PositionLimitTests (+2 more)
 
-### Community 25 - "test_orb_engine.py"
-Cohesion: 0.12
-Nodes (10): OrbConfig, session_bounds(), _ny(), NyDatetimeTests, OrbConfigTests, OrbDstTests, PurityTests, SessionBoundsTests (+2 more)
+### Community 25 - "OrbConfig"
+Cohesion: 0.13
+Nodes (7): in_orb_window(), OrbConfig, session_bounds(), DownloadWindowTests, OrbConfigTests, SessionBoundsTests, Bloque 12 — Estrategia ORB (spec v3)
 
 ### Community 26 - "test_portfolio_math.py"
 Cohesion: 0.10
 Nodes (15): correlate_closes(), floor_to_step(), halved_share(), pct_returns(), pearson(), _require_decimal_list(), _constant(), CorrelateClosesTests (+7 more)
 
 ### Community 27 - "Simulation.jsx"
-Cohesion: 0.10
-Nodes (25): App(), AccountSummary(), ICONS, MetricTile(), baseSymbol(), COIN_TONES, LivePrices(), priceChange() (+17 more)
+Cohesion: 0.13
+Nodes (17): getTrend(), App(), AccountSummary(), ICONS, MetricTile(), ICON_PATHS, NavRail(), scrollToWorkspace() (+9 more)
 
 ### Community 28 - "shutil"
-Cohesion: 0.11
-Nodes (16): _run(), test_creates_default_output_directory_when_missing(), test_dark_base_color_does_not_collapse_shades_to_black(), test_force_allows_sync_with_existing_css_token_source(), test_ignores_commented_root_custom_properties(), test_ignores_custom_properties_outside_root(), test_ignores_external_css_imports(), test_refuses_css_custom_property_source_without_force() (+8 more)
+Cohesion: 0.06
+Nodes (20): _run(), test_creates_default_output_directory_when_missing(), test_dark_base_color_does_not_collapse_shades_to_black(), test_force_allows_sync_with_existing_css_token_source(), test_ignores_commented_root_custom_properties(), test_ignores_custom_properties_outside_root(), test_ignores_external_css_imports(), test_refuses_css_custom_property_source_without_force() (+12 more)
 
-### Community 29 - "keepalive_loop"
-Cohesion: 0.11
-Nodes (6): keepalive_loop(), run_ping(), _FakeClient, KeepaliveLoopTests, fake_get(), RunPingTests
+### Community 29 - "ai_daily_analysis.py"
+Cohesion: 0.07
+Nodes (13): lifespan(), daily_loop(), _guard_elapsed(), run_daily_pass(), _trading_symbols(), keepalive_loop(), run_ping(), should_keepalive() (+5 more)
 
 ### Community 30 - "OKXDemoClient"
-Cohesion: 0.15
-Nodes (6): _compact_json(), _decimal_or_none(), _normalize_okx_status(), OKXAPIError, OKXDemoClient, main()
+Cohesion: 0.10
+Nodes (8): _points_to_production(), _compact_json(), _decimal_or_none(), _normalize_okx_status(), OKXAPIError, OKXDemoClient, main(), OKXDemoClientTest
 
-### Community 31 - "decimal"
-Cohesion: 0.04
-Nodes (33): reset_state(), BinanceMarketDataClient, DepthBook, MarketDataUnavailable, Ticker24, clear_cache(), _Entry, FearGreedData (+25 more)
+### Community 31 - "DepthBook"
+Cohesion: 0.11
+Nodes (9): reset_state(), DepthBook, Ticker24, FakeKlineMarket, FakeKlineMarket, FakeKlineMarket, _candles(), FakeCandidateMarket (+1 more)
 
 ### Community 32 - "bot_engine.py"
 Cohesion: 0.23
 Nodes (9): _calculate_revalidation_slippage(), evaluate_market(), execute_market(), _filter_fresh_executions(), _parse_fetched_at(), _prepare_market_evaluation(), RiskConfig, validate_opportunity() (+1 more)
 
-### Community 33 - "test_core.py"
-Cohesion: 0.06
-Nodes (4): TestBm25CoreBehavior, TestDiagnosticsContracts, TestDomainDetection, TestTokenizer
-
 ### Community 34 - "replay_service.py"
 Cohesion: 0.17
 Nodes (17): decision_replay(), decision_why(), _resolve_decision(), _ai_block(), _decimal_text(), _decision_block(), _decision_correlation(), _event_block() (+9 more)
 
-### Community 35 - "Candle"
-Cohesion: 0.15
-Nodes (7): Candle, _candles(), _candles(), _candles(), _buy_candles(), FakeMarketData, FakeMarketData
+### Community 35 - "strategies.py"
+Cohesion: 0.12
+Nodes (14): BollingerSqueeze, DonchianBreakout, EmaCross, EmaRsi4h, ImpulsePullback, _long(), OrbNY, OrbNYTrend (+6 more)
 
 ### Community 36 - "FakeDepthTickerMarket"
 Cohesion: 0.07
-Nodes (26): CandidatesEndpointTests, ContextEndpointTests, ContextSnapshotTests, ContextTestBase, FakeClock, FakeDepthTickerMarket, FearGreedTests, NewsFeedTests (+18 more)
+Nodes (22): CandidatesApiBase, CandidatesEndpointTests, ContextEndpointTests, EventTests, ContextSnapshotTests, ContextTestBase, FakeClock, FakeDepthTickerMarket (+14 more)
 
-### Community 37 - "_handle_signal"
-Cohesion: 0.07
-Nodes (10): get_signal_decisions(), _handle_signal(), _persist_rejection(), post_external_signal(), post_webhook_signal(), _serialize(), _trading_symbols(), ExternalSignalRequest (+2 more)
+### Community 37 - "BinanceMarketDataClient"
+Cohesion: 0.10
+Nodes (4): BinanceMarketDataClient, BinanceMarketDataClientTest, DepthAndTickerTests, Bloque 2 — Datos de mercado
 
 ### Community 38 - "package.json"
-Cohesion: 0.08
-Nodes (26): dependencies, axios, react, react-dom, name, private, scripts, build (+18 more)
+Cohesion: 0.07
+Nodes (27): dependencies, axios, react, react-dom, name, private, scripts, build (+19 more)
 
 ### Community 39 - "react"
-Cohesion: 0.11
-Nodes (23): Consola de control (spec 009), getDecisionReplay(), getDecisionWhy(), DecisionInspector(), PipelineCanvas(), ReplayView(), DECISIONES, REPLAY (+15 more)
+Cohesion: 0.09
+Nodes (29): Consola de control (spec 009), getDecisionReplay(), getDecisionWhy(), getEvents(), DecisionInspector(), EventStream(), payloadSummary(), ReplayView() (+21 more)
 
 ### Community 40 - "html-token-validator.py"
 Cohesion: 0.12
 Nodes (12): get_context(), is_allowed_exception(), is_allowed_rgba(), is_inside_block(), load_css_variables(), main(), print_result(), print_summary() (+4 more)
 
-### Community 41 - "send_email"
-Cohesion: 0.16
-Nodes (4): EmailSendError, send_email(), _send(), SendEmailTests
+### Community 41 - "send_daily_report.py"
+Cohesion: 0.06
+Nodes (23): EmailSendError, send_email(), build_parser(), main(), _report_moment(), _send(), SendEmailTests, CliSendTests (+15 more)
 
 ### Community 42 - "backtest_orb"
-Cohesion: 0.14
-Nodes (15): backtest_orb(), _close_position(), grid_search_orb(), KlineBacktestResult, OrbBacktestConfig, split_candles(), _breakout(), _hourly_candles() (+7 more)
+Cohesion: 0.15
+Nodes (13): backtest_orb(), grid_search_orb(), OrbBacktestConfig, split_candles(), _breakout(), _hourly_candles(), _orb_candle(), _orb_series() (+5 more)
 
 ### Community 43 - "ai_advisor_service.py"
 Cohesion: 0.20
 Nodes (19): ai_stats(), AnalysisOutcome, analyze(), _breaker_open(), _budget_exceeded(), _build_context(), _build_prompt(), _cached_evaluation() (+11 more)
 
-### Community 44 - "test_data_contracts.py"
-Cohesion: 0.14
-Nodes (6): read_rows(), split_values(), style_identities(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestStyleIdentityContract
+### Community 44 - "read_rows"
+Cohesion: 0.12
+Nodes (5): _resolve_dial(), read_rows(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestReasoningContract
 
 ### Community 45 - "strategy_lab_service.py"
-Cohesion: 0.21
+Cohesion: 0.22
 Nodes (13): backtest(), BacktestResult, evaluate_snapshot(), _find_execution_at_exchange(), _future_snapshot_after_latency(), grid_search(), _locked_future_profit(), normalize_snapshot_quotes() (+5 more)
 
 ### Community 46 - "DailyReportWorkflowTests"
@@ -597,69 +603,65 @@ Nodes (5): _assert_secure(), DailyReportWorkflowTests, PagesWorkflowTests, _read
 Cohesion: 0.11
 Nodes (20): _atlas_prediction_data(), _download_atlas_image(), _download_image(), _download_muapi_image(), enhance_prompt(), generate_batch(), generate_logo(), _generate_with_atlas() (+12 more)
 
-### Community 48 - "DesignSystemGenerator"
-Cohesion: 0.10
-Nodes (3): DesignSystemGenerator, TestReasoningMatch, TestReasoningContract
-
 ### Community 49 - "walk_forward_service.py"
-Cohesion: 0.05
-Nodes (33): KlineTrade, aggregate_metrics(), compute_fold_metrics(), daily_equity_series(), daily_returns(), daily_sharpe(), _fmt(), FoldMetrics (+25 more)
+Cohesion: 0.06
+Nodes (28): _close_position(), KlineTrade, aggregate_metrics(), compute_fold_metrics(), daily_equity_series(), daily_returns(), daily_sharpe(), _fmt() (+20 more)
 
-### Community 50 - "ai_analyze"
-Cohesion: 0.15
-Nodes (8): ai_analyze(), ai_recommendations(), ai_stats_endpoint(), AnalyzeRequest, _clamp_limit(), _resolve_symbol(), _serialize_evaluation(), universe()
+### Community 50 - "AiEvaluation"
+Cohesion: 0.16
+Nodes (11): ai_analyze(), ai_recommendations(), ai_stats_endpoint(), AnalyzeRequest, _clamp_limit(), _resolve_symbol(), _serialize_evaluation(), _serialize_list_item() (+3 more)
 
 ### Community 51 - "observability.js"
-Cohesion: 0.12
-Nodes (17): getEvents(), getObservability(), getPipeline(), EventStream(), payloadSummary(), NodeBadge(), STATE_LABELS, STATE_TONES (+9 more)
+Cohesion: 0.19
+Nodes (12): api, getObservability(), getPipeline(), getSources(), NodeBadge(), PipelineCanvas(), STATE_LABELS, STATE_TONES (+4 more)
 
-### Community 52 - "sys"
-Cohesion: 0.06
-Nodes (12): generate_html(), get_deliverable_info(), get_image_base64(), main(), format_brief(), format_results(), main(), main() (+4 more)
+### Community 52 - "json"
+Cohesion: 0.11
+Nodes (16): _append_hypotheses(), ask_llm(), _backtest(), best_by_regime(), brain_loop(), _compact(), findings(), gather_context() (+8 more)
 
 ### Community 53 - "FakeMarketData"
-Cohesion: 0.19
-Nodes (7): CorrelationIdTests, candles_15m(), FakeMarketData, _ny_utc(), OrbBreakoutLoopTests, OrbWindowAndScopeTests, range_candles()
+Cohesion: 0.30
+Nodes (4): candles_15m(), FakeMarketData, OrbWindowAndScopeTests, range_candles()
 
-### Community 54 - "csv"
-Cohesion: 0.08
-Nodes (12): BM25, detect_domain(), get_cip_brief(), _load_csv(), search(), search_all(), _search_csv(), detect_domain() (+4 more)
+### Community 54 - "cip/core.py"
+Cohesion: 0.20
+Nodes (6): detect_domain(), get_cip_brief(), _load_csv(), search(), search_all(), _search_csv()
 
-### Community 55 - "vitest"
-Cohesion: 0.16
-Nodes (13): api, API_BASE_URL, clearToken(), getToken(), setToken(), sendExternalSignal(), importClient(), importLearning() (+5 more)
+### Community 55 - "client.js"
+Cohesion: 0.30
+Nodes (7): API_BASE_URL, clearToken(), getToken(), setToken(), importClient(), importLearning(), TokenField()
 
 ### Community 56 - "test_walk_forward.py"
-Cohesion: 0.09
-Nodes (12): build_folds(), candles_in_range(), iter_grid(), split_train_validation(), walk_forward_dataset(), BuildFoldsTest, CandlesInRangeTest, _config() (+4 more)
+Cohesion: 0.10
+Nodes (11): build_folds(), candles_in_range(), split_train_validation(), walk_forward_dataset(), BuildFoldsTest, CandlesInRangeTest, _config(), _hourly() (+3 more)
 
 ### Community 57 - "._nodes"
 Cohesion: 0.19
 Nodes (4): PipelineApiBase, PipelineCatalogTests, PipelineServiceNodesTests, PipelineSourceNodesTests
 
 ### Community 58 - "candidate_service.py"
-Cohesion: 0.19
-Nodes (7): CandidateEntry, CandidatesResult, clamp_limit(), ExcludedEntry, get_candidates(), _mark_klines(), _resolve_weights()
+Cohesion: 0.18
+Nodes (8): FactorContribution, CandidateEntry, CandidatesResult, clamp_limit(), ExcludedEntry, get_candidates(), _mark_klines(), _resolve_weights()
 
 ### Community 59 - "bot_runner_service.py"
 Cohesion: 0.18
 Nodes (14): SimulationBotCycle, BotRuntimeState, build_risk_config(), _build_symbol_summary(), execute_bot_cycle(), get_bot_cycles(), get_bot_status(), get_configured_symbols() (+6 more)
 
-### Community 60 - "re"
-Cohesion: 0.17
-Nodes (8): apply_color(), apply_viewbox_size(), extract_svgs(), generate_batch(), generate_icon(), generate_sizes(), load_env(), main()
+### Community 60 - "argparse"
+Cohesion: 0.08
+Nodes (16): collect_snapshot(), main(), CollectMarketSnapshotsTest, generate_html(), get_deliverable_info(), get_image_base64(), main(), apply_color() (+8 more)
 
 ### Community 61 - "generate-slide.py"
 Cohesion: 0.13
-Nodes (11): _e(), generate_chart_slide(), generate_cta_slide(), generate_deck(), generate_metrics_slide(), generate_problem_slide(), generate_solution_slide(), generate_testimonial_slide() (+3 more)
+Nodes (10): _e(), generate_chart_slide(), generate_cta_slide(), generate_deck(), generate_metrics_slide(), generate_problem_slide(), generate_solution_slide(), generate_testimonial_slide() (+2 more)
 
 ### Community 63 - "spacing"
 Cohesion: 0.09
 Nodes (22): $type, $value, $type, $value, $type, $value, $type, $value (+14 more)
 
-### Community 65 - "signal_engine.py"
-Cohesion: 0.12
-Nodes (14): _ema(), evaluate(), _metric(), _rsi(), SignalAction, SignalResult, StrategyConfig, BuySellCasesTests (+6 more)
+### Community 65 - "SignalAction"
+Cohesion: 0.20
+Nodes (8): evaluate(), SignalAction, SignalResult, BuySellCasesTests, _candles(), DeterminismTests, HoldCasesTests, PurityTests
 
 ### Community 66 - "_palette_is_dark"
 Cohesion: 0.18
@@ -674,12 +676,12 @@ Cohesion: 0.05
 Nodes (37): 1. Color Palette, 2. Typography, 3. Logo Usage, 4. Voice & Tone, 5. Imagery Guidelines, 6. Design Components, Accessibility, AI Image Generation (+29 more)
 
 ### Community 69 - ".from_json"
-Cohesion: 0.17
-Nodes (4): AdvisorResponse, SchemaViolation, SchemaTests, Tasks — Spec 007
+Cohesion: 0.11
+Nodes (11): AdvisorResponse, SchemaViolation, SchemaTests, Modelos de dominio (Pydantic para I/O del LLM; `dataclass(frozen=True)` internos), Módulos, Orden de implementación (rojo → verde), Plan — Spec 007 (Analista IA, Gemini), Respuesta de la API (serialización D-7) (+3 more)
 
-### Community 70 - "OrderRejectedError"
-Cohesion: 0.17
-Nodes (5): OrderRejectedError, BinanceExecutorRulesTests, _BinanceExecutorTestCase, ClientOrderIdTests, _limit_request()
+### Community 70 - "test_order_rules.py"
+Cohesion: 0.13
+Nodes (6): OrderRejectedError, BinanceExecutorRulesTests, _BinanceExecutorTestCase, ClientOrderIdTests, _limit_request(), _spot_order_response()
 
 ### Community 71 - "Design"
 Cohesion: 0.05
@@ -689,53 +691,57 @@ Nodes (36): Banner Design (Built-in), Banner: Design Rules, Banner: Quick Size R
 Cohesion: 0.19
 Nodes (9): _committed(), _correlations(), _decimal_text(), evaluate_open(), _exposure_cap(), exposure_snapshot(), limits_snapshot(), _open_positions() (+1 more)
 
-### Community 73 - "fetch-background.py"
-Cohesion: 0.15
-Nodes (9): generate_css_for_background(), get_background_image(), get_curated_images(), get_overlay_css(), get_pexels_search_url(), load_backgrounds_config(), load_brand_colors(), main() (+1 more)
+### Community 73 - "csv"
+Cohesion: 0.07
+Nodes (13): generate_css_for_background(), get_background_image(), get_curated_images(), get_overlay_css(), get_pexels_search_url(), load_backgrounds_config(), load_brand_colors(), main() (+5 more)
 
 ### Community 74 - "slide_search_core.py"
-Cohesion: 0.08
-Nodes (17): format_context(), format_result(), main(), BM25, calculate_pattern_break(), detect_domain(), get_background_config(), get_color_for_emotion() (+9 more)
+Cohesion: 0.12
+Nodes (14): format_context(), format_result(), main(), calculate_pattern_break(), detect_domain(), get_background_config(), get_color_for_emotion(), get_layout_for_goal() (+6 more)
 
-### Community 76 - "json"
-Cohesion: 0.08
-Nodes (16): _event_payload(), build_parser(), _candle_line(), CollectionError, download_symbol(), fetch_chunk(), interval_to_ms(), klines_file() (+8 more)
+### Community 76 - "collect_klines.py"
+Cohesion: 0.15
+Nodes (9): build_parser(), _candle_line(), CollectionError, download_symbol(), fetch_chunk(), interval_to_ms(), klines_file(), load_last_open_time() (+1 more)
 
 ### Community 77 - "color"
 Cohesion: 0.11
 Nodes (19): $type, $value, background, foreground, muted-foreground, primary, primary-hover, secondary (+11 more)
 
-### Community 78 - "record_event"
-Cohesion: 0.06
-Nodes (13): _cap_payload(), record_event(), AggregatesTests, EventsEndpointTests, ObservabilityApiBase, ObservabilityEndpointTests, SourcesEndpointTests, EventPersistenceTests (+5 more)
+### Community 78 - "CorrelationIdTests"
+Cohesion: 0.09
+Nodes (12): EventsEndpointTests, ObservabilityApiBase, ObservabilityEndpointTests, SourcesEndpointTests, CorrelationIdTests, Eventos mínimos (inventario), Modelo de datos (tablas nuevas), Orden de implementación (rojo → verde) (+4 more)
 
-### Community 79 - "test_risk_engine.py"
-Cohesion: 0.07
-Nodes (15): SymbolRules, trend_hourly_flat(), _BrokenMarket, _FakeMarket, CapitalMatrixBase, CorrelatedSecondOpenTests, FakeMarketData, _flat_candles() (+7 more)
+### Community 79 - "test_risk_capitals.py"
+Cohesion: 0.14
+Nodes (8): CapitalMatrixBase, CorrelatedSecondOpenTests, FakeMarketData, _flat_candles(), _ny_utc(), range_candles(), SingleOpenSessionTests, _varied_candles()
 
-### Community 80 - "Spec 005 — Observabilidad estructurada"
-Cohesion: 0.10
-Nodes (19): css, jsxFiles, contrast(), css, luminance(), token(), toRgb(), loadCss() (+11 more)
+### Community 80 - "vitest"
+Cohesion: 0.19
+Nodes (11): css, jsxFiles, contrast(), css, luminance(), toRgb(), loadCss(), loadCssFiles() (+3 more)
+
+### Community 83 - "record_event"
+Cohesion: 0.08
+Nodes (8): _cap_payload(), record_event(), _is_forbidden(), redact(), AggregatesTests, EventPersistenceTests, RedactionTests, _session_factory()
 
 ### Community 84 - "cip/generate.py"
 Cohesion: 0.19
 Nodes (7): build_cip_prompt(), check_logo_required(), generate_cip_set(), generate_with_nano_banana(), load_env(), load_logo_image(), main()
 
-### Community 85 - "exchange_market_service.py"
-Cohesion: 0.30
-Nodes (13): _build_quote(), _coinbase_product_id(), _decimal(), fetch_binance_quote(), fetch_bybit_quote(), fetch_coinbase_quote(), fetch_exchange_quotes(), fetch_kraken_quote() (+5 more)
+### Community 85 - "typing"
+Cohesion: 0.13
+Nodes (16): _build_quote(), _coinbase_product_id(), _decimal(), fetch_binance_quote(), fetch_bybit_quote(), fetch_coinbase_quote(), fetch_exchange_quotes(), fetch_kraken_quote() (+8 more)
 
 ### Community 86 - "LoopIntegrationTests"
-Cohesion: 0.22
-Nodes (4): FakeMarketData, LoopIntegrationTests, _ny_utc(), range_candles()
+Cohesion: 0.24
+Nodes (3): FakeMarketData, LoopIntegrationTests, range_candles()
 
 ### Community 87 - "fontSize"
 Cohesion: 0.12
 Nodes (16): $type, $value, $type, $value, $type, $value, $type, $value (+8 more)
 
 ### Community 90 - "utc_now"
-Cohesion: 0.24
-Nodes (4): utc_now(), ReplayApiBase, ReplayPayloadTests, ReplayUnavailableTests
+Cohesion: 0.23
+Nodes (3): utc_now(), ReplayPayloadTests, ReplayUnavailableTests
 
 ### Community 91 - "extract-colors.cjs"
 Cohesion: 0.20
@@ -743,19 +749,19 @@ Nodes (11): calculateCompliance(), colorDistance(), displayPalette(), extractHex
 
 ### Community 93 - "score_candidate"
 Cohesion: 0.14
-Nodes (10): CandidateScore, _clamp(), FactorContribution, _normalize(), normalize_weights(), score_candidate(), FeatureVector, ScoringTests (+2 more)
+Nodes (9): CandidateScore, _clamp(), _normalize(), normalize_weights(), score_candidate(), FeatureVector, ScoringTests, _vector() (+1 more)
 
-### Community 94 - "test_observability.py"
-Cohesion: 0.09
-Nodes (11): lifespan(), configure_logging(), emit(), _is_forbidden(), JsonFormatter, redact(), _capture(), _lines() (+3 more)
+### Community 94 - "emit"
+Cohesion: 0.14
+Nodes (5): emit(), _capture(), _lines(), _LoggedRecord, StructuredLogTests
 
 ### Community 95 - "devDependencies"
 Cohesion: 0.14
 Nodes (14): devDependencies, eslint, @eslint/js, eslint-plugin-react-hooks, eslint-plugin-react-refresh, globals, jsdom, @testing-library/jest-dom (+6 more)
 
 ### Community 96 - "Simulation.test.jsx"
-Cohesion: 0.34
-Nodes (11): createAccount(), getAccounts(), getBalance(), getMarketPrices(), getPositions(), getSummary(), getTrades(), SUMMARY (+3 more)
+Cohesion: 0.20
+Nodes (17): createAccount(), createOrder(), getAccounts(), getBalance(), getMarketPrices(), getPositions(), getSummary(), getTrades() (+9 more)
 
 ### Community 97 - "sync-brand-to-tokens.cjs"
 Cohesion: 0.20
@@ -769,37 +775,45 @@ Nodes (13): checkManifest(), formatBytes(), formatOutput(), fs, main(), parseFil
 Cohesion: 0.19
 Nodes (14): $type, $value, $type, $value, $type, $value, primitive, radius (+6 more)
 
-### Community 101 - "candidates.py"
-Cohesion: 0.12
-Nodes (12): read_candidates(), read_context(), resolve_symbols(), _serialize_candidates(), _serialize_context(), universe(), ContextSnapshot, ContextSource (+4 more)
+### Community 100 - "formatMoney"
+Cohesion: 0.16
+Nodes (16): sendExternalSignal(), ExternalSignalForm(), SYMBOLS, baseSymbol(), COIN_TONES, LivePrices(), priceChange(), Sparkline() (+8 more)
+
+### Community 101 - "market_context_service.py"
+Cohesion: 0.08
+Nodes (28): read_candidates(), read_context(), resolve_symbols(), _serialize_candidates(), _serialize_context(), universe(), clear_cache(), ContextSnapshot (+20 more)
 
 ### Community 102 - "Crypto Market State, mid-October 2026 (snapshot dated 2026-10-15/16 UTC)"
 Cohesion: 0.06
 Nodes (35): 1. BTC/ETH price path (last 12 months), drawdown, 200DMA, volatility, 2. Macro drivers (Fed, USD, equities, liquidity) and regulation, 3. Flows: ETFs, corporate treasuries, stablecoins, 4. Sentiment and positioning, 5. Sector trends, altseason, BTC dominance, 6. Halving-cycle framing, 7. Upcoming catalysts (late 2026), Cited Findings (+27 more)
 
 ### Community 103 - "compute_features"
-Cohesion: 0.18
-Nodes (7): compute_features(), FeaturePeriods, _pct_change(), _stdev(), _candle(), FeatureTests, _rising()
+Cohesion: 0.14
+Nodes (11): compute_features(), FeaturePeriods, _pct_change(), _stdev(), _ema(), _metric(), _rsi(), _candle() (+3 more)
+
+### Community 104 - "store.py"
+Cohesion: 0.17
+Nodes (12): Position, Trade, LabAccountState, LabTrade, closed_trades(), leaderboard(), load_accounts(), _save_cash() (+4 more)
 
 ### Community 105 - "Canvas Design System"
 Cohesion: 0.06
 Nodes (35): 1. Visual Communication First, 2. Minimal Text Integration, 3. Expert Craftsmanship, 4. Systematic Patterns, Analog Meditation, Approach, Canvas Boundaries, Canvas Design System (+27 more)
 
 ### Community 106 - "@testing-library/react"
-Cohesion: 0.35
-Nodes (7): 6. Gap analysis contra el brief, buildGeometry(), EquityChart(), TRADES, buildEquitySeries(), isPresent(), @testing-library/react
+Cohesion: 0.40
+Nodes (6): buildGeometry(), EquityChart(), TRADES, buildEquitySeries(), isPresent(), @testing-library/react
 
 ### Community 107 - "design-tokens-starter.json"
 Cohesion: 0.15
 Nodes (12): component, $type, $value, dark, semantic, $schema, $type, $value (+4 more)
 
 ### Community 108 - "learning.py"
-Cohesion: 0.14
-Nodes (18): create_hypothesis_endpoint(), create_knowledge_endpoint(), create_strategy_version_endpoint(), _decimal_text(), evaluate_hypothesis_endpoint(), _get_hypothesis(), _hypothesis_payload(), HypothesisCreate (+10 more)
+Cohesion: 0.12
+Nodes (20): create_hypothesis_endpoint(), create_knowledge_endpoint(), create_strategy_version_endpoint(), _decimal_text(), evaluate_hypothesis_endpoint(), _get_hypothesis(), _hypothesis_payload(), HypothesisCreate (+12 more)
 
-### Community 109 - "test_text_layout_resilience.py"
-Cohesion: 0.18
-Nodes (3): read_rows(), TestTextLayoutDataContracts, TestTextLayoutRetrieval
+### Community 109 - "test_observability.py"
+Cohesion: 0.13
+Nodes (9): SourceHealth, mark_source(), sources_state(), configure_logging(), JsonFormatter, RotatingLogTests, SourceHealthTests, Módulos (+1 more)
 
 ### Community 110 - "claude_master_brief_ai_trading_bot.md"
 Cohesion: 0.06
@@ -817,9 +831,9 @@ Nodes (11): extensions, formatReport(), fs, getFiles(), main(), parseArgs(), pat
 Cohesion: 0.20
 Nodes (12): $type, $value, bg, bg, padding, shadow, card, bg (+4 more)
 
-### Community 115 - "test_design_system_mode.py"
-Cohesion: 0.15
-Nodes (6): _filter_anti_patterns_for_mode(), _query_wants_dark(), _resolve_color_mode(), _style_is_dark_primary(), TestAntiPatternGating, TestModeResolution
+### Community 115 - "TestStyleTaxonomy"
+Cohesion: 0.11
+Nodes (5): _query_wants_dark(), _resolve_color_mode(), _style_is_dark_primary(), TestModeResolution, TestStyleTaxonomy
 
 ### Community 116 - "Form & Input Components"
 Cohesion: 0.06
@@ -834,8 +848,8 @@ Cohesion: 0.31
 Nodes (10): extractColorsFromTable(), extractCoreAttributes(), extractHexColors(), extractImageStyle(), extractTypography(), extractVoice(), fs, generatePromptAddition() (+2 more)
 
 ### Community 120 - "transition_hypothesis"
-Cohesion: 0.11
-Nodes (11): Hypothesis, Knowledge, create_manual_knowledge(), list_hypotheses(), list_knowledge(), _promote_to_knowledge(), _rollback_knowledge(), transition_hypothesis() (+3 more)
+Cohesion: 0.13
+Nodes (9): Knowledge, create_manual_knowledge(), list_knowledge(), _promote_to_knowledge(), _rollback_knowledge(), transition_hypothesis(), _wald_interval(), KnowledgeTests (+1 more)
 
 ### Community 121 - "generate-tokens.cjs"
 Cohesion: 0.36
@@ -850,16 +864,12 @@ Cohesion: 0.20
 Nodes (10): fast, normal, slow, $type, $value, $type, $value, duration (+2 more)
 
 ### Community 128 - "arbitrage_service.py"
-Cohesion: 0.27
-Nodes (9): SimulationArbitrage, SimulationBalance, execute_arbitrage(), _find_execution(), get_arbitrages(), get_balance_record(), money(), quantity_value() (+1 more)
+Cohesion: 0.44
+Nodes (6): execute_arbitrage(), _find_execution(), get_arbitrages(), get_balance_record(), money(), quantity_value()
 
-### Community 129 - "Requisitos → tests"
-Cohesion: 0.14
-Nodes (9): IsolationTests, Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Requisitos no funcionales, Requisitos → tests (+1 more)
-
-### Community 131 - "ExecutionModeTests"
-Cohesion: 0.36
-Nodes (3): ExecutionModeTests, router(), _request()
+### Community 129 - "Spec 007 — Analista IA (Gemini, recomendación pura)"
+Cohesion: 0.25
+Nodes (7): Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Requisitos no funcionales, Spec 007 — Analista IA (Gemini, recomendación pura)
 
 ### Community 133 - "LearningTab.jsx"
 Cohesion: 0.14
@@ -873,21 +883,25 @@ Nodes (30): Accessibility, Base System, Best Practices, Clean & Modern, Common F
 Cohesion: 0.06
 Nodes (31): 0. How agents must use this document, 11.1 The rule, 11.2 Agent rules — text spacing, 11. Text Spacing — SC 1.4.12 (AA), 12.1 The rule, 12.2 Agent rules — hover/focus content, 12. Content on Hover or Focus — SC 1.4.13 (AA), 13.1 The rules (+23 more)
 
-### Community 137 - "report_service.py"
-Cohesion: 0.25
-Nodes (9): _balance_and_pnl_lines(), _breaker_text(), _daily_line(), _e(), _html_card(), _html_row(), _num(), _render_html() (+1 more)
+### Community 137 - "evaluate_trend"
+Cohesion: 0.17
+Nodes (7): closed_daily_candles(), _distance_pct(), evaluate_trend(), _sma(), TrendConfig, daily(), TrendEngineTests
 
 ### Community 139 - "simulation_service.py"
-Cohesion: 0.22
-Nodes (20): SimulationAccount, SimulationMarketPrice, SimulationPosition, SimulationTrade, execute_order(), get_account(), get_accounts(), get_balance() (+12 more)
+Cohesion: 0.19
+Nodes (24): SimulationAccount, SimulationArbitrage, SimulationBalance, SimulationMarketPrice, SimulationPosition, SimulationTrade, execute_order(), get_account() (+16 more)
 
 ### Community 140 - "3. The 30 Laws"
 Cohesion: 0.06
 Nodes (31): 3.10 Hick's Law, 3.11 Jakob's Law, 3.12 Law of Common Region, 3.13 Law of Proximity, 3.14 Law of Prägnanz (Simplicity), 3.15 Law of Similarity, 3.16 Law of Uniform Connectedness, 3.17 Mental Model (+23 more)
 
-### Community 141 - "Tareas 001 — Bot de trading Binance Spot con 20 USD (fase 1)"
-Cohesion: 0.13
-Nodes (12): ChunkDownloadAndResumeTests, flaky_request(), resumed_request(), _rows(), Bloque 1 — Dominio puro, Bloque 2 — Datos de mercado, Bloque 3 — Riesgo, Bloque 4 — Señales externas (copy) (+4 more)
+### Community 141 - ".test_chunk_download_and_resume"
+Cohesion: 0.28
+Nodes (5): ChunkDownloadAndResumeTests, flaky_request(), resumed_request(), _rows(), Bloque 9 — Backtest
+
+### Community 143 - "TrendLoopTests"
+Cohesion: 0.19
+Nodes (5): _candle(), daily(), FakeMarket, intraday(), TrendLoopTests
 
 ### Community 144 - "register_strategy_version"
 Cohesion: 0.19
@@ -905,9 +919,9 @@ Nodes (8): padding-x, input, $type, $value, focus-ring, padding-x, $type, $value
 Cohesion: 0.07
 Nodes (28): Absolute Don'ts, Approved Backgrounds, Before Using Logo, Clear Space, Co-branding, Color Rules, Color Usage, Color Variants (+20 more)
 
-### Community 150 - "run_daily_pass"
-Cohesion: 0.38
-Nodes (3): _guard_elapsed(), run_daily_pass(), _trading_symbols()
+### Community 150 - "test_core_data_quality.py"
+Cohesion: 0.16
+Nodes (6): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, _check_icon_contract()
 
 ### Community 151 - "Component Specifications"
 Cohesion: 0.07
@@ -922,32 +936,32 @@ Cohesion: 0.38
 Nodes (3): resolve(), shipped_invocations(), SkillScriptPathsTest
 
 ### Community 156 - "select_best_execution"
-Cohesion: 0.67
-Nodes (4): aggregate_market_prices(), calculate_buy_execution(), calculate_sell_execution(), select_best_execution()
+Cohesion: 0.90
+Nodes (3): calculate_buy_execution(), calculate_sell_execution(), select_best_execution()
 
 ### Community 157 - "live_market_prices"
-Cohesion: 0.21
-Nodes (3): live_market_prices(), synchronize_market_prices(), LiveMarketPricesTests
+Cohesion: 0.16
+Nodes (4): live_market_prices(), fetch_market_prices(), synchronize_market_prices(), LiveMarketPricesTests
 
 ### Community 158 - "GeminiUnavailable"
-Cohesion: 0.15
-Nodes (6): _extract_text(), GeminiClient, GeminiQuotaExceeded, GeminiReply, GeminiUnavailable, GeminiClientTests
+Cohesion: 0.14
+Nodes (7): _extract_text(), GeminiClient, GeminiQuotaExceeded, GeminiReply, GeminiUnavailable, GeminiClientTests, Requisitos → tests
 
-### Community 159 - "validate_candles"
-Cohesion: 0.11
-Nodes (14): validate_candles(), breakout_day(), orb_candle(), range_candles(), sl_loss_day(), ValidateCandlesTest, CLI (`backend/run_walk_forward.py`), Estrategia de tests (TDD, rojo→verde) (+6 more)
+### Community 159 - "Candle"
+Cohesion: 0.08
+Nodes (15): Candle, validate_candles(), breakout_day(), orb_candle(), range_candles(), sl_loss_day(), trend_hourly_flat(), BrokenKlineMarket (+7 more)
 
-### Community 160 - "Requisitos → tests"
-Cohesion: 0.15
-Nodes (5): ExposureEndpointTests, SingleOpenSessionTests, IsolationTests, RF → test (mapeo obligatorio), Requisitos → tests
+### Community 160 - "Account"
+Cohesion: 0.23
+Nodes (4): Account, _close_position(), EngineTests, Requisitos funcionales
+
+### Community 161 - "test_catalog_summary_line_endings.py"
+Cohesion: 0.14
+Nodes (3): CatalogSummaryLineEndingsTest, _load_generator(), TestMetricMath
 
 ### Community 162 - "Crypto trading bots and AI/LLM trading systems: credibility, real results, lessons for a solo Python bot (as of Oct 2026)"
 Cohesion: 0.07
 Nodes (26): 1. Open-source frameworks: Freqtrade (incl. FreqAI), Hummingbot, Jesse, OctoBot, NautilusTrader, vectorbt, 2. Commercial bots: Pionex, 3Commas, Cryptohopper, Bitsgap, Binance native bots, 3. LLM trading experiments with real money: Alpha Arena, academic papers, live fleets, 4. Best practices for an "AI that learns": ML retraining, regime detection, meta-labeling, overfitting, safe LLM use, 5. Running the bot locally on Windows: Task Scheduler vs service (NSSM), reliability, when to move to a VPS, Cited Findings, Cited Findings, Cited Findings (+18 more)
-
-### Community 163 - "generate_design_system"
-Cohesion: 0.20
-Nodes (3): generate_design_system(), format_output(), TestPersistence
 
 ### Community 164 - "Plan maestro crypto-bot — continuidad entre chats"
 Cohesion: 0.07
@@ -981,6 +995,10 @@ Nodes (5): lg, $type, $value, lg, lg
 Cohesion: 0.60
 Nodes (5): sm, sm, sm, $type, $value
 
+### Community 173 - "indicators.py"
+Cohesion: 0.24
+Nodes (8): atr(), ema(), highest_prev(), lowest_prev(), rsi(), session_vwap(), sma(), stdev()
+
 ### Community 175 - "Asset Approval Checklist"
 Cohesion: 0.08
 Nodes (25): Accessibility, Archival, Asset Approval Checklist, Automation Support, Color Compliance, Common Issues & Fixes, Content Accessibility, Content Quality (+17 more)
@@ -1008,6 +1026,14 @@ Nodes (4): $type, $value, none, none
 ### Community 183 - "Color Palette Management"
 Cohesion: 0.08
 Nodes (24): Accessibility Requirements, Brand Compliance Validation, Checking Contrast, Color Documentation Format, Color Extraction, Color Palette Examples, Color Palette Management, Color System Structure (+16 more)
+
+### Community 184 - "test_database_postgres.py"
+Cohesion: 0.17
+Nodes (3): DialectGuardTests, EngineOptionsTests, SchemaPortabilityTests
+
+### Community 185 - "logo/core.py"
+Cohesion: 0.21
+Nodes (5): detect_domain(), _load_csv(), search(), search_all(), _search_csv()
 
 ### Community 186 - "CIP Deliverable Guide"
 Cohesion: 0.08
@@ -1061,9 +1087,9 @@ Nodes (24): Accessibility, Accessibility Requirements, ARIA States, Color Contra
 Cohesion: 0.08
 Nodes (25): 0. How agents must use this file, 10. Relationship to other standards, 1. The spacing scale, 2. Core principle: proximity creates grouping, 4.1 Inside components, 4.2 Between sibling components, 4.3 Groups laid out horizontally, 4. Horizontal spacing (+17 more)
 
-### Community 201 - "ranging_win_day"
-Cohesion: 0.17
-Nodes (8): ranging_win_day(), write_klines_jsonl(), CliTest, _config(), RenderReportTest, RunWalkForwardTest, _write_dataset(), _write_hourly()
+### Community 201 - "run_walk_forward"
+Cohesion: 0.09
+Nodes (17): WalkForwardRun, FoldResult, render_report(), run_walk_forward(), WalkForwardResult, build_parser(), main(), persist_run() (+9 more)
 
 ### Community 202 - "Workflow"
 Cohesion: 0.08
@@ -1077,21 +1103,21 @@ Nodes (23): Best Practices, Chart.js Integration, Command, Component Spec Patter
 Cohesion: 0.09
 Nodes (22): @apply Directive, Best Practices, Color Customization, Complete Tailwind Config, Configuration Examples, Content Configuration, Custom Color Palette, Custom Font Sizes (+14 more)
 
-### Community 205 - "_now_ny"
+### Community 205 - "orb_engine.py"
 Cohesion: 0.16
-Nodes (6): in_orb_window(), ny_day_start_utc(), DownloadWindowTests, _now_ny(), NyDayStartTests, OrbRangeTests
+Nodes (7): _as_utc_naive(), ny_datetime(), ny_day_start_utc(), _ny_window(), _to_ny(), NyDatetimeTests, NyDayStartTests
 
 ### Community 206 - "Fase 0 — Diagnóstico del brief "AI Trading Intelligence System""
-Cohesion: 0.10
-Nodes (20): 10. API keys realmente necesarias (checklist §39), 11. Coste mensual en modo paper, 12. Coste mensual en modo live, 13. Plan de seguridad, 14. Plan de observabilidad, 15. Plan de datos, 16. Plan de UI, 17. Plan de testing (+12 more)
+Cohesion: 0.09
+Nodes (21): 10. API keys realmente necesarias (checklist §39), 11. Coste mensual en modo paper, 12. Coste mensual en modo live, 13. Plan de seguridad, 14. Plan de observabilidad, 15. Plan de datos, 16. Plan de UI, 17. Plan de testing (+13 more)
 
 ### Community 207 - "0.1 Non-negotiable component & surface rules"
 Cohesion: 0.10
 Nodes (21): 0.1 Non-negotiable component & surface rules, 0. How agents must use this file and the other standards files, Adjacent buttons must share the same size, Application order (mandatory), Badges are never full width, Button labels must not wrap — buttons must not shrink, Buttons use the design-system base size — not arbitrary scales, Contextual heading size caps (dashboard, store, marketing) (+13 more)
 
 ### Community 208 - "Decisiones justificadas"
-Cohesion: 0.10
-Nodes (20): Alcance de este plan, Algoritmo / flujo principal (loop, M8), Contrato público (API / CLI / interfaz), Decisiones justificadas, Decisión 10: ORB reemplaza a EMA/RSI en el loop; EMA/RSI sigue como candidata de backtest, Decisión 11: RR 1:1 por configuración, sin "modos", Decisión 12: 4 pares ORB, los otros 4 solo con copy, Decisión 1: Empezar en paper-trading local, no en testnet (+12 more)
+Cohesion: 0.09
+Nodes (21): Alcance de este plan, Algoritmo / flujo principal (loop, M8), Contrato público (API / CLI / interfaz), Decisiones justificadas, Decisión 10: ORB reemplaza a EMA/RSI en el loop; EMA/RSI sigue como candidata de backtest, Decisión 11: RR 1:1 por configuración, sin "modos", Decisión 12: 4 pares ORB, los otros 4 solo con copy, Decisión 1: Empezar en paper-trading local, no en testnet (+13 more)
 
 ### Community 209 - "Routing by Task Type"
 Cohesion: 0.10
@@ -1101,9 +1127,9 @@ Nodes (19): Banner Design Tasks, Brand Identity Tasks, Component Creation, Corpo
 Cohesion: 0.10
 Nodes (19): Base Color Presets, Best Practices, Color Customization, Color Format, Component Customization, CSS Variable System, Customize Styles, Customize Variants (+11 more)
 
-### Community 211 - "format_ascii_box"
-Cohesion: 0.13
-Nodes (9): ansi_ljust(), format_ascii_box(), add_wrapped(), wrap_text(), format_markdown(), hex_to_ansi(), _mode_support_labels(), section_header() (+1 more)
+### Community 211 - "test_design_system_mode.py"
+Cohesion: 0.10
+Nodes (11): ansi_ljust(), _filter_anti_patterns_for_mode(), format_ascii_box(), add_wrapped(), wrap_text(), format_markdown(), hex_to_ansi(), _mode_support_labels() (+3 more)
 
 ### Community 212 - "Asset Organization Guide"
 Cohesion: 0.11
@@ -1117,9 +1143,9 @@ Nodes (18): Accessibility Considerations, Analogous, Black, Blue, Color Combinat
 Cohesion: 0.11
 Nodes (18): 1. Wordmark (Logotype), 2. Lettermark (Monogram), 3. Pictorial Mark (Brand Mark), 4. Abstract Mark, 5. Mascot, 6. Emblem, 7. Combination Mark, Aesthetic Styles (+10 more)
 
-### Community 215 - "_collect_report"
-Cohesion: 0.14
-Nodes (11): _collect_report(), _collect_summary(), ReportData, ReportSummary, _state_text(), _summary_text(), Contexto, Decisiones (+3 more)
+### Community 215 - "report_service.py"
+Cohesion: 0.07
+Nodes (24): _balance_and_pnl_lines(), _breaker_text(), build_daily_report(), build_daily_report_html(), _collect_report(), _collect_summary(), _daily_line(), _e() (+16 more)
 
 ### Community 216 - "Brand Consistency Checklist"
 Cohesion: 0.11
@@ -1145,9 +1171,9 @@ Nodes (17): Before Delivering App UI, Example Workflow, If a search returns 0 re
 Cohesion: 0.11
 Nodes (17): A. Modo de operación y seguridad del capital, B. Datos de mercado y señales, C. Ejecución en Binance, Casos límite, Contexto y objetivo, Criterios de finalización, D. Validación, métricas y fases, Decisiones del propietario (cerradas) (+9 more)
 
-### Community 222 - "external_signal_service.py"
-Cohesion: 0.20
-Nodes (7): ExternalSignal, _is_duplicate(), _naive_utc(), _require_optional_decimal(), SignalValidation, _trading_symbols(), validate_external_signal()
+### Community 222 - "signals.py"
+Cohesion: 0.07
+Nodes (18): get_signal_decisions(), _handle_signal(), _persist_rejection(), post_external_signal(), post_webhook_signal(), _serialize(), _trading_symbols(), ExternalSignalRequest (+10 more)
 
 ### Community 223 - "crypto-bot — backend"
 Cohesion: 0.12
@@ -1169,13 +1195,13 @@ Nodes (15): 22 Art Direction Styles, Banner Sizes & Art Direction Styles Referen
 Cohesion: 0.12
 Nodes (16): 2. The role of UI design, 3. UI ≠ UX (but they are inseparable), 4. Pick the right interface type, 5. The four element categories every UI uses, 6. The four UI pro-tips, 7. Validate every idea against three lenses, 8. The four design-thinking principles, 9.1 Empathize (+8 more)
 
-### Community 228 - "Contratos"
-Cohesion: 0.12
-Nodes (15): Arquitectura, Configuración humana (fuera del código — README, M8), Configuración (M2/M6) — `app/config.py`, Contratos, `email_service.send_email(*, subject, body, to, host, port, user, password) -> None`, Fuera de alcance de este plan, Hitos (M) → tareas (T) → tests, `keepalive_service` (+7 more)
+### Community 228 - "BM25"
+Cohesion: 0.18
+Nodes (3): BM25, _load_csv(), _search_csv()
 
 ### Community 230 - "Spec 010 — Learning: hipótesis, conocimiento validado y memoria auditable"
-Cohesion: 0.13
-Nodes (11): LearningAuthTests, LearningIsolationTests, Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Mapeo RF → tests (+3 more)
+Cohesion: 0.22
+Nodes (8): Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Requisitos funcionales, Requisitos no funcionales, Spec 010 — Learning: hipótesis, conocimiento validado y memoria auditable
 
 ### Community 231 - "CIP Design Reference"
 Cohesion: 0.13
@@ -1277,17 +1303,25 @@ Nodes (12): Accessibility, Common Rules for Professional UI + Pre-Delivery Check
 Cohesion: 0.15
 Nodes (12): 10. Charts & Data (LOW), 1. Accessibility (CRITICAL), 2. Touch & Interaction (CRITICAL), 3. Performance (HIGH), 4. Style Selection (HIGH), 5. Layout & Responsive (HIGH), 6. Typography & Color (MEDIUM), 7. Animation (MEDIUM) (+4 more)
 
-### Community 257 - "list_events"
-Cohesion: 0.21
-Nodes (5): clamp_limit(), list_events(), list_sources(), observability_metrics(), pipeline_nodes()
+### Community 257 - "LabTab.jsx"
+Cohesion: 0.45
+Nodes (9): getLabBacktest(), getLabLive(), getLabTrades(), FeedStatus(), LabTab(), Leaderboard(), num(), signed() (+1 more)
 
 ### Community 258 - "Primitive Tokens"
 Cohesion: 0.17
 Nodes (11): Border Radius, Color Scales, Gray Scale, Motion / Duration, Primary Colors (Blue), Primitive Tokens, Shadows, Spacing Scale (+3 more)
 
+### Community 259 - "validate"
+Cohesion: 0.22
+Nodes (7): _check_reasoning_contract(), _check_stack_freshness_contract(), _check_style_contract(), main(), _split(), _valid_date(), validate()
+
+### Community 260 - "LearningEndpointsTests"
+Cohesion: 0.18
+Nodes (5): LearningApiBase, LearningAuthTests, LearningEndpointsTests, LearningIsolationTests, Mapeo RF → tests
+
 ### Community 261 - "backtest_tendencia_diaria.py"
-Cohesion: 0.31
-Nodes (7): load_closes(), main(), Result, run(), sma_series(), trend_signal(), _valid_confidence()
+Cohesion: 0.36
+Nodes (6): load_closes(), main(), Result, run(), sma_series(), trend_signal()
 
 ### Community 262 - "Anti-vibecode SDD"
 Cohesion: 0.18
@@ -1312,6 +1346,14 @@ Nodes (11): 2.1 What is visual hierarchy?, 2.3 Hierarchy through emphasis and de
 ### Community 267 - "Pillar 6 — Depth & Visual Polish"
 Cohesion: 0.18
 Nodes (11): 6.1 Light source consistency, 6.2 Elevation conveys meaning, 6.3 Depth without shadows, 6.4 Use fewer borders, 6.4a Nested border radius, 6.5 Accent borders, 6.6 Background decoration, 6.7 Design empty states (+3 more)
+
+### Community 269 - "Mapeo RF → módulo → test"
+Cohesion: 0.08
+Nodes (16): loop_main(), slow_cycle(), BotApiRoutesTests, DuplicateAndSymbolTests, _signal(), TtlAndPriceDistanceTests, Mapeo RF → módulo → test, Bloque 10 — Panel web (+8 more)
+
+### Community 270 - "metrics.py"
+Cohesion: 0.36
+Nodes (5): _f(), _longest_losing_streak(), max_drawdown_pct(), monte_carlo(), summarize()
 
 ### Community 271 - "Cambia el ORB por tendencia diaria, José"
 Cohesion: 0.20
@@ -1345,9 +1387,9 @@ Nodes (10): 8.1 Mobile-first thinking, 8.2 Content decides breakpoints, 8.3 Comp
 Cohesion: 0.20
 Nodes (9): 1. Backend, 3. Validación (T8), M1 · `GET /api/bot/ai/stats` (RF-1), M2 · `GET /api/bot/pipeline` (RF-2), M3 · `GET /api/bot/decisions/{id}/why` (RF-4) y `.../replay` (RF-5), M4 · Reglas transversales backend, Orden de integración, Plan de implementación — Spec 009 (UI Control Room) (+1 more)
 
-### Community 279 - "resolve_signal_conflict"
-Cohesion: 0.28
-Nodes (3): ConflictResolution, resolve_signal_conflict(), ConflictTests
+### Community 279 - "Spec 005 — Observabilidad estructurada"
+Cohesion: 0.20
+Nodes (9): token(), Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Requisitos funcionales, Requisitos no funcionales (+1 more)
 
 ### Community 280 - "31. DEFINITION OF DONE"
 Cohesion: 0.22
@@ -1369,9 +1411,9 @@ Nodes (9): 4.1 WCAG 2.2 contrast minimums, 4.2 Resizing and Dynamic Type, 4.3 Co
 Cohesion: 0.22
 Nodes (9): 4.1 Line length, 4.2 Line-height is inversely proportional to font size, 4.3 Baseline alignment, 4.4 Letter-spacing, 4.5 Weight hierarchy in forms, 4.6 Font-size minimum for mobile inputs, 4.7 Case and readability, 4.8 Agent rules — typography (+1 more)
 
-### Community 285 - "parse_decision_rules"
-Cohesion: 0.31
-Nodes (4): apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), _validate_action()
+### Community 285 - "Spec 013 — Núcleo de tendencia diaria (BTC + ETH, SMA50 & SMA200)"
+Cohesion: 0.20
+Nodes (9): Casos límite, Contexto, Criterios de finalización, Decisiones de diseño, Fuera de alcance, Mapeo RF → tests (propuesto; se cierra en el plan), Requisitos funcionales, Requisitos no funcionales (+1 more)
 
 ### Community 286 - "Spec 003 — Panel UI: rediseño con estándar anti-vibecode"
 Cohesion: 0.22
@@ -1385,9 +1427,9 @@ Nodes (7): AGENTS.md — crypto-bot, Al terminar cualquier tarea, Comandos, Esti
 Cohesion: 0.25
 Nodes (7): Checklist de Producción para Apps Generadas con IA, Despliegue, Diseño y UI/UX, Preparación para IA y answer engines, Rendimiento, Seguridad, SEO técnico — solo páginas públicas indexables
 
-### Community 290 - "TradingPanel.jsx"
-Cohesion: 0.43
-Nodes (6): createOrder(), MARKET_PRICES, renderPanel(), DEFAULT_SYMBOLS, getPriceForSymbol(), TradingPanel()
+### Community 290 - "_check_typography_contract"
+Cohesion: 0.31
+Nodes (8): _check_font_catalog(), _check_typography_contract(), _configured_font_names(), _declared_weights(), _font_families(), _font_names(), _imported_weights(), _valid_google_fonts_exclusion_source()
 
 ### Community 291 - "4. Color as Information — SC 1.4.1 (A)"
 Cohesion: 0.25
@@ -1409,13 +1451,17 @@ Nodes (8): 2.2 Core hierarchy principles, Alignment, Color, Contrast, Proximity,
 Cohesion: 0.25
 Nodes (8): 4.1 Default, 4.2 Hover, 4.3 Active (Pressed), 4.4 Focus, 4.5 Disabled, 4. The Five Core States, Active Technique Palette, Hover Technique Palette
 
+### Community 296 - "_select_palette_for_mode"
+Cohesion: 0.15
+Nodes (6): _button_outline_text_color(), _contrast_ratio(), _derive_dark_palette(), format_master_md(), _select_palette_for_mode(), TestPaletteSelection
+
 ### Community 297 - "Clarificación QA — Spec 001 (Fase 3)"
 Cohesion: 0.25
 Nodes (7): A. Contradicciones, B. Ambigüedades (no verificables tal cual), C. Casos límite ausentes, Clarificación QA — Spec 001 (Fase 3), D. Conflictos con la constitución, Estado de resolución (post-entrevista, spec v2), Resumen
 
 ### Community 298 - "Plan — Spec 008 (Risk engine v2, veto/redimensión)"
-Cohesion: 0.25
-Nodes (7): Fórmulas e invariantes, Modelos de dominio (`dataclass(frozen=True)` / `Enum`), Orden de ejecución dentro de `evaluate_open`, Orden de implementación (rojo → verde), Plan — Spec 008 (Risk engine v2, veto/redimensión), Respuesta de la API (serialización: decimales como texto), Sesiones de la matriz (RF-8, D-9)
+Cohesion: 0.13
+Nodes (9): ExposureEndpointTests, Fórmulas e invariantes, Modelos de dominio (`dataclass(frozen=True)` / `Enum`), Orden de ejecución dentro de `evaluate_open`, Orden de implementación (rojo → verde), Plan — Spec 008 (Risk engine v2, veto/redimensión), Respuesta de la API (serialización: decimales como texto), RF → test (mapeo obligatorio) (+1 more)
 
 ### Community 299 - "Spec 008 — Risk engine v2 (veto y redimensión)"
 Cohesion: 0.25
@@ -1469,9 +1515,13 @@ Nodes (7): 5.1 Color hierarchy, 5.2 Text on colored backgrounds, 5.3 Accessibili
 Cohesion: 0.29
 Nodes (6): Alcance, Contexto y objetivo, Decisiones, Requisitos funcionales, Requisitos no funcionales, Spec 002 — Bot en la nube gratis (Render) + informe diario por correo
 
-### Community 313 - "Plan — Spec 007 (Analista IA, Gemini)"
-Cohesion: 0.29
-Nodes (6): Modelos de dominio (Pydantic para I/O del LLM; `dataclass(frozen=True)` internos), Orden de implementación (rojo → verde), Plan — Spec 007 (Analista IA, Gemini), Respuesta de la API (serialización D-7), RF → test (mapeo obligatorio), Riesgos y mitigaciones
+### Community 313 - "Plan — Spec 011 (Evidencia: walk-forward ORB)"
+Cohesion: 0.22
+Nodes (8): CLI (`backend/run_walk_forward.py`), Estrategia de tests (TDD, rojo→verde), Fórmulas fijadas (D-5, RF-4), Orden de tareas (referencia para fase Tareas), Piezas nuevas (2 ficheros + directorio de salidas), Plan — Spec 011 (Evidencia: walk-forward ORB), Qué NO se toca, Salidas
+
+### Community 314 - "trades"
+Cohesion: 0.48
+Nodes (4): backtest(), live_board(), strategies(), trades()
 
 ### Community 315 - "39. API/key checklist inicial"
 Cohesion: 0.33
@@ -1496,10 +1546,6 @@ Nodes (6): 1.1 Do not generate a template-looking interface, 1.2 Do not fabricat
 ### Community 320 - "3. Vertical spacing"
 Cohesion: 0.33
 Nodes (6): 3.1 Typography rhythm, 3.2 Lists, 3.3 Forms and inputs, 3.4 Sections and pages, 3. Vertical spacing, Heading → paragraph spacing (non-negotiable)
-
-### Community 321 - "Plan — Spec 005 (Observabilidad estructurada)"
-Cohesion: 0.33
-Nodes (5): Eventos mínimos (inventario), Modelo de datos (tablas nuevas), Orden de implementación (rojo → verde), Plan — Spec 005 (Observabilidad estructurada), Riesgos y mitigación
 
 ### Community 322 - "Plan — spec 012: estrategia ORB v2 con filtro de tendencia"
 Cohesion: 0.33
@@ -1581,25 +1627,37 @@ Nodes (3): 10.1 The thresholds, 10.2 Agent rules — target size, 10. Target Siz
 Cohesion: 0.67
 Nodes (3): 6.1 The rules, 6.2 Agent rules — keyboard, 6. Keyboard Accessibility — SC 2.1.1 / 2.1.2 (A)
 
+### Community 370 - "split_values"
+Cohesion: 0.47
+Nodes (3): split_values(), style_identities(), TestStyleIdentityContract
+
+### Community 371 - "Plan — Spec 006 (Data & context)"
+Cohesion: 0.33
+Nodes (5): Modelos de dominio (dataclass frozen, sin tablas nuevas — D-4), Orden de implementación (rojo → verde), Pesos y normalización por defecto (RF-6), Plan — Spec 006 (Data & context), Riesgos y mitigación
+
+### Community 372 - "14:45 UTC"
+Cohesion: 0.40
+Nodes (4): 14:45 UTC, Diario del cerebro — 2026-10-16, Lectura del analista (LLM), Lo que dicen los datos
+
 ## Knowledge Gaps
 - **3 isolated node(s):** `@types/react`, `@types/react-dom`, `jsdom`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3046 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3128 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **74 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `TailwindConfigGenerator` connect `TailwindConfigGenerator` to `TestTailwindConfigGenerator`, `.test_node_check_parses_generated_config`, `.validate_config`, `sys`, `.add_plugins`, `.generate_config_string`, `._base_config`, `main`, `.write_config`, `.add_colors`?**
-  _High betweenness centrality (0.034) - this node is a cross-community bridge._
-- **Are the 54 inferred relationships involving `Candle` (e.g. with `compute_features()` and `evaluate_orb()`) actually correct?**
-  _`Candle` has 54 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `TailwindConfigGenerator` connect `TailwindConfigGenerator` to `TestTailwindConfigGenerator`, `shutil`, `._base_config`, `.test_node_check_parses_generated_config`, `.validate_config`, `.add_plugins`, `.generate_config_string`, `argparse`, `main`, `.write_config`, `.add_colors`?**
+  _High betweenness centrality (0.035) - this node is a cross-community bridge._
+- **Are the 59 inferred relationships involving `Candle` (e.g. with `compute_features()` and `evaluate_orb()`) actually correct?**
+  _`Candle` has 59 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `@types/react`, `@types/react-dom`, `jsdom` to the rest of the system?**
   _3 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Base` be split into smaller, more focused modules?**
-  _Cohesion score 0.04139086719731881 - nodes in this community are weakly interconnected._
-- **Why does `Candle` connect `Candle` to `Base`, `SignalDecision`, `PositionV2`, `test_circuit_breaker.py`, `OrbTrendFilterTests`, `train_strategy.py`, `evaluate_orb`, `trend_allows`, `SimulationAccountCreate`, `._evaluate`, `test_orb_engine.py`, `validate_candles`, `decimal`, `_handle_signal`, `backtest_orb`, `strategy_lab_service.py`, `walk_forward_service.py`, `FakeMarketData`, `test_walk_forward.py`, `signal_engine.py`, `ranging_win_day`, `test_risk_engine.py`, `LoopIntegrationTests`, `compute_features`?**
-  _High betweenness centrality (0.023) - this node is a cross-community bridge._
-- **Are the 52 inferred relationships involving `SignalDecision` (e.g. with `_resolve_decision()` and `_serialize()`) actually correct?**
-  _`SignalDecision` has 52 INFERRED edges - model-reasoned connections that need verification._
+- **Should `unittest` be split into smaller, more focused modules?**
+  _Cohesion score 0.0649152865029507 - nodes in this community are weakly interconnected._
+- **Why does `Tareas — Spec 010 (Learning)` connect `LearningTab.jsx` to `evaluate_hypothesis`, `learning.py`, `register_strategy_version`, `transition_hypothesis`, `Simulation.jsx`?**
+  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+- **Are the 44 inferred relationships involving `Base` (e.g. with `add_missing_columns()` and `lifespan()`) actually correct?**
+  _`Base` has 44 INFERRED edges - model-reasoned connections that need verification._
 - **Should `SystemEvent` be split into smaller, more focused modules?**
-  _Cohesion score 0.12941176470588237 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12299465240641712 - nodes in this community are weakly interconnected._
