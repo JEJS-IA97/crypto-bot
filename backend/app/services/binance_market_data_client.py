@@ -78,17 +78,27 @@ class BinanceMarketDataClient:
 
     def _get(self, path: str, params: dict[str, Any]) -> Any:
         url = f"{self.base_url}{path}"
-        try:
-            response = httpx.request(
-                method="GET",
-                url=url,
-                params=params,
-                timeout=self.timeout_seconds,
-            )
-        except httpx.HTTPError as exc:
-            raise MarketDataUnavailable(
-                f"Binance request failed for {path}: {exc}"
-            ) from exc
+        # Un reintento ante fallos de red: un timeout suelto no debe contar
+        # como ciclo fallido (5 seguidos abren el breaker).
+        for attempt in range(2):
+            try:
+                response = httpx.request(
+                    method="GET",
+                    url=url,
+                    params=params,
+                    timeout=self.timeout_seconds,
+                )
+                break
+            except httpx.TransportError as exc:
+                if attempt == 0:
+                    continue
+                raise MarketDataUnavailable(
+                    f"Binance request failed for {path}: {exc}"
+                ) from exc
+            except httpx.HTTPError as exc:
+                raise MarketDataUnavailable(
+                    f"Binance request failed for {path}: {exc}"
+                ) from exc
         if response.is_error:
             raise MarketDataUnavailable(
                 f"Binance responded {response.status_code} for {path}"

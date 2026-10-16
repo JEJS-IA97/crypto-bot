@@ -691,3 +691,187 @@
     flex-wrap: wrap;
     gap: var(--space-2);
 }
+
+/* Núcleo de tendencia: "Qué hará el bot hoy" */
+.trend-card {
+    margin-bottom: var(--space-6);
+}
+
+.trend-next {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.trend-next strong {
+    color: var(--text-primary);
+}
+
+.trend-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+}
+
+.trend-table th,
+.trend-table td {
+    padding: var(--space-3) var(--space-2);
+    border-bottom: 1px solid var(--divider);
+    text-align: left;
+}
+
+.trend-table thead th {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.trend-table tbody th {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.trend-table .num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.trend-signal {
+    display: inline-block;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.trend-signal--in {
+    background: var(--accent);
+    color: var(--accent-ink);
+}
+
+.trend-signal--out {
+    border: 1px solid var(--divider);
+    color: var(--text-secondary);
+}
+
+/* Laboratorio: torneo de estrategias */
+.lab-toggle {
+    display: inline-flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border: 1px solid var(--divider);
+    border-radius: var(--radius-md);
+}
+
+.lab-toggle button {
+    min-height: 36px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.lab-toggle button[aria-pressed="true"] {
+    background: var(--surface-active);
+    color: var(--text-primary);
+}
+
+.lab-feed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    margin: 0 0 var(--space-4);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.lab-feed--down {
+    color: var(--negative);
+}
+
+.lab-regimes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.lab-regimes strong {
+    color: var(--text-primary);
+}
+
+.lab-muted {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.lab-table-wrap {
+    overflow-x: auto;
+}
+
+.lab-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.lab-table th,
+.lab-table td {
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--divider);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.lab-table thead th {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.lab-table tbody th {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.lab-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.lab-pos {
+    color: var(--positive);
+}
+
+.lab-neg {
+    color: var(--negative);
+}
+
+.lab-subtitle {
+    margin: var(--space-6) 0 var(--space-3);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.lab-trades {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}

@@ -43,6 +43,20 @@ class Settings(BaseSettings):
     )
     # Pares con señal técnica ORB (spec 001, D-12); el resto solo externas.
     orb_symbols: str = "BTCUSDT,ETHUSDT,BNBUSDT,SOLUSDT,ADAUSDT"
+    # ORB en reposo (constitución #2): v1 NO PASA su walk-forward y v2 no se
+    # validó (spec 012). El código queda; el loop no lo evalúa salvo opt-in.
+    orb_enabled: bool = False
+    # Núcleo de tendencia diaria (SMA50 & SMA200 sobre velas 1d cerradas):
+    # cada par compra hasta trend_allocation_pct del capital aportado cuando
+    # está "dentro" y vende todo al salir. Sin SL/TP fijo.
+    trend_enabled: bool = False
+    trend_symbols: str = "BTCUSDT,ETHUSDT"
+    trend_allocation_pct: Decimal = Decimal("50")
+    # Laboratorio: torneo de estrategias en paper (longs y shorts) en vivo
+    # por WebSocket de Binance; 20/50/100 USD virtuales por estrategia.
+    lab_enabled: bool = False
+    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT"
+    lab_ws_url: str = "wss://data-stream.binance.vision/stream"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")
@@ -86,6 +100,8 @@ class Settings(BaseSettings):
     # nivel de log y version de estrategia que viaja en cada evento.
     event_retention_days: int = 30
     log_level: str = "INFO"
+    # Vacío = log a stderr; con ruta = archivo rotado 5×5 MB (iniciar_bot.bat).
+    log_file: str = ""
     strategy_version: str = "orb-001-v3"
 
     # Datos y contexto (spec 006, D-2): fuentes declaradas. URL vacia =

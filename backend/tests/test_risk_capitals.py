@@ -237,6 +237,7 @@ class CapitalMatrixBase(unittest.TestCase):
         ).first()
 
 
+@patch.object(settings, "orb_enabled", True)  # ORB en reposo por defecto
 class SingleOpenSessionTests(CapitalMatrixBase):
     """Sesión A: una apertura por capital ⇒ invariantes de la constitución."""
 
@@ -300,6 +301,7 @@ class SingleOpenSessionTests(CapitalMatrixBase):
                     engine.dispose()
 
 
+@patch.object(settings, "orb_enabled", True)  # ORB en reposo por defecto
 class CorrelatedSecondOpenTests(CapitalMatrixBase):
     """Sesión B: segunda apertura correlacionada ⇒ Tabla 1 (RF-5)."""
 

@@ -583,6 +583,7 @@ class EventTests(RiskEngineBase):
         self.assertEqual(len(self._risk_events()), 2)
 
 
+@patch.object(settings, "orb_enabled", True)  # ORB en reposo por defecto
 class LoopIntegrationTests(RiskEngineBase):
     """RF-1/RF-2: el bucle evalúa antes de ordenar (D-1)."""
 

@@ -10,11 +10,13 @@ import json
 import unittest
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
+from app.config import settings
 from app.database import Base, _enable_sqlite_foreign_keys
 from app.domain.signal_engine import Candle
 from app.models import (
@@ -124,6 +126,10 @@ class FakeMarketData:
 
 class OrbLoopTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        # ORB está en reposo por defecto; estos tests lo activan explícitamente.
+        orb_on = patch.object(settings, "orb_enabled", True)
+        orb_on.start()
+        self.addCleanup(orb_on.stop)
         engine = create_engine("sqlite://")
         _enable_sqlite_foreign_keys(engine)
         Base.metadata.create_all(engine)
@@ -336,6 +342,19 @@ class OrbWindowAndScopeTests(OrbLoopTestCase):
         self.assertEqual(report.opened, 0)
         self.assertEqual(self._decisions(), [])
         self.assertEqual(market.kline_calls, [("XRPUSDT", "15m")])
+
+    def test_orb_at_rest_never_evaluates(self) -> None:
+        # Paso 0a: con orb_enabled=False ni BTC se evalúa en la ventana.
+        market = FakeMarketData(
+            {"BTCUSDT": candles_15m()}, {"BTCUSDT": range_candles()}
+        )
+        with patch.object(settings, "orb_enabled", False):
+            report = self._run(market, now=NOW_IN_WINDOW)
+
+        self.assertEqual(report.status, "ok")
+        self.assertEqual(report.opened, 0)
+        self.assertEqual(self._decisions(), [])
+        self.assertEqual(market.kline_calls, [("BTCUSDT", "15m")])
 
     def test_empty_5m_klines_fails_the_cycle(self) -> None:
         # RNF-6: sin datos 5m en ventana → ciclo fallido, sin órdenes.

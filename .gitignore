@@ -58,3 +58,6 @@ backend/data/klines/
 backend/data/market_snapshots_6h.jsonl
 backend/data/*.log
 backend/data/*.cmd
+
+# Pidfile del bot (iniciar_bot.bat)
+*.pid

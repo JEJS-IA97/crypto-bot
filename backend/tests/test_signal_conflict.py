@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
@@ -7,6 +8,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
+from app.config import settings
 from app.database import Base, _enable_sqlite_foreign_keys
 from app.domain.signal_engine import Candle
 from app.models import (
@@ -129,6 +131,7 @@ class RecordingExecutor:
         return self._inner.place_order(request)
 
 
+@patch.object(settings, "orb_enabled", True)  # ORB en reposo por defecto
 class SignalConflictTests(unittest.TestCase):
     def setUp(self) -> None:
         self.session_factory = _session_factory()

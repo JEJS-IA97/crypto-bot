@@ -45,3 +45,8 @@ export const stopBot = async () => {
     const response = await api.post("/api/bot/stop");
     return response.data;
 };
+
+export const getTrend = async () => {
+    const response = await api.get("/api/bot/trend");
+    return response.data;
+};

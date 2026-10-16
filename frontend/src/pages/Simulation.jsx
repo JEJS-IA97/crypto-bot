@@ -10,10 +10,12 @@ import EquityChart from "../components/EquityChart";
 import AccountSummary from "../components/AccountSummary";
 import OpenPositions from "../components/OpenPositions";
 import TradeHistory from "../components/TradeHistory";
+import LabTab from "../components/LabTab";
 import LearningTab from "../components/LearningTab";
 import NavRail from "../components/NavRail";
 import SectionTabs from "../components/SectionTabs";
 import Sidebar from "../components/Sidebar";
+import TrendCard from "../components/TrendCard";
 
 import useSimulationData from "./useSimulationData";
 
@@ -110,6 +112,8 @@ function Simulation() {
                     hidden={tab !== "operar"}
                     tabIndex={0}
                 >
+                    <TrendCard />
+
                     <div className="operar-grid">
                         <section className="data-section equity-section">
                             <div className="section-header">
@@ -145,6 +149,17 @@ function Simulation() {
                             onOrderExecuted={reload}
                         />
                     </div>
+                </div>
+
+                <div
+                    className="tab-panel"
+                    role="tabpanel"
+                    id="panel-laboratorio"
+                    aria-labelledby="tab-laboratorio"
+                    hidden={tab !== "laboratorio"}
+                    tabIndex={0}
+                >
+                    {tab === "laboratorio" && <LabTab />}
                 </div>
 
                 <div

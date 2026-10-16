@@ -138,6 +138,15 @@ class BinanceMarketDataClientTest(unittest.TestCase):
             self.client.get_klines("BNBUSDT")
 
     @patch("app.services.binance_market_data_client.httpx.request")
+    def test_single_timeout_is_retried_once(self, request_mock) -> None:
+        request_mock.side_effect = [
+            httpx.ReadTimeout("slow"),
+            httpx.Response(200, json=KLINES_PAYLOAD),
+        ]
+        self.assertEqual(len(self.client.get_klines("BTCUSDT")), 2)
+        self.assertEqual(request_mock.call_count, 2)
+
+    @patch("app.services.binance_market_data_client.httpx.request")
     def test_stale_cache_is_never_served(self, request_mock) -> None:
         request_mock.return_value = httpx.Response(200, json=KLINES_PAYLOAD)
         self.client.get_klines("BTCUSDT")

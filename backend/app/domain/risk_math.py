@@ -181,3 +181,37 @@ def estimated_loss_usd(
     if quantity < 0:
         raise ValueError("quantity must be >= 0")
     return quantity * (entry_price - stop_price)
+
+
+def allocation_order_size(
+    *,
+    price: Decimal,
+    target_usd: Decimal,
+    available_usd: Decimal,
+    min_notional_usd: Decimal,
+    step_size: Decimal,
+    cost_reserve_pct: Decimal = Decimal(0),
+) -> SizingResult:
+    """Size a trend-core buy: spend up to `target_usd` (capped by balance).
+
+    No stop: the position exits on the daily signal, so there is no
+    per-trade loss cap here; the allocation itself is the risk limit.
+    ``cost_reserve_pct`` keeps room in the balance for fee + slippage.
+    """
+    for name, value in (
+        ("price", price),
+        ("target_usd", target_usd),
+        ("available_usd", available_usd),
+        ("min_notional_usd", min_notional_usd),
+        ("step_size", step_size),
+        ("cost_reserve_pct", cost_reserve_pct),
+    ):
+        _require_decimal(name, value)
+    if price <= 0 or step_size <= 0:
+        raise ValueError("price and step_size must be > 0")
+    budget = min(target_usd, available_usd / (1 + cost_reserve_pct / HUNDRED))
+    quantity = _floor_to_step(budget / price, step_size)
+    notional = quantity * price
+    if quantity <= 0 or notional < min_notional_usd:
+        return SizingResult(None, None, None, True, "below_min_notional")
+    return SizingResult(quantity, notional, None, False, "")
