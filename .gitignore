@@ -64,3 +64,7 @@ backend/data/*.cmd
 
 # Estado interno del cerebro (marca de la ultima corrida)
 docs/brain/.ultima-corrida
+
+# Sesion de Telegram (es tu cuenta: nunca subirla)
+backend/data/*.session
+backend/data/*.session-journal

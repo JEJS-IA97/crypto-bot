@@ -1,7 +1,7 @@
-import Simulation from "./pages/Simulation";
+import ControlRoom from "./pages/ControlRoom";
 
 function App() {
-    return <Simulation />;
+    return <ControlRoom />;
 }
 
 export default App;

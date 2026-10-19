@@ -87,6 +87,42 @@ class ReportData:
     summary: ReportSummary | None
     breaker_active: bool
     breaker_reason: str | None
+    lab: tuple[tuple[str, str], ...] = ()
+
+
+def _lab_rows(db: Session, moment: datetime) -> tuple[tuple[str, str], ...]:
+    """Torneo de estrategias y cerebro: lo que el informe antiguo no mostraba."""
+    from app.brain.evolve import BrainGenome
+    from app.lab import store
+
+    try:
+        trades = store.closed_trades(db)
+        genomes = db.scalars(select(BrainGenome)).all()
+    except Exception:  # noqa: BLE001 — tablas aún no creadas
+        return ()
+    since = (moment.timestamp() - 86_400) * 1000
+    day = [t for t in trades if t.closed_ts and t.closed_ts >= since]
+    by: dict[str, list] = {}
+    for t in trades:
+        by.setdefault(f"{t.strategy} ({t.capital:.0f})", []).append(t)
+    ranked = sorted(
+        ((k, sum(x.pnl for x in v) / v[0].capital * 100, len(v)) for k, v in by.items() if len(v) >= 3),
+        key=lambda r: r[1], reverse=True,
+    )
+    rows = [
+        ("Operaciones 24 h", f"{len(day)} (PnL {_num(sum((t.pnl for t in day), Decimal(0)))} USDT)"),
+        ("Operaciones totales", f"{len(trades)} · comisiones {_num(sum((t.fees for t in trades), Decimal(0)))} USDT"),
+    ]
+    rows += [(f"Mejor #{i + 1}", f"{k}: {r:+.2f}% en {n}") for i, (k, r, n) in enumerate(ranked[:3])]
+    if ranked:
+        k, r, n = ranked[-1]
+        rows.append(("Peor", f"{k}: {r:+.2f}% en {n}"))
+    count = {s: sum(1 for g in genomes if g.status == s and g.origin != "fija") for s in ("live", "retirada", "rechazada")}
+    rows.append(("Cerebro", f"{count['live']} aprobadas en vivo · {count['retirada']} retiradas · {count['rechazada']} rechazadas"))
+    banca = [g.name for g in genomes if g.status == "banca"]
+    if banca:
+        rows.append(("En la banca", ", ".join(banca)))
+    return tuple(rows)
 
 
 def build_daily_report(
@@ -109,6 +145,7 @@ def build_daily_report(
         _daily_line(data.metrics),
         _summary_text(data.summary),
         _breaker_text(data.breaker_active, data.breaker_reason),
+        *(["Torneo y cerebro:"] + [f"  {k}: {v}" for k, v in data.lab] if data.lab else []),
     ]
     return "\n".join(lines)
 
@@ -161,6 +198,7 @@ def _collect_report(
         summary=_collect_summary(db, moment),
         breaker_active=runtime.breaker_active,
         breaker_reason=runtime.breaker_reason,
+        lab=_lab_rows(db, moment),
     )
 
 
@@ -353,7 +391,13 @@ def _html_card(title: str, rows: str, extra: str = "") -> str:
 
 def _render_html(data: ReportData) -> str:
     metrics = data.metrics
-    cards = [
+    lab_card = (
+        [_html_card("Torneo y cerebro", "".join(
+            _html_row(k, v, _TEXT, last=i == len(data.lab) - 1) for i, (k, v) in enumerate(data.lab)
+        ))]
+        if data.lab else []
+    )
+    cards = lab_card + [
         _html_card(
             "Bot",
             _html_row(

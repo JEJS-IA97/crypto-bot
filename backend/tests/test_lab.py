@@ -150,6 +150,7 @@ class LiveRunnerTests(unittest.TestCase):
 
     def test_signal_opens_and_ticker_closes_at_take_profit(self):
         with patch.object(live, "STRATEGIES", [AlwaysLong()]):
+            self.runner.strategies = [AlwaysLong()]
             self.runner.accounts = {k: v for k, v in self.runner.accounts.items() if k[0] == "always_long"}
             from app.lab import store
             with self.factory() as db:

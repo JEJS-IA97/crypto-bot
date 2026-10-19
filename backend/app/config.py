@@ -57,14 +57,16 @@ class Settings(BaseSettings):
     lab_enabled: bool = False
     lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
-    # Cerebro: analista cada brain_interval_hours vía la CLI de OmniRoute;
-    # escribe diario e hipótesis en brain_dir (relativo a backend/).
+    # Cerebro: cada brain_interval_hours lee el torneo, consulta a Gemini,
+    # examina estrategias nuevas y escribe diario/memoria en brain_dir.
     brain_enabled: bool = False
     brain_interval_hours: int = 4
     brain_dir: str = "../docs/brain"
-    brain_command: str = "omniroute"
-    brain_model: str = "auto"
-    brain_timeout_seconds: int = 180
+    # Telegram (lectura de tus grupos con tu cuenta; my.telegram.org → API).
+    # TELEGRAM_CHATS: @usuarios o ids separados por coma (los lista telegram_login.py).
+    telegram_api_id: int = 0
+    telegram_api_hash: str = ""
+    telegram_chats: str = ""
     # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
     brain_graphify_model: str = "gemini-3-flash-preview"
     trading_interval_seconds: int = 60
