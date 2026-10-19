@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     brain_command: str = "omniroute"
     brain_model: str = "auto"
     brain_timeout_seconds: int = 180
+    # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
+    brain_graphify_model: str = "gemini-3-flash-preview"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -285,7 +286,32 @@ def run_once(session_factory=None, now: datetime | None = None) -> Path:
     path = write_entry(Path(settings.brain_dir), now, notes, ctx, answer, error)
     (Path(settings.brain_dir) / ".ultima-corrida").write_text(now.isoformat(), encoding="utf-8")
     logger.info("brain: entry written to %s (llm=%s)", path, "ok" if answer else error)
+    index_memory()
     return path
+
+
+def index_memory() -> bool:
+    """graphify indexa docs/brain (incremental) para que otros agentes lo consulten."""
+    command = shutil.which("graphify")
+    if command is None or not settings.gemini_api_key.strip():
+        return False
+    try:
+        result = subprocess.run(
+            [command, "extract", settings.brain_dir, "--backend", "gemini",
+             "--model", settings.brain_graphify_model, "--max-concurrency", "1"],
+            env={**os.environ, "GEMINI_API_KEY": settings.gemini_api_key},
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=600,
+        )
+    except subprocess.TimeoutExpired:
+        logger.warning("brain: graphify timed out")
+        return False
+    if result.returncode != 0:
+        logger.warning("brain: graphify failed (%s)", result.returncode)
+    return result.returncode == 0
 
 
 def seconds_until_due(now: float | None = None) -> float:

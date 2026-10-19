@@ -59,10 +59,25 @@ class BrainTests(unittest.TestCase):
             patch.object(settings, "brain_dir", str(self.dir)),
             patch.object(live, "runner", FakeRunner()),
             patch.object(analyst, "_backtest", lambda: BACKTEST),
+            patch.object(analyst, "index_memory", lambda: False),
         ]
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
+
+    def test_index_memory_runs_graphify_with_gemini_key(self):
+        self.patches[-1].stop()
+        ok = subprocess.CompletedProcess([], 0, stdout="", stderr="")
+        with patch.object(settings, "gemini_api_key", "k-test"), \
+                patch.object(analyst.shutil, "which", return_value="graphify"), \
+                patch.object(analyst.subprocess, "run", return_value=ok) as run:
+            self.assertTrue(analyst.index_memory())
+        args, kwargs = run.call_args
+        self.assertEqual(args[0][:3], ["graphify", "extract", str(self.dir)])
+        self.assertEqual(kwargs["env"]["GEMINI_API_KEY"], "k-test")
+        with patch.object(settings, "gemini_api_key", ""):
+            self.assertFalse(analyst.index_memory())
+        self.patches[-1].start()
 
     def test_best_by_regime_needs_evidence_and_uses_100_usd_rows(self):
         self.assertEqual(analyst.best_by_regime(BACKTEST)["rango · vol media"], ("A", 0.05, 12))
