@@ -152,7 +152,7 @@ class ConfigTests(unittest.TestCase):
         """Spec 007 RF-3/RF-4/D-2: sin clave (DISABLED), solo free tier 0 USD."""
         settings = _settings_without_env()
         self.assertEqual(settings.gemini_api_key, "")
-        self.assertEqual(settings.gemini_model, "gemini-2.5-flash")
+        self.assertEqual(settings.gemini_model, "gemini-3.8-flash")
         self.assertEqual(
             settings.gemini_base_url,
             "https://generativelanguage.googleapis.com/v1beta",
