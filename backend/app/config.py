@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     lab_enabled: bool = False
     lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
+    # Cerebro: analista cada brain_interval_hours vía la CLI de OmniRoute;
+    # escribe diario e hipótesis en brain_dir (relativo a backend/).
+    brain_enabled: bool = False
+    brain_interval_hours: int = 4
+    brain_dir: str = "../docs/brain"
+    brain_command: str = "omniroute"
+    brain_model: str = "auto"
+    brain_timeout_seconds: int = 180
+    # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
+    brain_graphify_model: str = "gemini-3-flash-preview"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")

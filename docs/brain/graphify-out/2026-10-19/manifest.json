@@ -1,0 +1,38 @@
+{
+  "README.md": {
+    "mtime": 1792161955.7421415,
+    "seen": 1792335748.981365,
+    "ast_hash": "4b335e44294662cc900764f56d720587",
+    "semantic_hash": "4b335e44294662cc900764f56d720587"
+  },
+  "diario/2026-10-16.md": {
+    "mtime": 1792189811.0044487,
+    "seen": 1792335748.981378,
+    "ast_hash": "128d7ec0e9538d73b91e5bf657262dc1",
+    "semantic_hash": "128d7ec0e9538d73b91e5bf657262dc1"
+  },
+  "diario/2026-10-17.md": {
+    "mtime": 1792279544.3900783,
+    "seen": 1792335748.9813833,
+    "ast_hash": "4f3cc40b1c682adaa32a2963f8013980",
+    "semantic_hash": "4f3cc40b1c682adaa32a2963f8013980"
+  },
+  "diario/2026-10-18.md": {
+    "mtime": 1792350068.184541,
+    "seen": 1792350084.0809238,
+    "ast_hash": "5919e37f72447e88657d65eafaf72874",
+    "semantic_hash": "5919e37f72447e88657d65eafaf72874"
+  },
+  "hipotesis.md": {
+    "mtime": 1792293949.7651837,
+    "seen": 1792335748.9813886,
+    "ast_hash": "358399c66a61ad44e96352aa5c97dc63",
+    "semantic_hash": "358399c66a61ad44e96352aa5c97dc63"
+  },
+  "diario/2026-10-19.md": {
+    "mtime": 1792384728.7273493,
+    "seen": 1792384743.4053342,
+    "ast_hash": "92b5ebff1ce9243039146456f2bcfd1f",
+    "semantic_hash": "92b5ebff1ce9243039146456f2bcfd1f"
+  }
+}
