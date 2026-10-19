@@ -8,6 +8,8 @@
    y reinicia el bot. La sesión queda en data/telegram.session: no la compartas.
 """
 
+import asyncio
+
 from telethon.sync import TelegramClient
 
 from app.config import settings
@@ -18,6 +20,8 @@ def main() -> None:
     if not (settings.telegram_api_id and settings.telegram_api_hash):
         raise SystemExit("Falta TELEGRAM_API_ID / TELEGRAM_API_HASH en backend/.env")
     SESSION_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # Python 3.14 ya no crea un event loop implícito y telethon.sync lo necesita.
+    asyncio.set_event_loop(asyncio.new_event_loop())
     with TelegramClient(str(SESSION_PATH), settings.telegram_api_id, settings.telegram_api_hash) as client:
         print("\nTus grupos y canales (id  ·  nombre):")
         for dialog in client.iter_dialogs():

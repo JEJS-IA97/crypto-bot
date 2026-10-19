@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     telegram_api_hash: str = ""
     telegram_chats: str = ""
     # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
-    brain_graphify_model: str = "gemini-3-flash-preview"
+    brain_graphify_model: str = "gemini-3.8-flash"
     trading_interval_seconds: int = 60
 
     stop_loss_pct: Decimal = Decimal("2.0")
@@ -132,7 +132,7 @@ class Settings(BaseSettings):
     # Clave vacia = DISABLED; NUNCA se habilita pago (punto 4 de la
     # constitucion). El modelo se confirma con la doc oficial al crearla.
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.8-flash"
     gemini_base_url: str = (
         "https://generativelanguage.googleapis.com/v1beta"
     )
