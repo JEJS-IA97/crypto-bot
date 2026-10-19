@@ -44,7 +44,9 @@ class LabRunner:
         self.session_factory = session_factory or database.SessionLocal
         self.market = market or BinanceMarketDataClient()
         self.symbols = _symbols()
-        self.timeframes = sorted({s.timeframe for s in STRATEGIES}, key=TF_MINUTES.get)
+        self.strategies = list(STRATEGIES)
+        self.benched: set[str] = set()  # el cerebro las mandó a la banca: no abren más
+        self.timeframes = sorted(TF_MINUTES, key=TF_MINUTES.get)
         self.bars: dict[tuple[str, str], list[Bar]] = {}
         self.regimes: dict[str, RegimeLookup] = {}
         self.prices: dict[str, Decimal] = {}
@@ -58,6 +60,18 @@ class LabRunner:
     def restore(self) -> None:
         with self.session_factory() as db:
             self.accounts = store.load_accounts(db, [s.name for s in STRATEGIES], CAPITALS)
+        self.sync_brain()
+
+    def sync_brain(self) -> None:
+        """Toma del cerebro las estrategias aprobadas y la banca (se llama tras cada ciclo)."""
+        from app.brain.evolve import EVOLVED_CAPITAL, live_strategies
+
+        with self.session_factory() as db:
+            evolved, self.benched = live_strategies(db)
+            if evolved:
+                self.accounts.update(store.load_accounts(db, [s.name for s in evolved], (Decimal(EVOLVED_CAPITAL),)))
+        telegram = [s for s in self.strategies if s.name.startswith("tg_")]
+        self.strategies = list(STRATEGIES) + evolved + telegram
 
     def seed(self) -> None:
         now_ms = int(time.time() * 1000)
@@ -122,7 +136,7 @@ class LabRunner:
         close_ts = bar.ts + tf_ms
         price = self.prices.get(symbol, dec(bar.c))
         running = self._running()
-        for strategy in STRATEGIES:
+        for strategy in self.strategies:
             if strategy.timeframe != tf:
                 continue
             signal = strategy.signals(series)[-1] if len(series) >= 2 else None
@@ -137,7 +151,7 @@ class LabRunner:
                     elif strategy.exit_now(series, len(series) - 1, position.side):
                         self._close(account, symbol, price, "salida")
                     continue
-                if signal is None or not running:
+                if signal is None or not running or strategy.name in self.benched:
                     continue
                 opened = account.open(
                     symbol=symbol,
@@ -204,6 +218,8 @@ class LabRunner:
             "ticks": self.ticks,
             "seconds_since_tick": round(time.time() - self.last_tick, 1) if self.last_tick else None,
             "prices": {s: float(p) for s, p in self.prices.items()},
+            "strategies": len(self.strategies),
+            "benched": sorted(self.benched),
             "regimes": {
                 s: r.labels[-1] if r.labels else "sin datos" for s, r in self.regimes.items()
             },

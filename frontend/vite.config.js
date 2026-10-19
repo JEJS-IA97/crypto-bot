@@ -2,9 +2,9 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-// build: GitHub Pages lo sirve bajo /crypto-bot/ (RF-8); dev: raíz local.
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/crypto-bot/' : '/',
+// El backend sirve el build en http://127.0.0.1:8000/ (sin Render ni GitHub Pages).
+export default defineConfig(() => ({
+  base: '/',
   plugins: [react()],
   test: {
     environment: 'jsdom',

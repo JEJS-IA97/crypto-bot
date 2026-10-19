@@ -1,5 +1,8 @@
 import asyncio
 import logging
+from pathlib import Path
+
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
@@ -21,6 +24,7 @@ from app.api.routes import (
     simulation,
 )
 from app.brain.analyst import brain_loop
+from app.signals.telegram import telegram_loop
 from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.lab import live as lab_live
@@ -139,6 +143,7 @@ async def lifespan(app: FastAPI):
     brain_task = (
         asyncio.create_task(brain_loop(stop_event)) if settings.brain_enabled else None
     )
+    telegram_task = asyncio.create_task(telegram_loop(stop_event))
 
     if settings.gemini_auto_analysis and settings.gemini_api_key.strip():
         ai_task = asyncio.create_task(
@@ -165,6 +170,7 @@ async def lifespan(app: FastAPI):
         await lab_task
     if brain_task is not None:
         await brain_task
+    await telegram_task
     if ai_task is not None:
         await ai_task
 
@@ -236,3 +242,9 @@ app.include_router(
 app.include_router(
     lab.router
 )
+
+# Panel: si existe el build del frontend (npm run build), se sirve en
+# http://127.0.0.1:8000/ y no hace falta Vite ni Render.
+_PANEL = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _PANEL.is_dir():
+    app.mount("/", StaticFiles(directory=_PANEL, html=True), name="panel")

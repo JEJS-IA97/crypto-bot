@@ -1,4 +1,4 @@
-"""Cerebro: conclusiones propias, LLM vía OmniRoute (simulado) y Markdown en docs/brain."""
+"""Cerebro: conclusiones propias, Gemini (simulado) y Markdown en docs/brain."""
 
 import shutil
 import subprocess
@@ -59,6 +59,8 @@ class BrainTests(unittest.TestCase):
             patch.object(settings, "brain_dir", str(self.dir)),
             patch.object(live, "runner", FakeRunner()),
             patch.object(analyst, "_backtest", lambda: BACKTEST),
+            patch.object(analyst, "refresh_data", lambda: None),
+            patch.object(analyst.evolve, "load_history", lambda *a, **k: None),
             patch.object(analyst, "index_memory", lambda: False),
         ]
         for p in self.patches:
@@ -95,13 +97,11 @@ class BrainTests(unittest.TestCase):
         self.assertIsNone(analyst.parse_json("sin json"))
 
     def test_run_once_with_llm_writes_diary_and_hypotheses(self):
-        reply = '{"resumen": "Mercado en rango.", "alertas": ["ORB pierde"], "hipotesis": [{"titulo": "ORB solo en tendencia", "razon": "pierde en rango", "como_probar": "filtro ER>0.3"}]}'
-        done = subprocess.CompletedProcess([], 0, stdout=reply, stderr="")
-        with patch.object(analyst.shutil, "which", return_value="omniroute"), \
-                patch.object(analyst.subprocess, "run", return_value=done) as run:
+        answer = {"resumen": "Mercado en rango.", "alertas": ["ORB pierde"], "hipotesis": [{"titulo": "ORB solo en tendencia", "razon": "pierde en rango", "como_probar": "filtro ER>0.3"}]}
+        with patch.object(analyst.evolve, "ask_ideas", return_value=([], "", answer)) as ask:
             path = analyst.run_once(self.factory, now=NOW)
             analyst.run_once(self.factory, now=NOW)  # misma hipótesis: no se duplica
-        self.assertIn("--stdin", run.call_args.args[0])
+        self.assertIn("ranking_vivo", ask.call_args.args[0])
         diary = path.read_text(encoding="utf-8")
         self.assertIn("Mercado en rango.", diary)
         self.assertIn("ORB pierde", diary)
@@ -111,14 +111,13 @@ class BrainTests(unittest.TestCase):
         self.assertEqual(analyst.seconds_until_due(NOW.timestamp()), 4 * 3600)
 
     def test_llm_down_still_writes_statistics(self):
-        failed = subprocess.CompletedProcess([], 1, stdout="", stderr="✖ 429 Too Many Requests")
-        with patch.object(analyst.shutil, "which", return_value="omniroute"), \
-                patch.object(analyst.subprocess, "run", return_value=failed):
+        with patch.object(analyst.evolve, "ask_ideas", return_value=([], "Gemini no respondió (429)", None)):
             path = analyst.run_once(self.factory, now=NOW)
         diary = path.read_text(encoding="utf-8")
         self.assertIn("LLM no disponible", diary)
         self.assertIn("429", diary)
         self.assertIn("Lo que dicen los datos", diary)
+        self.assertIn("no pude examinar", diary)
 
 
 if __name__ == "__main__":

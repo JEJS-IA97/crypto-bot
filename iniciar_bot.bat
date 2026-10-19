@@ -23,10 +23,9 @@ set "RISK_MAX_TOTAL_EXPOSURE_PCT=100"
 set "STRATEGY_VERSION=trend-001"
 rem Laboratorio: torneo de 10 estrategias x 20/50/100 USD en paper (longs y shorts), en vivo por WebSocket.
 set "LAB_ENABLED=true"
-rem Cerebro: analista cada 4 h via OmniRoute; escribe docs\brain (diario e hipotesis).
+rem Cerebro: cada 4 h consulta a Gemini, examina estrategias nuevas y escribe docs\brain (diario y memoria).
 set "BRAIN_ENABLED=true"
-set "BRAIN_MODEL=auto"
 powershell -NoProfile -Command "(Start-Process -PassThru -WindowStyle Hidden -FilePath '%CD%\.venv\Scripts\python.exe' -ArgumentList '-m','uvicorn','app.main:app','--host','127.0.0.1','--port','8000','--no-access-log' -WorkingDirectory '%CD%' -RedirectStandardOutput '%CD%\logs\bot.out.log' -RedirectStandardError '%CD%\logs\bot.err.log').Id | Set-Content -Encoding ascii '%CD%\logs\bot.pid'"
 
-echo Bot arrancado en 2a plana. Logs: backend\logs\bot.log (app) y bot.err.log (uvicorn)
+echo Bot arrancado en 2a plana. Panel: http://127.0.0.1:8000/  Logs: backend\logs\bot.log y bot.err.log
 endlocal

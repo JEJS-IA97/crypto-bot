@@ -1,4 +1,4 @@
-"""Analista del cerebro: contexto → conclusiones propias → LLM (OmniRoute) → Markdown."""
+"""Analista del cerebro: datos → conclusiones propias → Gemini → evolución → Markdown."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,11 +22,11 @@ from app.config import settings
 from app.lab import live, store
 from app.lab.backtest import REPORT_JSON
 from app.lab.models import LabTrade
+from app.brain import evolve
 from app.lab.strategies import STRATEGIES
 
 logger = logging.getLogger(__name__)
 
-LABELS = {s.name: s.label for s in STRATEGIES}
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 STARTUP_DELAY_SECONDS = 120
 
@@ -51,6 +52,11 @@ def _backtest() -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
+def labels() -> dict[str, str]:
+    strategies = getattr(live.runner, "strategies", STRATEGIES)
+    return {s.name: s.label for s in strategies}
+
+
 def gather_context(db, hours: int) -> dict[str, Any]:
     since_ms = int((time.time() - hours * 3600) * 1000)
     recent = db.scalars(
@@ -59,11 +65,11 @@ def gather_context(db, hours: int) -> dict[str, Any]:
     open_count = len(db.scalars(select(LabTrade).where(LabTrade.status == "OPEN")).all())
     return {
         "feed": live.runner.status() if live.runner else None,
-        "live": store.leaderboard(db, LABELS),
+        "live": store.leaderboard(db, labels()),
         "backtest": _backtest(),
         "recent": [
             {
-                "estrategia": LABELS.get(t.strategy, t.strategy),
+                "estrategia": labels().get(t.strategy, t.strategy),
                 "capital": float(t.capital),
                 "par": t.symbol,
                 "lado": t.side,
@@ -144,7 +150,7 @@ def findings(ctx: dict[str, Any]) -> list[str]:
     return out
 
 
-# --- LLM vía OmniRoute ------------------------------------------------------
+# --- contexto para Gemini --------------------------------------------------
 
 
 def _compact(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -159,6 +165,7 @@ def _compact(ctx: dict[str, Any]) -> dict[str, Any]:
         ],
         "mejor_por_regimen_backtest": best_by_regime(ctx["backtest"]),
         "operaciones_recientes": ctx["recent"][-40:],
+        "senales_telegram": ctx.get("telegram", []),
     }
 
 
@@ -171,39 +178,6 @@ def parse_json(text: str) -> dict | None:
         return json.loads(text[start : end + 1])
     except ValueError:
         return None
-
-
-def ask_llm(ctx: dict[str, Any], notes: list[str]) -> tuple[dict | None, str]:
-    """Devuelve (respuesta, error). Usa la CLI de OmniRoute (token local de la máquina).
-
-    shortcut: CLI en vez de HTTP para no gestionar una API key de OmniRoute;
-    pasar a /v1/chat/completions con BRAIN key si el bot corre en otra máquina.
-    """
-    command = shutil.which(settings.brain_command)
-    if command is None:
-        return None, f"no se encontró '{settings.brain_command}' en el PATH"
-    prompt = (
-        f"{SYSTEM}\n\nCONCLUSIONES DEL SISTEMA:\n- " + "\n- ".join(notes)
-        + "\n\nDATOS (JSON):\n" + json.dumps(_compact(ctx), ensure_ascii=False, default=str)
-    )
-    try:
-        result = subprocess.run(
-            [command, "chat", "--no-history", "-m", settings.brain_model, "--max-tokens", "2000", "--stdin"],
-            input=prompt,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=settings.brain_timeout_seconds,
-        )
-    except subprocess.TimeoutExpired:
-        return None, "el modelo no respondió a tiempo"
-    output = ANSI.sub("", result.stdout + result.stderr)
-    parsed = parse_json(result.stdout)
-    if result.returncode != 0 or parsed is None:
-        error = next((line for line in output.splitlines() if "✖" in line or "error" in line.lower()), output[-300:])
-        return None, error.strip()[:300]
-    return parsed, ""
 
 
 # --- escritura ------------------------------------------------------------
@@ -276,13 +250,36 @@ def _append_hypotheses(path: Path, now: datetime, items: list) -> None:
 # --- orquestación ---------------------------------------------------------
 
 
-def run_once(session_factory=None, now: datetime | None = None) -> Path:
+def refresh_data() -> None:
+    """Trae las velas 5m nuevas (incremental) para que el examen use datos frescos."""
+    try:
+        sys.path.insert(0, str(Path.cwd()))
+        import collect_klines
+
+        collect_klines.main(["--symbols", settings.lab_symbols, "--interval", "5m", "--days", "365",
+                             "--data-dir", "data/klines"])
+    except Exception:  # noqa: BLE001 — sin red se examina con lo que haya
+        logger.warning("brain: could not refresh klines", exc_info=True)
+
+
+def run_once(session_factory=None, now: datetime | None = None, history=None) -> Path:
     now = now or datetime.now(timezone.utc)
     factory = session_factory or database.SessionLocal
     with factory() as db:
         ctx = gather_context(db, settings.brain_interval_hours)
     notes = findings(ctx)
-    answer, error = ask_llm(ctx, notes)
+    ideas, error, answer = evolve.ask_ideas(_compact(ctx))
+    if history is None:
+        refresh_data()
+        history = evolve.load_history(Path("data/klines"), [s for s in settings.lab_symbols.split(",") if s])
+    if history is not None:
+        with factory() as db:
+            result = evolve.evolve_once(db, history, ideas, store.closed_trades(db), now)
+        notes += result["notes"]
+        if live.runner:
+            live.runner.sync_brain()
+    else:
+        notes.append("Sin velas históricas en data/klines: no pude examinar estrategias nuevas.")
     path = write_entry(Path(settings.brain_dir), now, notes, ctx, answer, error)
     (Path(settings.brain_dir) / ".ultima-corrida").write_text(now.isoformat(), encoding="utf-8")
     logger.info("brain: entry written to %s (llm=%s)", path, "ok" if answer else error)
