@@ -138,7 +138,7 @@ class BinanceExecutorRulesTests(_BinanceExecutorTestCase):
         info_kwargs = self.exchange_info_calls[0].kwargs
         self.assertEqual(
             info_kwargs["url"],
-            "https://api.binance.com/api/v3/exchangeInfo",
+            "https://data-api.binance.vision/api/v3/exchangeInfo",
         )
         headers = info_kwargs.get("headers") or {}
         self.assertNotIn("X-MBX-APIKEY", headers)

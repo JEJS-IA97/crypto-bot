@@ -485,7 +485,7 @@
 
 .token-field input:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(39, 231, 207, 0.14);
+    box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.25);
 }
 
 .token-actions {

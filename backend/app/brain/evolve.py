@@ -67,6 +67,11 @@ FAMILIES: dict[str, dict[str, Any]] = {
         "stop_atr": (1.5, 4.0, float),
         "tp_atr": (2.0, 8.0, float),
     },
+    "momentum": {
+        "tf": ["4h", "1d"],
+        "lookback": (6, 60, int),
+        "min_ret": (0.0, 0.15, float),
+    },
     "reversion": {
         "tf": ["15m", "1h"],
         "rsi_low": (15, 35, int),
@@ -79,6 +84,7 @@ DESCRIPTIONS = {
     "tendencia": "Comprado si el cierre está sobre SMA{fast} y SMA{slow} ({tf}); sale al perder alguna.",
     "donchian": "Compra al romper el máximo de {n} velas ({tf}) sobre SMA200. Stop {stop_atr} ATR, objetivo {tp_atr} ATR.",
     "ema_rsi": "EMA{fast} sobre EMA{slow} y RSI cruza 50 al alza ({tf}). Stop {stop_atr} ATR, objetivo {tp_atr} ATR.",
+    "momentum": "Comprado mientras el retorno de las últimas {lookback} velas ({tf}) supere {min_ret:.0%}; sale al perderlo.",
     "reversion": "RSI<{rsi_low} sobre SMA200 ({tf}): compra el rebote. Stop {stop_atr} ATR, objetivo {tp_atr} ATR, máx. 24 velas.",
 }
 
@@ -115,10 +121,16 @@ class Evolved(Strategy):
         f, s = ind.sma(c, self.params["fast"]), ind.sma(c, self.params["slow"])
         return [f[i] is not None and s[i] is not None and c[i] > f[i] and c[i] > s[i] for i in range(len(c))]
 
+    def _momentum(self, bars: list[Bar]) -> list[bool]:
+        n, edge = self.params["lookback"], self.params["min_ret"]
+        return [i >= n and bars[i].c / bars[i - n].c - 1 > edge for i in range(len(bars))]
+
     def signals(self, bars: list[Bar]) -> list[Signal | None]:
         p, c = self.params, [b.c for b in bars]
         if self.family == "tendencia":
             return [Signal("LONG", None, None) if x else None for x in self._inside(bars)]
+        if self.family == "momentum":
+            return [Signal("LONG", None, None) if x else None for x in self._momentum(bars)]
         a, t = ind.atr(bars), ind.sma(c, 200)
         out: list[Signal | None] = [None] * len(bars)
         if self.family == "donchian":
@@ -139,6 +151,8 @@ class Evolved(Strategy):
         return out
 
     def exit_now(self, bars: list[Bar], i: int, side: str) -> bool:
+        if self.family == "momentum":
+            return not self._momentum(bars[: i + 1])[-1]
         return self.family == "tendencia" and not self._inside(bars[: i + 1])[-1]
 
 

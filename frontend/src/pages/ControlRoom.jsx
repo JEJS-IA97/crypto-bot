@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { getLabLive } from "../api/lab";
+import Balances from "../components/room/Balances";
 import BrainPanel from "../components/room/BrainPanel";
 import CandleChart from "../components/room/CandleChart";
 import Leaderboard from "../components/room/Leaderboard";
@@ -21,11 +22,13 @@ function ControlRoom() {
             {error && <p className="banner">No hay conexión con el bot en 127.0.0.1:8000. ¿Está encendido? ({error})</p>}
             {view === "account" ? (
                 <div className="legacy">
-                    <Simulation />
+                    <Balances board={board} />
+                    <Simulation embedded />
                 </div>
             ) : (
                 <main className="room-grid">
                     <div className="col-main">
+                        <Balances board={board} />
                         <CandleChart />
                         <Leaderboard board={board} brain={brain} />
                     </div>

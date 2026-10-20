@@ -9,12 +9,12 @@ function resolve(command) {
   return viteConfig
 }
 
-describe('vite.config base (RF-8, Pages)', () => {
+describe('vite.config base (spec 014: el backend sirve el panel)', () => {
   it('en dev sirve en la raíz', () => {
     expect(resolve('serve').base ?? '/').toBe('/')
   })
 
-  it('en build sirve bajo /crypto-bot/ para GitHub Pages', () => {
-    expect(resolve('build').base).toBe('/crypto-bot/')
+  it('en build también sirve en la raíz (http://127.0.0.1:8000/)', () => {
+    expect(resolve('build').base).toBe('/')
   })
 })

@@ -4,7 +4,7 @@ import { createChart, CrosshairMode } from "lightweight-charts";
 import { getCandles, getLabTrades } from "../../api/lab";
 import { coin, price, signed, tone } from "./fmt";
 
-const SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"];
+const SYMBOLS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "LINKUSDT", "AVAXUSDT", "LTCUSDT"];
 const TFS = [
     ["15m", 900],
     ["1h", 3600],

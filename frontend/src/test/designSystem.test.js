@@ -9,15 +9,15 @@ const root = css.slice(
 );
 
 describe("design system (spec 003 RF-6, design.json)", () => {
-    it("define la paleta de design.json en :root", () => {
+    it("define la paleta terminal de trader (DESIGN.md) en :root", () => {
         for (const declaration of [
-            "--bg-main: #1d1e21",
-            "--bg-rail: #050505",
-            "--surface: #202124",
-            "--divider: #303236",
-            "--accent: #27e7cf",
-            "--color-buy: #27e7cf",
-            "--negative: #ff4d5a",
+            "--bg-main: #0e1013",
+            "--bg-rail: #121417",
+            "--surface: #14171b",
+            "--divider: #262b31",
+            "--accent: #f0b429",
+            "--color-buy: #26a96c",
+            "--negative: #e5534b",
         ]) {
             expect(root).toContain(declaration);
         }
@@ -27,8 +27,8 @@ describe("design system (spec 003 RF-6, design.json)", () => {
         for (const declaration of [
             "--space-4: 16px",
             "--space-8: 32px",
-            "--radius-md: 10px",
-            "--radius-xl: 16px",
+            "--radius-md: 4px",
+            "--radius-xl: 6px",
             "--font-size-page-title",
             "--font-sans",
         ]) {
