@@ -35,16 +35,25 @@ const COLS = [
 function Leaderboard({ board, brain }) {
     const [capital, setCapital] = useState(100);
     const [sort, setSort] = useState(["return_pct", -1]);
+    const [showDiscarded, setShowDiscarded] = useState(false);
     const status = useMemo(() => Object.fromEntries((brain?.genomes || []).map((g) => [g.name, g.status])), [brain]);
+    const onlyIn = useMemo(
+        () => Object.fromEntries((brain?.genomes || []).filter((g) => g.params?.symbols?.length).map((g) => [g.name, g.params.symbols])),
+        [brain],
+    );
+    const discarded = (r) => ["banca", "retirada"].includes(status[r.strategy]);
+    const hidden = (board?.rows || []).filter((r) => (capital === 0 || r.capital === capital) && discarded(r)).length;
     const rows = useMemo(() => {
-        const list = (board?.rows || []).filter((r) => capital === 0 || r.capital === capital);
+        const list = (board?.rows || []).filter(
+            (r) => (capital === 0 || r.capital === capital) && (showDiscarded || !["banca", "retirada"].includes(status[r.strategy])),
+        );
         const [key, dir] = sort;
         return [...list].sort((a, b) => {
             const x = a[key] ?? -Infinity;
             const y = b[key] ?? -Infinity;
             return (typeof x === "string" ? x.localeCompare(y) : x - y) * dir;
         });
-    }, [board, capital, sort]);
+    }, [board, capital, sort, showDiscarded, status]);
 
     return (
         <section className="panel">
@@ -59,6 +68,14 @@ function Leaderboard({ board, brain }) {
                 </div>
             </header>
             {!rows.length && <p className="note">Aún no hay cuentas con este capital.</p>}
+            {hidden > 0 && (
+                <p className="foot">
+                    {showDiscarded ? "Mostrando" : "Ocultas"} {hidden} estrategias descartadas por el cerebro (quedan guardadas en su memoria).{" "}
+                    <button className="link" onClick={() => setShowDiscarded(!showDiscarded)}>
+                        {showDiscarded ? "Ocultarlas" : "Verlas"}
+                    </button>
+                </p>
+            )}
             <div className="scroll">
                 <table className="grid">
                     <thead>
@@ -80,6 +97,9 @@ function Leaderboard({ board, brain }) {
                                     <td>
                                         <span className={`tag ${kind}`} title={kindTitle}>{kind}</span> {r.label}
                                         {capital === 0 && <span className="dim"> · {r.capital}</span>}
+                                        {onlyIn[r.strategy] && (
+                                            <span className="dim small"> · solo {onlyIn[r.strategy].map((s) => s.replace("USDT", "")).join(", ")}</span>
+                                        )}
                                     </td>
                                     <td className="r num">{r.trades}{r.open_positions ? <span className="dim"> +{r.open_positions}</span> : null}</td>
                                     <td className="r num">{r.win_rate ?? "—"}</td>

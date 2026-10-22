@@ -166,7 +166,7 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
     from app.signals.telegram import TelegramSignal, _chats
 
     rows = db.scalars(select(TelegramSignal).order_by(TelegramSignal.id.desc()).limit(min(limit, 200))).all()
-    from app.signals.verify import channel_score
+    from app.signals.verify import binance_pair, binance_symbols, channel_score
 
     channels: dict[str, dict[str, int]] = {}
     verified: dict[str, list[dict]] = {}
@@ -185,6 +185,7 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
             stats["perdidas"] += parsed["losses"]
     return {
         "channels": [{"chat": k, **v, **channel_score(verified.get(k, []))} for k, v in sorted(channels.items())],
+        "assets": _assets(db, TelegramSignal, binance_symbols(), binance_pair),
         "configured": bool(settings.telegram_api_id and settings.telegram_api_hash and _chats()),
         "signals": [
             {"chat": r.chat_title, "text": r.text[:280], "parsed": r.parsed, "outcome": r.outcome,
@@ -192,3 +193,16 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
             for r in rows
         ],
     }
+
+
+def _assets(db: Session, model, symbols: set[str], to_pair) -> list[dict[str, Any]]:
+    """Divisas que mencionan tus grupos y si existen en Binance para seguirlas allá."""
+    count: dict[tuple[str, bool], int] = {}
+    for (parsed,) in db.execute(select(model.parsed)):
+        if (parsed or {}).get("kind") == "binaria":
+            key = (parsed["asset"], bool(parsed.get("otc")))
+            count[key] = count.get(key, 0) + 1
+    return sorted(
+        ({"asset": a, "otc": otc, "senales": n, "binance": to_pair(a, symbols)} for (a, otc), n in count.items()),
+        key=lambda r: -r["senales"],
+    )

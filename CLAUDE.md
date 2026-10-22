@@ -12,3 +12,12 @@
 - SDD: una fase a la vez; para entre fases y espera aprobación. Marca `[NEEDS DECISION]` cuando falte una decisión.
 - Pide confirmación antes de: registrar tareas programadas o servicios de Windows, enmendar la constitución, borrar archivos, hacer push.
 - Nunca actives `ALLOW_LIVE_TRADING` ni muestres el contenido de `.env`.
+
+## Ahorro de tokens (pedido de José, 2026-10-21)
+- Contexto antes de codificar: lee solo los archivos relevantes (offset/limit si basta una sección), git log, y pregunta si falta algo.
+- Respuestas de 1-3 frases, sin preámbulos, sin resumen final, sin halagos ni narrar el plan.
+- Edit parcial; nunca reescribir un archivo existente salvo cambio >80 %. No "limpiar" código alrededor.
+- No releer archivos ya leídos si no cambiaron. Paralelizar lecturas independientes.
+- Validar (tests/compilar) antes de decir "listo". No pegar en la respuesta el código ya editado.
+- Lo mínimo que resuelve el problema (ponytail). Si José dice "hazlo así", se hace; una sola frase si hay riesgo real.
+- Grep/Read directos en vez de subagentes salvo búsquedas amplias.

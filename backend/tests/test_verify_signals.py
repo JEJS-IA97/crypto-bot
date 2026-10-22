@@ -42,5 +42,27 @@ class VerifyTests(unittest.TestCase):
         self.assertEqual(score["resultado_1usd"], 1.1)
 
 
+class BinanceMapTests(unittest.TestCase):
+    def test_maps_signal_currencies_to_binance_pairs(self):
+        symbols = {"EURUSDT", "USDTTRY", "USDTBRL", "BTCUSDT"}
+        self.assertEqual(verify.binance_pair("EUR/USD", symbols), "EURUSDT")
+        self.assertEqual(verify.binance_pair("USD/TRY", symbols), "USDTTRY")
+        self.assertIsNone(verify.binance_pair("AUD/CAD", symbols))
+
+
+class AlertTests(unittest.TestCase):
+    def test_only_approved_strategies_alert(self):
+        from decimal import Decimal
+
+        from app.signals import alerts
+
+        alerts.outbox.clear()
+        pos = type("P", (), {"side": "LONG", "entry": Decimal("82000"), "stop": None, "take_profit": None})()
+        alerts.on_open(type("S", (), {"name": "orb_ny", "label": "ORB"})(), "BTCUSDT", pos)
+        alerts.on_open(type("S", (), {"name": "evo_x", "label": "tendencia 1d"})(), "BTCUSDT", pos)
+        self.assertEqual(len(alerts.outbox), 1)
+        self.assertIn("COMPRA BTC", alerts.outbox[0])
+
+
 if __name__ == "__main__":
     unittest.main()

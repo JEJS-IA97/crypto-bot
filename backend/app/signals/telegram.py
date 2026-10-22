@@ -213,14 +213,24 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
             restore_sources(live.runner)
         logger.info("telegram: %s stored messages reclassified", reclassify())
         logger.info("telegram: listening to %s chats", len(_chats()))
-        while not stop_event.is_set():  # cada 5 min: veredicto de las señales de divisas reales
-            from app.signals.verify import verify_pending
+        from app.signals import alerts
+        from app.signals.verify import verify_pending
 
-            checked = await asyncio.to_thread(verify_pending)
-            if checked:
-                logger.info("telegram: %s binary signals verified against real prices", checked)
+        tick = 0
+        while not stop_event.is_set():
+            while alerts.outbox:  # avisos de compra/venta a tus Mensajes guardados
+                text = alerts.outbox.pop(0)
+                try:
+                    await client.send_message("me", text)
+                except Exception:  # noqa: BLE001
+                    logger.warning("telegram: could not send alert", exc_info=True)
+            if tick % 20 == 0:  # cada ~5 min: veredicto de las señales de divisas reales
+                checked = await asyncio.to_thread(verify_pending)
+                if checked:
+                    logger.info("telegram: %s binary signals verified against real prices", checked)
+            tick += 1
             try:
-                await asyncio.wait_for(stop_event.wait(), timeout=300)
+                await asyncio.wait_for(stop_event.wait(), timeout=15)
             except TimeoutError:
                 pass
     finally:

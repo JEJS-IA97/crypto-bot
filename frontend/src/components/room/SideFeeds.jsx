@@ -73,6 +73,27 @@ export function TelegramFeed() {
                     </tbody>
                 </table>
             )}
+            {!!data?.assets?.length && (
+                <>
+                    <h3>Divisas de las señales y su par en Binance</h3>
+                    <div className="feed-scroll">
+                        <table className="grid compact">
+                            <thead>
+                                <tr><th>Activo</th><th className="r">Señales</th><th>En Binance</th></tr>
+                            </thead>
+                            <tbody>
+                                {data.assets.map((a) => (
+                                    <tr key={`${a.asset}-${a.otc}`}>
+                                        <td>{a.asset}{a.otc && <span className="dim"> OTC</span>}</td>
+                                        <td className="r num">{a.senales}</td>
+                                        <td className={a.binance ? "up" : "dim"}>{a.binance || "no existe"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
             <ul className="tg tg-scroll">
                 {(data?.signals || []).map((s, i) => (
                     <li key={i}>

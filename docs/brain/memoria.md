@@ -25,3 +25,43 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Aprobada (mutación) tendencia 1d · 59 / 139: examen +890.19 USD, PF 37.19, 5 trades. Entra al torneo en vivo con 100 USD.
 - Aprobada (mutación) tendencia 1d · 77 / 124: examen +717.06 USD, PF 41.06, 5 trades. Entra al torneo en vivo con 100 USD.
 - Probé 10 estrategias nuevas, aprobaron 2. Probabilidad de aprobar por familia: tendencia 33%, donchian 10%, ema_rsi 8%, reversion 11%.
+
+## 2026-10-20 16:36 UTC
+- ema_cross: a la banca: 30 trades, -3.57 USD.
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 26%, donchian 8%, ema_rsi 8%, momentum 33%, reversion 11%.
+
+## 2026-10-20 20:36 UTC
+- impulse_pullback: a la banca: 30 trades, -5.83 USD.
+- Idea de Gemini rechazada, tendencia 1d · 65 / 160: drawdown Monte Carlo p95 de 100.0 %.
+- Idea de Gemini rechazada, momentum 1d · 21 / 0.06: drawdown Monte Carlo p95 de 100.0 %.
+- Idea de Gemini rechazada, ema_rsi 4h · 21 / 89 / 2.5 / 5.0: no gana en entrenamiento (PF 0.82).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 21%, donchian 8%, ema_rsi 8%, momentum 25%, reversion 11%.
+
+## 2026-10-21 00:36 UTC
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 18%, donchian 8%, ema_rsi 8%, momentum 17%, reversion 10%.
+
+## 2026-10-21 10:55 UTC
+- Idea de Gemini rechazada, tendencia 4h · 34 / 144: no gana en entrenamiento (PF 0.31).
+- Idea de Gemini rechazada, donchian 4h · 48 / 2.0 / 5.0: no gana en entrenamiento (PF 0.4).
+- Idea de Gemini rechazada, reversion 1h · 22 / 1.8 / 3.2: pocas operaciones en entrenamiento (1).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 16%, donchian 8%, ema_rsi 8%, momentum 14%, reversion 9%.
+
+## 2026-10-21 14:55 UTC
+- Idea de Gemini rechazada, tendencia 1d · 72 / 150: drawdown Monte Carlo p95 de 84.73 %.
+- Idea de Gemini rechazada, momentum 4h · 36 / 0.04: no gana en entrenamiento (PF 0.34).
+- Idea de Gemini rechazada, ema_rsi 1h · 16 / 96 / 2.0 / 4.5: no gana en entrenamiento (PF 0.51).
+- Probé 11 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 14%, donchian 8%, ema_rsi 7%, momentum 12%, reversion 9%.
+
+## 2026-10-21 18:55 UTC
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 12%, donchian 8%, ema_rsi 7%, momentum 11%, reversion 8%.
+
+## 2026-10-21 23:06 UTC
+- Aprobada (mutación) tendencia 1d · 59 / 162: examen +20.52 USD, PF 6.12, 10 trades · opera solo en BNB, ETH. Entra al torneo en vivo con 100 USD.
+- Aprobada (mutación) tendencia 1d · 90 / 163: examen +20.98 USD, PF 10.25, 7 trades · opera solo en BNB, ETH. Entra al torneo en vivo con 100 USD.
+- Probé 10 estrategias nuevas, aprobaron 2. Probabilidad de aprobar por familia: tendencia 14%, donchian 7%, ema_rsi 7%, momentum 11%, reversion 8%.
+
+## 2026-10-22 12:28 UTC
+- Idea de Gemini rechazada, tendencia 1d · 68 / 132: no gana en entrenamiento (PF 1.07).
+- Aprobada (gemini) tendencia 1d · 85 / 168: examen +20.82 USD, PF 10.48, 7 trades · opera solo en BNB, ETH. Entra al torneo en vivo con 100 USD.
+- Aprobada (gemini) momentum 1d · 42 / 0.05: examen +18.65 USD, PF 2.72, 18 trades · opera solo en BNB. Entra al torneo en vivo con 100 USD.
+- Probé 10 estrategias nuevas, aprobaron 2. Probabilidad de aprobar por familia: tendencia 14%, donchian 7%, ema_rsi 7%, momentum 18%, reversion 8%.

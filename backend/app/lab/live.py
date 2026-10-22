@@ -27,6 +27,7 @@ from app.lab.bars import TF_MINUTES, Bar
 from app.lab.engine import dec
 from app.lab.regime import RegimeLookup
 from app.lab.strategies import STRATEGIES
+from app.signals import alerts
 from app.services.binance_market_data_client import BinanceMarketDataClient
 from app.services.risk_guard_service import get_runtime
 
@@ -151,7 +152,9 @@ class LabRunner:
                     elif strategy.exit_now(series, len(series) - 1, position.side):
                         self._close(account, symbol, price, "salida")
                     continue
-                if signal is None or not running or strategy.name in self.benched:
+                allowed = getattr(strategy, "symbols", None)
+                if (signal is None or not running or strategy.name in self.benched
+                        or f"{strategy.name}|{symbol}" in self.benched or (allowed and symbol not in allowed)):
                     continue
                 opened = account.open(
                     symbol=symbol,
@@ -166,12 +169,15 @@ class LabRunner:
                 if opened:
                     with self.session_factory() as db:
                         store.save_open(db, account, opened)
+                    alerts.on_open(strategy, symbol, opened)
 
     def _close(self, account, symbol: str, price: Decimal, reason: str) -> None:
         db_id = account.positions[symbol].db_id
         trade = account.close(symbol, price, int(time.time() * 1000), reason)
         with self.session_factory() as db:
             store.save_close(db, account, db_id, trade)
+        label = next((s.label for s in self.strategies if s.name == account.strategy), account.strategy)
+        alerts.on_close(account.strategy, label, symbol, trade)
 
     def _running(self) -> bool:
         try:

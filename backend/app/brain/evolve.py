@@ -46,6 +46,7 @@ MAX_LIVE = 8
 CANDIDATES_PER_RUN = 10
 LIVE_MIN_TRADES = 15
 STATIC_MIN_TRADES = 30
+PAIR_MIN_TRADES = 8  # trades de una estrategia en un par antes de juzgarla en ese par
 
 # familia → {parámetro: (mín, máx, tipo)}; "tf" se elige de la lista.
 FAMILIES: dict[str, dict[str, Any]] = {
@@ -111,8 +112,10 @@ class Evolved(Strategy):
     def __init__(self, name: str, family: str, params: dict[str, Any]) -> None:
         self.name, self.family, self.params = name, family, params
         self.timeframe = params["tf"]
+        self.symbols = set(params.get("symbols") or [])  # vacío = todos
         self.label = f"{family} {_short_params(params)}"
-        self.description = DESCRIPTIONS[family].format(**params)
+        self.description = DESCRIPTIONS[family].format(**params) + (
+            f" Solo en {', '.join(s.replace('USDT', '') for s in sorted(self.symbols))}." if self.symbols else "")
         self.max_hold = 24 if family == "reversion" else None
         self.warmup = 260
 
@@ -157,7 +160,7 @@ class Evolved(Strategy):
 
 
 def _short_params(params: dict[str, Any]) -> str:
-    tf, *rest = params.values()
+    tf, *rest = [v for k, v in params.items() if k != "symbols"]
     return f"{tf} · " + " / ".join(str(v) for v in rest)
 
 
@@ -197,7 +200,8 @@ def mutate(rng: random.Random, family: str, params: dict[str, Any], scale: float
 
 
 def genome_name(family: str, params: dict[str, Any]) -> str:
-    return ("evo_" + family + "_" + "_".join(str(v) for v in params.values())).replace(".", "p")[:60]
+    values = [str(v) for k, v in params.items() if k != "symbols"]
+    return ("evo_" + family + "_" + "_".join(values)).replace(".", "p")[:60]
 
 
 # --- examen en el histórico -------------------------------------------------
@@ -224,7 +228,10 @@ def load_history(data_dir: Path, symbols: list[str], oos_fraction: float = 0.25)
     daily = data_dir.parent / "klines_1d"
     for s in raw:  # 1d con años de historia si existen (la SMA200 diaria lo necesita)
         if (daily / f"{s}.jsonl").exists():
-            by_tf["1d"][s] = load_jsonl(daily / f"{s}.jsonl")
+            # Solo 260 días antes del periodo de examen (calentamiento de la SMA200): con años
+            # de historia la cuenta se capitalizaba desde 2017 y el examen daba +700 USD falsos.
+            start = first - 260 * 86_400_000
+            by_tf["1d"][s] = [b for b in load_jsonl(daily / f"{s}.jsonl") if b.ts >= start]
     regimes = {s: RegimeLookup(by_tf["1h"][s]) for s in raw}
     return History(by_tf, regimes, split, days * (1 - oos_fraction), days * oos_fraction)
 
@@ -239,7 +246,17 @@ def examine(strategy: Strategy, history: History) -> dict[str, Any]:
     from decimal import Decimal
 
     cap = Decimal(EVOLVED_CAPITAL)
-    return {"in": summarize(ins, cap, history.days_in), "out": summarize(outs, cap, history.days_out)}
+    by_symbol = {}
+    for t in account.trades:
+        row = by_symbol.setdefault(t.symbol, {"in": 0.0, "out": 0.0})
+        row["out" if t.opened_ts >= history.split_ts else "in"] += float(t.pnl)
+    return {"in": summarize(ins, cap, history.days_in), "out": summarize(outs, cap, history.days_out),
+            "symbols": by_symbol}
+
+
+def winning_symbols(result: dict[str, Any]) -> list[str]:
+    """Pares donde la estrategia ganó en entrenamiento Y en el examen: solo ahí opera."""
+    return sorted(s for s, v in result.get("symbols", {}).items() if v["in"] > 0 and v["out"] > 0)
 
 
 def verdict(result: dict[str, Any], min_out_trades: int = 6) -> tuple[bool, str]:
@@ -329,6 +346,14 @@ def review_live(db: Session, trades: list[Trade]) -> list[str]:
         stats = live_stats(trades, row.name)
         row.metrics = {**(row.metrics or {}), "vivo": {k: stats[k] for k in ("trades", "net_pnl", "expectancy_r", "profit_factor", "win_rate")}}
         label = row.name
+        if row.status == "live":
+            pairs = set((row.metrics or {}).get("banca_pares", []))
+            for symbol in {t.symbol for t in trades if t.strategy == row.name}:
+                mine = [t for t in trades if t.strategy == row.name and t.symbol == symbol]
+                if f"{row.name}|{symbol}" not in pairs and len(mine) >= PAIR_MIN_TRADES and sum(float(t.pnl) for t in mine) < 0:
+                    pairs.add(f"{row.name}|{symbol}")
+                    notes.append(f"{label} deja de operar {symbol}: {len(mine)} trades, {sum(float(t.pnl) for t in mine):+.2f} USD en ese par.")
+            row.metrics = {**row.metrics, "banca_pares": sorted(pairs)}
         if row.origin == "fija":
             losing = stats["trades"] >= STATIC_MIN_TRADES and (stats["expectancy_r"] or stats["expectancy_usd"] or 0) < -0.1
             if row.status == "live" and losing:
@@ -356,6 +381,25 @@ def confidence(trades: list[Trade], names: list[str]) -> dict[str, float]:
 
 
 # --- ciclo ------------------------------------------------------------------
+
+
+def revalidate(db: Session, history: History) -> list[str]:
+    """Re-examina las evolucionadas vivas con datos frescos y las reglas actuales."""
+    notes = []
+    for row in db.scalars(select(BrainGenome).where(BrainGenome.status == "live", BrainGenome.origin != "fija")):
+        params = {k: v for k, v in row.params.items() if k != "symbols"}
+        result = examine(Evolved(row.name, row.family, params), history)
+        ok, why = verdict(result, 3 if params["tf"] == "1d" else 6)
+        symbols = winning_symbols(result)
+        if not ok or not symbols:
+            row.status, row.note = "retirada", f"no pasó el re-examen: {why if not ok else 'ningún par gana'}"
+            notes.append(f"Retirada {row.name}: {row.note}.")
+        elif sorted(symbols) != sorted(row.params.get("symbols") or []):
+            row.params = {**params, "symbols": symbols}
+            notes.append(f"{row.name} ahora opera solo en {', '.join(symbols)}.")
+        row.updated_at = utc_now()
+    db.commit()
+    return notes
 
 
 def candidates(db: Session, rng: random.Random, ideas: list[dict]) -> list[tuple[str, dict, str]]:
@@ -388,7 +432,7 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
                 rng: random.Random | None = None) -> dict[str, Any]:
     now = now or datetime.now(timezone.utc)
     rng = rng or random.Random()
-    notes = review_live(db, live_trades or [])
+    notes = review_live(db, live_trades or []) + revalidate(db, history)
     live_count = len(db.scalars(select(BrainGenome).where(BrainGenome.status == "live", BrainGenome.origin != "fija")).all())
     tested, promoted = 0, []
     exams = {
@@ -406,6 +450,12 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
             ok, why = False, f"clon de {twin} (mismo resultado)"
         if ok and not robust(family, params, history, rng):
             ok, why = False, why + ", pero sus vecinos pierden (frágil)"
+        symbols = winning_symbols(result) if ok else []
+        if ok and not symbols:
+            ok, why = False, why + ", pero ningún par gana en entrenamiento y examen a la vez"
+        if ok:
+            params = {**params, "symbols": symbols}
+            why += f" · opera solo en {', '.join(s.replace('USDT', '') for s in symbols)}"
         status = "live" if ok and live_count < MAX_LIVE else "rechazada"
         if ok and status == "rechazada":
             why += " (aprobó, pero no hay cupo en el torneo)"
@@ -436,6 +486,7 @@ def live_strategies(db: Session) -> tuple[list[Strategy], set[str]]:
     rows = db.scalars(select(BrainGenome)).all()
     evolved = [Evolved(r.name, r.family, r.params) for r in rows if r.status == "live" and r.origin != "fija"]
     benched = {r.name for r in rows if r.status in ("banca", "retirada")}
+    benched |= {p for r in rows for p in (r.metrics or {}).get("banca_pares", [])}
     return evolved, benched
 
 

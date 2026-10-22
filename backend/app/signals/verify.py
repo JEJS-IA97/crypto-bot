@@ -116,3 +116,30 @@ def channel_score(signals: list[dict]) -> dict:
         "acierto_real": round(wins / n * 100, 1) if n else None,
         "resultado_1usd": round(wins * PAYOUT - losses, 2),
     }
+
+
+_BINANCE: set[str] | None = None
+
+
+def binance_symbols(client=None) -> set[str]:
+    """Pares spot de Binance (una vez por arranque; vacío si no hay red)."""
+    global _BINANCE
+    if _BINANCE is None:
+        try:
+            from app.config import settings
+
+            data = (client or httpx).get(f"{settings.binance_market_data_base_url}/api/v3/exchangeInfo",
+                                         params={"permissions": "SPOT"}, timeout=20).json()
+            _BINANCE = {s["symbol"] for s in data.get("symbols", []) if s.get("status") == "TRADING"}
+        except Exception:  # noqa: BLE001
+            return set()
+    return _BINANCE
+
+
+def binance_pair(asset: str, symbols: set[str]) -> str | None:
+    """'EUR/USD' → EURUSDT, 'USD/TRY' → USDTTRY… o None si Binance no lo lista."""
+    base, quote = asset.split("/")
+    for candidate in (base + quote, base + "USDT" if quote == "USD" else "", "USDT" + quote if base == "USD" else ""):
+        if candidate and candidate in symbols:
+            return candidate
+    return None

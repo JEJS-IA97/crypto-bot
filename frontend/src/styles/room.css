@@ -690,3 +690,10 @@ body {
     font-size: 18px;
     font-weight: 500;
 }
+
+.room .link {
+    padding: 0;
+    color: var(--r-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
