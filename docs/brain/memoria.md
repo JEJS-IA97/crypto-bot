@@ -99,3 +99,7 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Mine13 (378 días, copiadores +420,861 USD): acierto 78.8 %, payoff 4.99, 61 % largos, 187.1 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
 - BestMax (846 días, copiadores +99,025 USD): acierto 72.0 %, payoff 2.26, 100 % largos, 5.6 h, 20.0x, opera XRP, SOL, PUMP, HYPE.
 - IS.K (183 días, copiadores +24,537 USD): acierto 51.0 %, payoff 1.52, 43 % largos, 19.2 h, 30.0x, opera HYPE, SNDK, ZEC, XRP, CL.
+
+## 2026-10-27 18:00 UTC
+- Aprobada (azar) momentum 1d · 51 / 0.09: examen +9.67 USD, PF 1.45, 22 trades · opera solo en BNB, ETH. Entra al torneo en vivo con 100 USD.
+- Probé 10 estrategias nuevas, aprobaron 1. Probabilidad de aprobar por familia: tendencia 10%, donchian 5%, ema_rsi 4%, momentum 13%, reversion 5%.
