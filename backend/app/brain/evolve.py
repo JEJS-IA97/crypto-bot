@@ -519,6 +519,26 @@ def live_strategies(db: Session) -> tuple[list[Strategy], set[str]]:
     return evolved, benched
 
 
+_FLASH: list[str] | None = None
+
+
+def flash_models() -> list[str]:
+    """Modelos 'flash' que tu clave puede usar según Google (se consulta una vez por arranque)."""
+    global _FLASH
+    if _FLASH is None:
+        try:
+            import httpx
+
+            data = httpx.get(f"{settings.gemini_base_url}/models", headers={"x-goog-api-key": settings.gemini_api_key},
+                             params={"pageSize": 200}, timeout=20).json()
+            names = [m["name"].split("/")[-1] for m in data.get("models", [])
+                     if "generateContent" in m.get("supportedGenerationMethods", []) and "flash" in m["name"]]
+            _FLASH = sorted(names, key=lambda n: ("preview" in n or "exp" in n, "lite" in n, n), reverse=False)[:4]
+        except Exception:  # noqa: BLE001
+            _FLASH = []
+    return _FLASH
+
+
 def ask_ideas(context: dict[str, Any]) -> tuple[list[dict], str, dict | None]:
     """Gemini: lectura del mercado + hasta 3 estrategias concretas dentro de las familias."""
     if not settings.gemini_api_key.strip():
@@ -533,12 +553,20 @@ def ask_ideas(context: dict[str, Any]) -> tuple[list[dict], str, dict | None]:
         '"resumen" (máx. 6 frases), "alertas" (lista), "hipotesis" (lista de {"titulo","razon","como_probar"}), '
         '"estrategias" (máx. 3, cada una {"familia","params","por_que"} usando EXACTAMENTE estas familias '
         f"y rangos: {json.dumps(spec)}).\n\nMEMORIA:\n{recent_memory()}\n\nDATOS:\n"
-        + json.dumps(context, ensure_ascii=False, default=str)[:12000]
+        + json.dumps(context, ensure_ascii=False, default=str)[:8000]
     )
-    try:
-        reply = GeminiClient(timeout_seconds=60).generate(prompt, request_id=f"brain-{utc_now():%Y%m%d%H%M}")
-        answer = json.loads(reply.text)
-    except Exception as exc:  # noqa: BLE001 — el cerebro sigue sin LLM
-        return [], f"Gemini no respondió ({type(exc).__name__}: {str(exc)[:120]})", None
+    models = [settings.gemini_model] + [m.strip() for m in settings.gemini_fallback_models.split(",") if m.strip()]
+    models += flash_models()
+    errors = []
+    for model in dict.fromkeys(models):  # cuota agotada o caído → siguiente modelo
+        try:
+            reply = GeminiClient(model=model, timeout_seconds=90, max_retries=1).generate(
+                prompt, request_id=f"brain-{utc_now():%Y%m%d%H%M}")
+            answer = json.loads(reply.text)
+            break
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{model}: {type(exc).__name__} {str(exc)[:80]}")
+    else:  # el cerebro sigue sin LLM
+        return [], "Gemini no respondió (" + " | ".join(errors) + ")", None
     ideas = [x for x in answer.get("estrategias") or [] if isinstance(x, dict)]
     return ideas[:3], "", answer

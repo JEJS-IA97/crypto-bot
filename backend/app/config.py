@@ -136,6 +136,8 @@ class Settings(BaseSettings):
     odds_api_key: str = ""
     bets_enabled: bool = True
     gemini_model: str = "gemini-3.8-flash"
+    # Si el modelo principal da 429 (cuota), 5xx o no responde, el cerebro prueba estos en orden.
+    gemini_fallback_models: str = "gemini-3.5-flash,gemini-3.5-flash-lite"
     gemini_base_url: str = (
         "https://generativelanguage.googleapis.com/v1beta"
     )

@@ -23,7 +23,7 @@ RESULTS = {
 
 
 class Client:
-    def get(self, url, timeout=None, params=None):
+    def get(self, url, timeout=None, params=None, headers=None):
         path = url.replace(bets.FD, "")
         body = FIXTURES if path == "/fixtures.csv" else RESULTS.get(path)
         return type("R", (), {"status_code": 200 if body else 404, "content": (body or "").encode()})()

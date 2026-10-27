@@ -1026,7 +1026,7 @@ async def run(
 
     controller._arm()
     last_purge = time.monotonic()
-    last_probe = 0.0
+    last_probe = -float(BREAKER_PROBE_SECONDS)  # el primer chequeo es inmediato
     try:
         while True:
             if stop_event is not None and stop_event.is_set():

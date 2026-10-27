@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-10-27T17:55:29.330011+00:00",
+ "actualizado": "2026-10-27T18:07:54.715754+00:00",
  "traders": [
   {
    "mercado": "Spot",
@@ -44,7 +44,7 @@
    "dias": 1086,
    "pnl_usd": 36718,
    "retorno_pct": 9.9,
-   "copiadores": 662,
+   "copiadores": 663,
    "pnl_copiadores_usd": -35365,
    "dias_gana": 190,
    "dias_pierde": 175
@@ -274,7 +274,7 @@
    "dias": 1138,
    "pnl_usd": 916987,
    "retorno_pct": 99.7,
-   "copiadores": 213,
+   "copiadores": 212,
    "pnl_copiadores_usd": 7465,
    "dias_gana": 177,
    "dias_pierde": 186,
@@ -416,7 +416,7 @@
    "dias": 522,
    "pnl_usd": 303320,
    "retorno_pct": 47.1,
-   "copiadores": 18,
+   "copiadores": 17,
    "pnl_copiadores_usd": 72,
    "dias_gana": 70,
    "dias_pierde": 72,
@@ -518,7 +518,7 @@
    "dias": 846,
    "pnl_usd": 23924,
    "retorno_pct": 22.1,
-   "copiadores": 349,
+   "copiadores": 348,
    "pnl_copiadores_usd": 99025,
    "dias_gana": 194,
    "dias_pierde": 105,
