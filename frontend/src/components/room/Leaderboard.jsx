@@ -109,7 +109,13 @@ function Leaderboard({ board, brain }) {
                                     <td className={`r num ${tone(r.net_pnl)}`}>{signed(r.net_pnl)}</td>
                                     <td className={`r num ${tone(r.return_pct)}`}>{signed(r.return_pct)}</td>
                                     <td className="r num">{r.max_dd_pct}</td>
-                                    <td><span className={`chip ${stTone}`}>{st}</span></td>
+                                    <td>
+                                        {st === "opera" && board?.feed?.waiting?.[r.strategy] ? (
+                                            <span className="chip" title={board.feed.waiting[r.strategy]}>en espera</span>
+                                        ) : (
+                                            <span className={`chip ${stTone}`}>{st}</span>
+                                        )}
+                                    </td>
                                 </tr>
                             );
                         })}

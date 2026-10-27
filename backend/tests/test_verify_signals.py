@@ -57,9 +57,9 @@ class AlertTests(unittest.TestCase):
         from app.signals import alerts
 
         alerts.outbox.clear()
-        pos = type("P", (), {"side": "LONG", "entry": Decimal("82000"), "stop": None, "take_profit": None})()
+        pos = type("P", (), {"side": "LONG", "entry": Decimal("82000"), "stop": None, "take_profit": None, "regime": "ema_rsi_4h"})()
         alerts.on_open(type("S", (), {"name": "orb_ny", "label": "ORB"})(), "BTCUSDT", pos)
-        alerts.on_open(type("S", (), {"name": "evo_x", "label": "tendencia 1d"})(), "BTCUSDT", pos)
+        alerts.on_open(type("S", (), {"name": "principal", "label": "Cuenta principal"})(), "BTCUSDT", pos)
         self.assertEqual(len(alerts.outbox), 1)
         self.assertIn("COMPRA BTC", alerts.outbox[0])
 

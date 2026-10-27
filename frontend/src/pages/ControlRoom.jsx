@@ -6,10 +6,11 @@ import BrainPanel from "../components/room/BrainPanel";
 import CandleChart from "../components/room/CandleChart";
 import Leaderboard from "../components/room/Leaderboard";
 import NowPanel from "../components/room/NowPanel";
-import { TelegramFeed, TradeFeed } from "../components/room/SideFeeds";
+import { OkxFeed, TelegramFeed, TradeFeed } from "../components/room/SideFeeds";
 import TopBar from "../components/room/TopBar";
 import usePoll from "../components/room/usePoll";
 import Simulation from "./Simulation";
+import BetsView from "../components/room/BetsView";
 
 function ControlRoom() {
     const [view, setView] = useState("room");
@@ -20,7 +21,9 @@ function ControlRoom() {
         <div className="room">
             <TopBar view={view} onView={setView} board={board} />
             {error && <p className="banner">No hay conexión con el bot en 127.0.0.1:8000. ¿Está encendido? ({error})</p>}
-            {view === "account" ? (
+            {view === "bets" ? (
+                <BetsView />
+            ) : view === "account" ? (
                 <div className="legacy">
                     <Balances board={board} />
                     <Simulation embedded />
@@ -36,6 +39,7 @@ function ControlRoom() {
                         <NowPanel board={board} />
                         <BrainPanel onData={setBrain} />
                         <TelegramFeed />
+                        <OkxFeed />
                         <TradeFeed />
                     </aside>
                 </main>

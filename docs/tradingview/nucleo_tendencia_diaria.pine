@@ -1,0 +1,15 @@
+//@version=5
+// Núcleo de tendencia diaria del bot (cuenta principal): comprado solo si el cierre diario
+// está sobre la SMA50 y la SMA200; si no, en USDT. Usar en BINANCE:BTCUSDT y BINANCE:ETHUSDT, velas 1D.
+strategy("crypto-bot · tendencia diaria SMA50/200", overlay=true, initial_capital=40,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=100,
+     commission_type=strategy.commission.percent, commission_value=0.1, slippage=2)
+s50  = ta.sma(close, 50)
+s200 = ta.sma(close, 200)
+dentro = close > s50 and close > s200
+plot(s50, "SMA50", color.new(color.orange, 0))
+plot(s200, "SMA200", color.new(color.gray, 0))
+if dentro and strategy.position_size == 0
+    strategy.entry("Largo", strategy.long)
+if not dentro and strategy.position_size > 0
+    strategy.close("Largo")

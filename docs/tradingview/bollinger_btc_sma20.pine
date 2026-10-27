@@ -1,0 +1,24 @@
+//@version=5
+// Bollinger 2.5σ en 1h con filtro de mercado: solo compra si BTC diario cerró sobre su SMA20.
+// Stop 2 ATR, objetivo 4 ATR (2R), máximo 72 velas. Riesgo 2 % por operación. Velas 1H.
+strategy("crypto-bot · Bollinger 1h + BTC>SMA20", overlay=true, initial_capital=100,
+     commission_type=strategy.commission.percent, commission_value=0.1, slippage=2)
+mid = ta.sma(close, 20)
+up  = mid + 2.5 * ta.stdev(close, 20)
+atr = ta.atr(14)
+btc = request.security("BINANCE:BTCUSDT", "D", close[1], lookahead=barmerge.lookahead_on)
+btcSma = request.security("BINANCE:BTCUSDT", "D", ta.sma(close, 20)[1], lookahead=barmerge.lookahead_on)
+mercadoOk = btc > btcSma
+senal = ta.crossover(close, up) and mercadoOk and strategy.position_size == 0
+var float stopPx = na
+var float tpPx = na
+if senal
+    stopPx := close - 2 * atr
+    tpPx := close + 4 * atr
+    qty = (strategy.equity * 0.02) / (close - stopPx)
+    strategy.entry("Largo", strategy.long, qty=math.min(qty, strategy.equity / close))
+strategy.exit("Salida", "Largo", stop=stopPx, limit=tpPx)
+if strategy.position_size > 0 and bar_index - strategy.opentrades.entry_bar_index(0) >= 72
+    strategy.close("Largo", comment="tiempo")
+plot(up, "Banda 2.5σ", color.new(color.teal, 0))
+bgcolor(mercadoOk ? na : color.new(color.red, 92), title="BTC bajo SMA20: no opera")

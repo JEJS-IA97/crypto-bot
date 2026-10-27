@@ -2,6 +2,29 @@ import { getTrend } from "../../api/bot";
 import { coin, price } from "./fmt";
 import usePoll from "./usePoll";
 
+function Context({ feed }) {
+    const macro = feed?.macro;
+    const ctx = feed?.contexto || {};
+    const fg = ctx.fear_greed;
+    const btc = ctx.BTCUSDT;
+    if (!macro && !fg) return null;
+    return (
+        <ul className="context-line">
+            {macro?.bloqueo ? (
+                <li className="down" title="La cuenta principal no abre posiciones de 12 h antes a 6 h después">Pausa macro: {macro.bloqueo}</li>
+            ) : macro?.proximo ? (
+                <li className="dim">Próximo evento: {macro.proximo.evento} en {macro.proximo.horas} h</li>
+            ) : null}
+            {fg && <li className="dim">Miedo y codicia: {typeof fg === "object" ? `${fg.valor} (${fg.texto})` : fg}</li>}
+            {btc && typeof btc === "object" && (
+                <li className="dim">
+                    BTC futuros: funding {btc.funding_pct} % · largos/cortos {btc.largos_vs_cortos ?? "—"}
+                </li>
+            )}
+        </ul>
+    );
+}
+
 function NowPanel({ board }) {
     const { data, error } = usePoll(getTrend, 60000);
     const regimes = board?.feed?.regimes || {};
@@ -10,6 +33,7 @@ function NowPanel({ board }) {
         <section className="panel">
             <h2>Qué hace el bot ahora</h2>
             {error && <p className="note">{error}</p>}
+            <Context feed={board?.feed} />
             <table className="grid compact">
                 <thead>
                     <tr>

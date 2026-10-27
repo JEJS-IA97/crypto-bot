@@ -26,6 +26,7 @@ class Signal:
 
 
 class Strategy:
+    regime_filter = False  # True: solo entra si BTC diario cierra sobre su SMA20 (lo aplica el torneo)
     name = ""
     label = ""
     timeframe = "15m"
@@ -307,7 +308,102 @@ class TrendDaily(Strategy):
         return not self._inside(bars[: i + 1])[-1]
 
 
-STRATEGIES: list[Strategy] = [
+class BollingerTrend1h(Strategy):
+    """Investigación 2026-10-25 (research/lab_2026_10_25.py): la única idea que no perdió ni en
+    entreno (+0.2 %) ni en examen (+6.0 %, DD 11 %) en un año en que las monedas cayeron 32–74 %."""
+
+    name = "bollinger_trend_1h"
+    label = "Bollinger 2.5σ 1h + BTC sobre SMA20"
+    timeframe = "1h"
+    warmup = 60
+    max_hold = 72
+    regime_filter = True
+    description = (
+        "Cierre que cruza sobre la banda de Bollinger (20, 2.5σ) en 1h, solo si BTC diario está "
+        "sobre su SMA20. Stop 2 ATR, objetivo 4 ATR (2R), máx. 3 días."
+    )
+
+    def signals(self, bars):
+        c = [b.c for b in bars]
+        mid, sd, a = ind.sma(c, 20), ind.stdev(c, 20), ind.atr(bars)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(21, len(bars)):
+            if None in (mid[i], sd[i], mid[i - 1], sd[i - 1], a[i]):
+                continue
+            if c[i] > mid[i] + 2.5 * sd[i] and c[i - 1] <= mid[i - 1] + 2.5 * sd[i - 1]:
+                out[i] = _long(c[i], c[i] - 2 * a[i], 2)
+        return out
+
+
+class Breakout168h1h(Strategy):
+    """Video TradingLab #1 + filtro BTC (research 2026-10-25: entreno −10.6 %, examen +4.1 %). En paper para medir."""
+
+    name = "ruptura_7d_1h"
+    label = "Ruptura de 7 días 1h + BTC sobre SMA20"
+    timeframe = "1h"
+    warmup = 210
+    max_hold = 120
+    regime_filter = True
+    description = "Cierre sobre la SMA200 y sobre el máximo de las 168 h previas. Stop 3 ATR, objetivo 9 ATR (3R), máx. 5 días."
+
+    def signals(self, bars):
+        c, a = [b.c for b in bars], ind.atr(bars)
+        hh, sma = ind.highest_prev([b.h for b in bars], 168), ind.sma(c, 200)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(len(bars)):
+            if None not in (hh[i], sma[i], a[i]) and c[i] > hh[i] and c[i] > sma[i]:
+                out[i] = _long(c[i], c[i] - 3 * a[i], 3)
+        return out
+
+
+class Momentum48h1h(Strategy):
+    """Video TradingLab #3 + filtro BTC (research: entreno +6.2 %, examen −8.8 %). En paper para medir."""
+
+    name = "momentum_48h_1h"
+    label = "Momentum 48 h > 3 % + BTC sobre SMA20"
+    timeframe = "1h"
+    warmup = 60
+    max_hold = 120
+    regime_filter = True
+    description = "El retorno de 48 h cruza +3 % al alza. Stop 3 ATR, objetivo 6 ATR (2R), máx. 5 días."
+
+    def signals(self, bars):
+        c, a = [b.c for b in bars], ind.atr(bars)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(49, len(bars)):
+            r, prev = c[i] / c[i - 48] - 1, c[i - 1] / c[i - 49] - 1
+            if a[i] is not None and r > 0.03 >= prev:
+                out[i] = _long(c[i], c[i] - 3 * a[i], 2)
+        return out
+
+
+class Momentum48hShort1h(Strategy):
+    """Experimento de cortos (paper, Spot no permite cortos reales): caída de 48 h > 3 % con BTC
+    BAJO su SMA20. Research 2026-10-27: entreno +67 % (meses de caída), examen −1.3 % (PF 0.98)."""
+
+    name = "momentum_48h_corto"
+    label = "Corto: caída 48 h > 3 % con BTC bajo SMA20 (paper)"
+    timeframe = "1h"
+    warmup = 60
+    max_hold = 120
+    regime_filter = "bear"
+    description = "Vende en corto cuando el retorno de 48 h cruza −3 %. Stop 3 ATR, objetivo 6 ATR. Solo en paper."
+
+    def signals(self, bars):
+        c, a = [b.c for b in bars], ind.atr(bars)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(49, len(bars)):
+            r, prev = c[i] / c[i - 48] - 1, c[i - 1] / c[i - 49] - 1
+            if a[i] is not None and r < -0.03 <= prev:
+                out[i] = _short(c[i], c[i] + 3 * a[i], 2)
+        return out
+
+
+ALL_STRATEGIES: list[Strategy] = [
+    BollingerTrend1h(),
+    Momentum48hShort1h(),
+    Breakout168h1h(),
+    Momentum48h1h(),
     OrbNY(),
     OrbNYTrend(),
     ImpulsePullback(),
@@ -319,4 +415,14 @@ STRATEGIES: list[Strategy] = [
     EmaRsi4h(),
     TrendDaily(),
 ]
-BY_NAME = {s.name: s for s in STRATEGIES}
+# Torneo en vivo: solo las fijas que no perdieron en vivo (2026-10-24, ~240 trades).
+# Las demás quedan en ALL_STRATEGIES para backtest y en el cerebro como "retirada".
+STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto")]
+RETIRED = {
+    "orb_ny": "PF 0.60 en 10 trades", "orb_ny_trend": "PF 0.95 en 12 trades, comisiones > ganancia",
+    "impulse_pullback": "PF 0.60 en 11 trades", "ema_cross": "PF 0.46 en 10 trades",
+    "rsi_reversion": "5m: las comisiones se comen la reversión", "bollinger_squeeze": "PF 0.21 en 9 trades",
+    "vwap_reversion": "PF 0.38 en 15 trades", "donchian_breakout": "PF 0.03 en 8 trades",
+    "trend_daily": "0 de 3, la cubre la familia tendencia del cerebro",
+}
+BY_NAME = {s.name: s for s in ALL_STRATEGIES}

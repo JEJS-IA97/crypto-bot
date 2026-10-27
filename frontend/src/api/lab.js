@@ -13,3 +13,6 @@ export const getCandles = async (symbol, tf, limit = 300) =>
 export const getBrain = async () => (await api.get("/api/lab/brain")).data;
 
 export const getTelegram = async () => (await api.get("/api/lab/telegram")).data;
+
+export const getOkxTraders = async () => (await api.get("/api/lab/okx")).data;
+export const getBets = async () => (await api.get("/api/lab/bets")).data;

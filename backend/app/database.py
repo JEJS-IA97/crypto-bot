@@ -34,9 +34,12 @@ def _engine_options(database_url: str) -> dict[str, object]:
             "connect_args": {"check_same_thread": False},
             "pool_pre_ping": False,
         }
+    # Neon pooler = PgBouncer en modo transacción: sin prepared statements
+    # (si no, psycopg falla con "received 2 results from command 'ROLLBACK'").
     return {
-        "connect_args": {},
+        "connect_args": {"prepare_threshold": None},
         "pool_pre_ping": True,
+        "pool_recycle": 300,
     }
 
 

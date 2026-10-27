@@ -47,6 +47,9 @@ CANDIDATES_PER_RUN = 10
 LIVE_MIN_TRADES = 15
 STATIC_MIN_TRADES = 30
 PAIR_MIN_TRADES = 8  # trades de una estrategia en un par antes de juzgarla en ese par
+FAST_RETIRE_TRADES = 4  # diarias: con 4 cierres y -3 % ya no se espera a 15
+FAST_RETIRE_PCT = -3.0
+MAX_PER_KIND = 2  # vivas por familia y timeframe: 8 "tendencia 1d" casi iguales eran una sola apuesta x8
 
 # familia → {parámetro: (mín, máx, tipo)}; "tf" se elige de la lista.
 FAMILIES: dict[str, dict[str, Any]] = {
@@ -191,8 +194,8 @@ def random_genome(rng: random.Random, family: str) -> dict[str, Any]:
 
 
 def mutate(rng: random.Random, family: str, params: dict[str, Any], scale: float = 0.2) -> dict[str, Any]:
-    raw = dict(params)
-    key = rng.choice([k for k in params if k != "tf"])
+    raw = {k: v for k, v in params.items() if k != "symbols"}  # los pares los decide el examen
+    key = rng.choice([k for k in raw if k != "tf"])
     raw[key] = params[key] * (1 + rng.uniform(-scale, scale))
     if rng.random() < 0.15:
         raw["tf"] = rng.choice(FAMILIES[family]["tf"])
@@ -332,8 +335,15 @@ def live_stats(trades: list[Trade], name: str) -> dict[str, Any]:
 
 def review_live(db: Session, trades: list[Trade]) -> list[str]:
     """Retira evolucionadas que pierden y manda a la banca a las fijas que pierden."""
+    from app.lab.strategies import RETIRED
+
     notes = []
     known = {g.name: g for g in db.scalars(select(BrainGenome))}
+    for name, why in RETIRED.items():
+        row = known.get(name)
+        if row is not None and row.status in ("live", "banca"):
+            row.status, row.note = "retirada", f"fuera del torneo: perdió en vivo ({why})"
+            notes.append(f"{name}: {row.note}.")
     for strategy in STRATEGIES:
         if strategy.name not in known:
             row = BrainGenome(name=strategy.name, family="fija", params={"tf": strategy.timeframe},
@@ -359,12 +369,25 @@ def review_live(db: Session, trades: list[Trade]) -> list[str]:
             if row.status == "live" and losing:
                 row.status, row.note = "banca", f"a la banca: {stats['trades']} trades, {stats['net_pnl']:+.2f} USD"
                 notes.append(f"{label}: {row.note}.")
+        elif row.status == "live" and stats["trades"] >= FAST_RETIRE_TRADES and stats["return_pct"] <= FAST_RETIRE_PCT:
+            row.status = "retirada"
+            row.note = f"en vivo {stats['return_pct']:+.2f} % en {stats['trades']} trades: no se espera a 15"
+            notes.append(f"Retirada {label}: {row.note}.")
         elif row.status == "live" and stats["trades"] >= LIVE_MIN_TRADES:
             if stats["net_pnl"] < 0 or (stats["expectancy_r"] or 0) < 0:
                 row.status = "retirada"
                 row.note = f"aprobó el examen pero en vivo perdió {stats['net_pnl']:+.2f} USD en {stats['trades']} trades"
                 notes.append(f"Retirada {label}: {row.note}. Lección: su backtest no se sostuvo en vivo.")
         row.updated_at = utc_now()
+    kinds: dict[tuple[str, str], list[BrainGenome]] = {}
+    for row in known.values():
+        if row.status == "live" and row.origin != "fija":
+            kinds.setdefault((row.family, row.params.get("tf", "")), []).append(row)
+    for (family, tf), rows in kinds.items():
+        rows.sort(key=lambda r: (-(((r.metrics or {}).get("vivo") or {}).get("net_pnl") or 0), r.id or 0))
+        for row in rows[MAX_PER_KIND:]:
+            row.status, row.note = "retirada", f"clon: ya hay {MAX_PER_KIND} {family} {tf} vivas mejores (no diversifica)"
+            notes.append(f"Retirada {row.name}: {row.note}.")
     db.commit()
     return notes
 
@@ -435,6 +458,9 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
     notes = review_live(db, live_trades or []) + revalidate(db, history)
     live_count = len(db.scalars(select(BrainGenome).where(BrainGenome.status == "live", BrainGenome.origin != "fija")).all())
     tested, promoted = 0, []
+    per_kind: dict[tuple[str, str], int] = {}
+    for r in db.scalars(select(BrainGenome).where(BrainGenome.status == "live", BrainGenome.origin != "fija")):
+        per_kind[(r.family, r.params.get("tf", ""))] = per_kind.get((r.family, r.params.get("tf", "")), 0) + 1
     exams = {
         r.name: (r.family, r.metrics["examen"]["out"]["trades"], r.metrics["examen"]["out"]["net_pnl"])
         for r in db.scalars(select(BrainGenome).where(BrainGenome.status == "live"))
@@ -448,6 +474,8 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
         twin = next((n for n, out in exams.items() if out == (family, result["out"]["trades"], result["out"]["net_pnl"])), None)
         if ok and twin:
             ok, why = False, f"clon de {twin} (mismo resultado)"
+        if ok and per_kind.get((family, params["tf"]), 0) >= MAX_PER_KIND:
+            ok, why = False, f"ya hay {MAX_PER_KIND} {family} {params['tf']} vivas (no diversifica)"
         if ok and not robust(family, params, history, rng):
             ok, why = False, why + ", pero sus vecinos pierden (frágil)"
         symbols = winning_symbols(result) if ok else []
@@ -467,6 +495,7 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
             exams[name] = (family, result["out"]["trades"], result["out"]["net_pnl"])
         if status == "live":
             live_count += 1
+            per_kind[(family, params["tf"])] = per_kind.get((family, params["tf"]), 0) + 1
             promoted.append(name)
             notes.append(f"Aprobada ({origin}) {strategy.label}: {why}. Entra al torneo en vivo con {EVOLVED_CAPITAL} USD.")
         elif origin == "gemini":

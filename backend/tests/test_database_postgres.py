@@ -43,7 +43,7 @@ class EngineOptionsTests(unittest.TestCase):
 
     def test_postgresql_options_enable_pre_ping(self) -> None:
         options = database._engine_options(POSTGRES_URL)
-        self.assertEqual(options["connect_args"], {})
+        self.assertEqual(options["connect_args"], {"prepare_threshold": None})
         self.assertIs(options["pool_pre_ping"], True)
 
 

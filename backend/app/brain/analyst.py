@@ -330,8 +330,8 @@ async def brain_loop(stop_event) -> None:
         if wait <= 0:
             try:
                 await asyncio.to_thread(run_once)
-            except Exception:
-                logger.exception("brain: analysis failed")
+            except Exception as exc:  # el log JSON no guarda la traza: va el motivo en el mensaje
+                logger.exception("brain: analysis failed: %r", exc)
             wait = settings.brain_interval_hours * 3600
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=min(wait, 600))

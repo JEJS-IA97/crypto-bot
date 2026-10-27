@@ -35,7 +35,7 @@ function Balances({ board }) {
         <section className="panel balances" aria-label="Saldos">
             {main && (
                 <Group
-                    title="Cuenta principal · paper"
+                    title="Cuenta principal · tendencia diaria BTC+ETH"
                     initial={main.initial}
                     balance={main.balance}
                     extra={
@@ -43,6 +43,23 @@ function Balances({ board }) {
                             <dt>Disponible · posiciones</dt>
                             <dd className="num">
                                 {money(main.available)} · {main.open_positions}
+                            </dd>
+                        </div>
+                    }
+                />
+            )}
+            {b.copier && (
+                <Group
+                    title="Copia de ganadoras · paper"
+                    initial={b.copier.initial}
+                    balance={b.copier.balance}
+                    extra={
+                        <div>
+                            <dt>Copia a</dt>
+                            <dd>
+                                {b.copier.copies?.length
+                                    ? b.copier.copies.join(", ")
+                                    : "nadie aún · espera en USDT hasta que algo gane 5 largos"}
                             </dd>
                         </div>
                     }

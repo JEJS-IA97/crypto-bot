@@ -697,3 +697,28 @@ body {
     text-decoration: underline;
     text-underline-offset: 3px;
 }
+
+.account-view {
+    display: grid;
+    gap: 16px;
+}
+
+.context-line {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 12px;
+}
+
+.bets-view {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+}
+
+.feed-scroll.tall {
+    max-height: 60vh;
+}

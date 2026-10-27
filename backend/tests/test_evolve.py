@@ -105,17 +105,33 @@ class EvolveTests(unittest.TestCase):
         with self.factory() as db:
             db.add(evolve.BrainGenome(name="evo_x", family="tendencia", params={"tf": "1d", "fast": 20, "slow": 50},
                                       origin="azar", status="live", metrics={}, note=""))
+            db.add(evolve.BrainGenome(name="orb_ny", family="fija", params={"tf": "5m"}, origin="fija", status="banca", metrics={}))
             db.commit()
-            trades = [trade("evo_x", -0.5, i) for i in range(16)] + [trade("orb_ny", -0.5, i) for i in range(31)]
+            trades = [trade("evo_x", -0.5, i) for i in range(16)] + [trade("ema_rsi_4h", -0.5, i) for i in range(31)]
             notes = evolve.review_live(db, trades)
             status = {r.name: r.status for r in db.scalars(select(evolve.BrainGenome))}
             evolved, benched = evolve.live_strategies(db)
         self.assertEqual(status["evo_x"], "retirada")
-        self.assertEqual(status["orb_ny"], "banca")
-        self.assertEqual(status["trend_daily"], "live")
+        self.assertEqual(status["ema_rsi_4h"], "banca")
+        self.assertEqual(status["orb_ny"], "retirada")  # eliminada del torneo, queda en la memoria
         self.assertIn("orb_ny", benched)
         self.assertEqual(evolved, [])
-        self.assertTrue(any("Lección" in n for n in notes))
+        self.assertTrue(any("fuera del torneo" in n for n in notes))
+
+    def test_mutate_ignores_symbols_of_approved_parents(self):
+        child = evolve.mutate(random.Random(3), "tendencia", {"tf": "1d", "fast": 20, "slow": 50, "symbols": ["BTCUSDT"]})
+        self.assertNotIn("symbols", child)
+
+    def test_review_live_keeps_only_two_clones_per_family_and_timeframe(self):
+        with self.factory() as db:
+            for i, pnl in enumerate((1.0, -1.0, 0.5)):
+                db.add(evolve.BrainGenome(name=f"evo_t{i}", family="tendencia", params={"tf": "1d", "fast": 20 + i, "slow": 50},
+                                          origin="azar", status="live", metrics={}, note=""))
+            db.commit()
+            trades = [trade(f"evo_t{i}", pnl, 0) for i, pnl in enumerate((1.0, -1.0, 0.5))]
+            evolve.review_live(db, trades)
+            status = {r.name: r.status for r in db.scalars(select(evolve.BrainGenome))}
+        self.assertEqual((status["evo_t0"], status["evo_t1"], status["evo_t2"]), ("live", "retirada", "live"))
 
     def test_confidence_prefers_proven_winners(self):
         trades = [trade("a", 1.0, i) for i in range(30)] + [trade("b", 1.0, 0)] + [trade("c", -1, i) for i in range(30)]
