@@ -1,7 +1,21 @@
 [
  {
+  "id": -1002079856682,
+  "title": "Sofia Market Analysis 💘",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
+ },
+ {
   "id": -1001753318356,
   "title": "Cupones Udemy - Aprende Todo GRATIS",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
@@ -14,18 +28,18 @@
   "configurado": true
  },
  {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
+  "id": -1004313945352,
+  "title": "ARTHUR TRADER 📊",
   "kind": "canal",
   "silenciado": null,
-  "configurado": false
+  "configurado": true
  },
  {
-  "id": -1003642095241,
-  "title": "Mundo Deportivo",
+  "id": -1002037853278,
+  "title": "📊 ELITE - EQUIPO DE TRADERS",
   "kind": "canal",
   "silenciado": null,
-  "configurado": false
+  "configurado": true
  },
  {
   "id": -1002107344934,
@@ -35,29 +49,22 @@
   "configurado": true
  },
  {
-  "id": -1002079856682,
-  "title": "Sofia Market Analysis 💘",
+  "id": -1003397271144,
+  "title": "Facundo Contreras - SEÑALES FREE",
   "kind": "canal",
   "silenciado": null,
   "configurado": true
  },
  {
-  "id": -1004313945352,
-  "title": "ARTHUR TRADER 📊",
+  "id": -1003642095241,
+  "title": "Mundo Deportivo",
   "kind": "canal",
   "silenciado": null,
-  "configurado": true
+  "configurado": false
  },
  {
   "id": -1002076646063,
   "title": "Nelson - Opero en Vivo GRATIS 🎁",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1003397271144,
-  "title": "Facundo Contreras - SEÑALES FREE",
   "kind": "canal",
   "silenciado": null,
   "configurado": true
@@ -89,13 +96,6 @@
   "kind": "grupo",
   "silenciado": null,
   "configurado": false
- },
- {
-  "id": -1002037853278,
-  "title": "📊 ELITE - EQUIPO DE TRADERS",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
  },
  {
   "id": -1001683083792,

@@ -153,5 +153,5 @@ class GeminiClient:
                 latency_ms=latency_ms,
             )
 
-        detail = type(last_error).__name__ if last_error else "no response"
+        detail = (f"{type(last_error).__name__} {last_error}".strip() if last_error else "no response")[:160]
         raise GeminiUnavailable(f"gemini unavailable: {detail}") from last_error

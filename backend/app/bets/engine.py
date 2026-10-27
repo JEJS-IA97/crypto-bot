@@ -153,8 +153,9 @@ def parlays(favs: list[tuple[str, dict]]) -> list[dict]:
 # --- fútbol europeo (football-data) -------------------------------------------------------
 
 def _csv(client, path: str) -> list[dict]:
-    response = client.get(FD + path, timeout=30)
+    response = client.get(FD + path, timeout=30, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     if response.status_code != 200:
+        logger.warning("bets: %s -> HTTP %s", path, response.status_code)
         return []
     return list(csv.DictReader(io.StringIO(response.content.decode("utf-8-sig", "replace"))))
 
