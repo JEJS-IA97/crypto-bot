@@ -19,7 +19,7 @@ import TrendCard from "../components/TrendCard";
 
 import useSimulationData from "./useSimulationData";
 
-function Simulation() {
+function Simulation({ embedded = false }) {
     const {
         account,
         summary,
@@ -71,10 +71,11 @@ function Simulation() {
     const availableBalance = accountBalance.available_usd || 0;
 
     return (
-        <div className="app-shell">
-            <NavRail active={tab} onSelect={setTab} />
+        <div className={embedded ? "app-shell embedded" : "app-shell"}>
+            {!embedded && <NavRail active={tab} onSelect={setTab} />}
 
             <main className="workspace" id="workspace">
+                {!embedded && (<>
                 <header className="workspace-header">
                     <div className="page-heading">
                         <span className="eyebrow">
@@ -101,6 +102,7 @@ function Simulation() {
                 />
 
                 <HeaderPanel />
+                </>)}
 
                 <SectionTabs value={tab} onChange={setTab} />
 
@@ -218,13 +220,15 @@ function Simulation() {
                 </div>
             </main>
 
-            <Sidebar
-                balance={accountBalance}
-                marketPrices={marketPrices}
-                priceHistory={priceHistory}
-                onReload={reload}
-                onOperar={() => setTab("operar")}
-            />
+            {!embedded && (
+                <Sidebar
+                    balance={accountBalance}
+                    marketPrices={marketPrices}
+                    priceHistory={priceHistory}
+                    onReload={reload}
+                    onOperar={() => setTab("operar")}
+                />
+            )}
         </div>
     );
 }

@@ -3,41 +3,41 @@
    ============================================================ */
 
 :root {
-    /* Superficies (design.json global_palette) */
-    --bg-main: #1d1e21;
-    --bg-rail: #050505;
-    --bg-sidebar: #050505;
-    --surface: #202124;
-    --surface-soft: #151619;
-    --surface-card: #222326;
-    --surface-deep: #050505;
-    --surface-active: #2a2b30;
-    --divider: #303236;
-    --scrollbar-thumb: #45484e;
-    --scrollbar-thumb-hover: #5a5e66;
+    /* Superficies: mundo "terminal de trader" (DESIGN.md); los nombres vienen de design.json */
+    --bg-main: #0e1013;
+    --bg-rail: #121417;
+    --bg-sidebar: #121417;
+    --surface: #14171b;
+    --surface-soft: #121417;
+    --surface-card: #14171b;
+    --surface-deep: #0e1013;
+    --surface-active: #1a1e23;
+    --divider: #262b31;
+    --scrollbar-thumb: #343a42;
+    --scrollbar-thumb-hover: #454c55;
 
     /* Texto */
-    --text-primary: #ffffff;
-    --text: #f4f4f4;
-    --text-value: #f2f2f2;
-    --text-secondary: #929292;
+    --text-primary: #f2f3f5;
+    --text: #e6e8eb;
+    --text-value: #e6e8eb;
+    --text-secondary: #8b939d;
 
     /* Acentos (design.json) */
-    --accent: #27e7cf;
-    --accent-ink: #0c1616;
-    --cyan: #14d8e8;
-    --blue: #1498d8;
-    --purple: #6846ea;
-    --orange: #ff791e;
-    --positive: #21d99b;
-    --negative: #ff4d5a;
-    --negative-ink: #1d040a;
-    --white-button: #f5f5f5;
-    --white-button-ink: #151515;
+    --accent: #f0b429;
+    --accent-ink: #1a1408;
+    --cyan: #2c3138;
+    --blue: #2c3138;
+    --purple: #2c3138;
+    --orange: #d9922b;
+    --positive: #26a96c;
+    --negative: #e5534b;
+    --negative-ink: #1d0807;
+    --white-button: #e6e8eb;
+    --white-button-ink: #14171b;
 
     /* Acciones (RF-2): un tono por rol */
-    --color-buy: #27e7cf;
-    --color-sell: #ff4d5a;
+    --color-buy: #26a96c;
+    --color-sell: #e5534b;
 
     /* Espaciado (escala de 4px) */
     --space-1: 4px;
@@ -52,20 +52,20 @@
     --space-16: 64px;
 
     /* Radio (design.json shape_language: botones 8-12, tarjetas 12-16) */
-    --radius-sm: 8px;
-    --radius-md: 10px;
-    --radius-lg: 12px;
-    --radius-xl: 16px;
+    --radius-sm: 4px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 6px;
     --radius-pill: 999px;
 
     /* Tipografía (design.json typography: sans geométrica moderna) */
-    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+    --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system,
         "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-size-xs: 0.66rem;
     --font-size-sm: 0.75rem;
     --font-size-md: 0.78rem;
     --font-size-lg: 1.18rem;
-    --font-size-page-title: clamp(2.5rem, 4vw, 3.5rem);
+    --font-size-page-title: 1.75rem;
 
     /* Layout (design.json layout.columns) */
     --rail-width: 92px;
@@ -74,5 +74,5 @@
     --card-pad: var(--space-5);
 
     /* Curva de equity (RF-3) */
-    --equity-fill: rgba(39, 231, 207, 0.08);
+    --equity-fill: rgba(240, 180, 41, 0.08);
 }

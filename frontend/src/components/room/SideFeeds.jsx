@@ -8,6 +8,7 @@ export function TradeFeed() {
         <section className="panel">
             <h2>Últimas operaciones del torneo</h2>
             {error && <p className="note">{error}</p>}
+            <div className="feed-scroll">
             <table className="grid compact">
                 <tbody>
                     {(data || []).map((t) => (
@@ -28,6 +29,7 @@ export function TradeFeed() {
                     ))}
                 </tbody>
             </table>
+            </div>
         </section>
     );
 }
@@ -47,12 +49,62 @@ export function TelegramFeed() {
                 </ol>
             )}
             {data?.configured && !data.signals.length && <p className="note">Escuchando. Aún no llegó ningún mensaje.</p>}
-            <ul className="tg">
+            {!!data?.channels?.length && (
+                <table className="grid compact">
+                    <thead>
+                        <tr>
+                            <th>Canal</th>
+                            <th className="r">Señales</th>
+                            <th className="r" title="Lo que el propio canal publica">Dice</th>
+                            <th className="r" title="Comprobado contra el precio real (solo divisas no OTC, sin gales)">Real</th>
+                            <th className="r" title="Resultado apostando 1 USD fijo por señal con pago 85 %">1 USD</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.channels.map((c) => (
+                            <tr key={c.chat}>
+                                <td className="small">{c.chat}</td>
+                                <td className="r num">{c.senales}</td>
+                                <td className="r num dim">{c.ganadas}/{c.perdidas}</td>
+                                <td className="r num">{c.acierto_real != null ? `${c.acierto_real} % (${c.comprobadas})` : "—"}</td>
+                                <td className={`r num ${tone(c.resultado_1usd)}`}>{c.comprobadas ? signed(c.resultado_1usd) : "—"}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+            {!!data?.assets?.length && (
+                <>
+                    <h3>Divisas de las señales y su par en Binance</h3>
+                    <div className="feed-scroll">
+                        <table className="grid compact">
+                            <thead>
+                                <tr><th>Activo</th><th className="r">Señales</th><th>En Binance</th></tr>
+                            </thead>
+                            <tbody>
+                                {data.assets.map((a) => (
+                                    <tr key={`${a.asset}-${a.otc}`}>
+                                        <td>{a.asset}{a.otc && <span className="dim"> OTC</span>}</td>
+                                        <td className="r num">{a.senales}</td>
+                                        <td className={a.binance ? "up" : "dim"}>{a.binance || "no existe"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            )}
+            <ul className="tg tg-scroll">
                 {(data?.signals || []).map((s, i) => (
                     <li key={i}>
                         <div className="small"><strong>{s.chat}</strong> <span className="dim num">{clock(Date.parse(`${s.created_at}Z`))}</span></div>
                         <p className="msg">{s.text}</p>
-                        <span className={`chip ${s.outcome === "abierta" ? "up" : ""}`}>{s.outcome}</span>
+                        <span className={`chip ${s.outcome === "abierta" || s.parsed?.kind === "binaria" ? "up" : ""}`}>{s.outcome}</span>
+                        {s.parsed?.verificada && (
+                            <span className={`chip ${s.parsed.verificada.result === "gana" ? "up" : s.parsed.verificada.result === "pierde" ? "down" : ""}`}>
+                                precio real: {s.parsed.verificada.result}
+                            </span>
+                        )}
                     </li>
                 ))}
             </ul>

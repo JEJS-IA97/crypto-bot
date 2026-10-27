@@ -27,6 +27,7 @@ from app.database import Base
 from app.lab import live, store
 from app.lab.strategies import Strategy
 from app.models import utc_now
+from app.signals.binary import describe, parse_binary
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,34 @@ def apply_signal(chat_id: int, title: str, parsed: dict | None, runner=None, ses
     return "abierta"
 
 
+def classify(chat_id: int, title: str, text: str) -> tuple[dict | None, str]:
+    """Cripto con stop → se opera en paper; si no, se lee como binaria/resultado/informe."""
+    parsed = parse_signal(text)
+    if parsed is None:
+        parsed = parse_binary(text)
+        return parsed, describe(parsed)
+    try:
+        return parsed, apply_signal(chat_id, title, parsed)
+    except Exception:  # noqa: BLE001 — un mensaje raro no tumba el lector
+        logger.exception("telegram: could not apply signal")
+        return parsed, "error"
+
+
+def reclassify(session_factory=None) -> int:
+    """Relee los mensajes guardados como 'no es señal' con el parser binario."""
+    from sqlalchemy import select
+
+    changed = 0
+    with (session_factory or database.SessionLocal)() as db:
+        for row in db.scalars(select(TelegramSignal).where(TelegramSignal.outcome == "no es señal")):
+            parsed = parse_binary(row.text)
+            if parsed:
+                row.parsed, row.outcome = parsed, describe(parsed)
+                changed += 1
+        db.commit()
+    return changed
+
+
 def restore_sources(runner) -> None:
     """Tras un reinicio, vuelve a registrar los chats que ya tienen cuenta."""
     from sqlalchemy import select
@@ -169,12 +198,7 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
     async def on_message(event) -> None:
         chat = await event.get_chat()
         title = getattr(chat, "title", None) or getattr(chat, "username", None) or str(event.chat_id)
-        parsed = parse_signal(event.raw_text or "")
-        try:
-            outcome = apply_signal(event.chat_id, title, parsed)
-        except Exception:  # noqa: BLE001 — un mensaje raro no tumba el lector
-            logger.exception("telegram: could not apply signal")
-            outcome = "error"
+        parsed, outcome = classify(event.chat_id, title, event.raw_text or "")
         with database.SessionLocal() as db:
             db.add(TelegramSignal(chat_id=event.chat_id, chat_title=title[:120], message_id=event.id,
                                   text=(event.raw_text or "")[:4000], parsed=parsed, outcome=outcome))
@@ -187,7 +211,27 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
             return
         if live.runner:
             restore_sources(live.runner)
+        logger.info("telegram: %s stored messages reclassified", reclassify())
         logger.info("telegram: listening to %s chats", len(_chats()))
-        await stop_event.wait()
+        from app.signals import alerts
+        from app.signals.verify import verify_pending
+
+        tick = 0
+        while not stop_event.is_set():
+            while alerts.outbox:  # avisos de compra/venta a tus Mensajes guardados
+                text = alerts.outbox.pop(0)
+                try:
+                    await client.send_message("me", text)
+                except Exception:  # noqa: BLE001
+                    logger.warning("telegram: could not send alert", exc_info=True)
+            if tick % 20 == 0:  # cada ~5 min: veredicto de las señales de divisas reales
+                checked = await asyncio.to_thread(verify_pending)
+                if checked:
+                    logger.info("telegram: %s binary signals verified against real prices", checked)
+            tick += 1
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=15)
+            except TimeoutError:
+                pass
     finally:
         await client.disconnect()

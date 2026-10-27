@@ -94,7 +94,7 @@ class ExecutionModeTests(unittest.TestCase):
     def test_no_live_without_flag(self) -> None:
         self.assertFalse(settings.allow_live_trading)
 
-        executor = self._executor("https://api.binance.com")
+        executor = self._executor("https://data-api.binance.vision")
         with self.assertRaises(OrderRejectedError) as ctx:
             executor.place_order(_request("dec-501"))
 
@@ -110,7 +110,7 @@ class ExecutionModeTests(unittest.TestCase):
         self.assertEqual(len(self.order_calls), 1)
         self.assertEqual(
             self.order_calls[0].kwargs["url"],
-            "https://api.binance.com/api/v3/order",
+            "https://data-api.binance.vision/api/v3/order",
         )
 
     def test_testnet_allowed_without_flag(self) -> None:

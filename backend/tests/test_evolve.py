@@ -75,6 +75,15 @@ class EvolveTests(unittest.TestCase):
                                           "monte_carlo": {"dd_p95": 10}}})
         self.assertTrue(ok, why)
 
+    def test_momentum_family_rides_trends_and_exits_when_they_fade(self):
+        params = evolve.clip("momentum", {"tf": "1d", "lookback": 20, "min_ret": 0.02})
+        strategy = evolve.Evolved("m", "momentum", params)
+        bars = self.history.by_tf["1d"]["BTCUSDT"]
+        signals = strategy.signals(bars)
+        self.assertTrue(any(signals))
+        i = next(k for k, s in enumerate(signals) if s)
+        self.assertFalse(strategy.exit_now(bars, i, "LONG"))
+
     def test_verdict_rejects_losers_and_explains_why(self):
         base = {"trades": 30, "profit_factor": 1.5, "net_pnl": 3, "max_dd_pct": 5, "monte_carlo": {"dd_p95": 10}}
         ok, why = evolve.verdict({"in": base, "out": {**base, "net_pnl": -1, "profit_factor": 0.8}})

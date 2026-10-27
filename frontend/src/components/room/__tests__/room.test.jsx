@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../api/lab", () => ({
@@ -27,6 +27,8 @@ describe("Sala de control", () => {
             ],
         };
         render(<Leaderboard board={board} brain={{ genomes: [{ name: "orb_ny", status: "banca" }] }} />);
+        expect(screen.queryByText("en la banca")).toBeNull(); // descartadas ocultas por defecto
+        fireEvent.click(screen.getByText("Verlas"));
         expect(screen.getByText("en la banca")).toBeInTheDocument();
         expect(screen.getByText("telegram")).toBeInTheDocument();
     });

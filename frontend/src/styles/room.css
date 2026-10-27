@@ -238,10 +238,14 @@ body {
 
 .room-grid {
     display: grid;
+    background: var(--r-panel);
     grid-template-columns: minmax(0, 1fr) clamp(340px, 27vw, 440px);
     gap: 1px;
-    background: var(--r-line);
     min-height: calc(100vh - 52px);
+}
+
+.col-main {
+    background: var(--r-line);
 }
 
 .col-main,
@@ -250,6 +254,30 @@ body {
     flex-direction: column;
     gap: 1px;
     min-width: 0;
+}
+
+/* La columna derecha no alarga la página: ocupa la pantalla y tiene su propio scroll,
+   y cada lista larga dentro de ella tiene un tope de altura. */
+.col-side {
+    position: sticky;
+    top: 52px;
+    height: calc(100vh - 52px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--r-panel);
+}
+
+.col-side .panel {
+    border-bottom: 1px solid var(--r-line);
+}
+
+.lessons,
+.genomes,
+.tg-scroll,
+.feed-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .panel {
@@ -549,6 +577,34 @@ body {
     padding: 0;
 }
 
+/* Vista de la cuenta principal dentro de la sala de control: sin la barra
+   lateral ni el encabezado viejos; mismo tono que el resto. */
+.legacy .app-shell.embedded {
+    display: block;
+    min-height: 0;
+    background: var(--r-bg);
+}
+
+.legacy .embedded .workspace {
+    max-width: none;
+    padding: 0 16px 24px;
+}
+
+.legacy .eyebrow {
+    display: none;
+}
+
+.legacy .section-tabs button,
+.legacy [role="tab"] {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.legacy [class*="card"],
+.legacy [class*="metric"] {
+    border-left-width: 0;
+}
+
 /* --- pantallas más chicas ------------------------------------------------ */
 
 @media (max-width: 1440px) {
@@ -560,6 +616,12 @@ body {
 @media (max-width: 1180px) {
     .room-grid {
         grid-template-columns: 1fr;
+    }
+
+    .col-side {
+        position: static;
+        height: auto;
+        overflow: visible;
     }
 
     .stats {
@@ -587,4 +649,51 @@ body {
     .panel {
         padding: 12px;
     }
+}
+
+/* Lista de mensajes de Telegram: altura fija con scroll propio */
+
+
+/* --- saldos ---------------------------------------------------------------- */
+
+.balances {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 12px 32px;
+}
+
+.bal-group h2 {
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--r-dim);
+}
+
+.bal-group dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 28px;
+    margin: 0;
+}
+
+.bal-group dt {
+    font-size: 11px;
+    color: var(--r-dim);
+}
+
+.bal-group dd {
+    margin: 0;
+    font-size: 15px;
+}
+
+.bal-group dd.strong {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.room .link {
+    padding: 0;
+    color: var(--r-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }

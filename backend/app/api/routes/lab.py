@@ -40,12 +40,45 @@ def backtest() -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _balances(db: Session, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Saldo inicial y actual: cuenta principal (paper) y suma del torneo."""
+    from app.services.decision_store import get_metrics
+
+    main = None
+    try:
+        m = get_metrics(db, account_id=settings.simulation_bot_account_id)
+        main = {
+            "initial": float(settings.configured_capital_usd),
+            "balance": float(m["balance_usd"]),
+            "available": float(m["available_usd"]),
+            "realized": float(m["realized_pnl_usd"]),
+            "unrealized": float(m["unrealized_pnl_usd"]),
+            "open_positions": m["open_positions"],
+        }
+    except Exception:  # noqa: BLE001 — sin cuenta principal se muestra solo el torneo
+        main = None
+    runner = live.runner
+    initial = sum(r["capital"] for r in rows)
+    equity = (
+        sum(float(a.equity(runner.prices)) for a in runner.accounts.values())
+        if runner and runner.accounts
+        else initial + sum(r["net_pnl"] for r in rows)
+    )
+    return {
+        "main": main,
+        "tournament": {"initial": initial, "balance": round(equity, 2), "realized": round(sum(r["net_pnl"] for r in rows), 2),
+                       "accounts": len(rows)},
+    }
+
+
 @router.get("/live")
 def live_board(db: Session = Depends(get_db)) -> dict[str, Any]:
     runner = live.runner
+    rows = store.leaderboard(db, labels())
     return {
         "feed": runner.status() if runner else {"connected": False, "enabled": False},
-        "rows": store.leaderboard(db, labels()),
+        "rows": rows,
+        "balances": _balances(db, rows),
     }
 
 
@@ -133,7 +166,26 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
     from app.signals.telegram import TelegramSignal, _chats
 
     rows = db.scalars(select(TelegramSignal).order_by(TelegramSignal.id.desc()).limit(min(limit, 200))).all()
+    from app.signals.verify import binance_pair, binance_symbols, channel_score
+
+    channels: dict[str, dict[str, int]] = {}
+    verified: dict[str, list[dict]] = {}
+    for title, parsed in db.execute(select(TelegramSignal.chat_title, TelegramSignal.parsed)):
+        if (parsed or {}).get("verificada"):
+            verified.setdefault(title, []).append(parsed["verificada"])
+        stats = channels.setdefault(title, {"mensajes": 0, "senales": 0, "ganadas": 0, "perdidas": 0})
+        stats["mensajes"] += 1
+        kind = (parsed or {}).get("kind", "cripto" if parsed else None)
+        if kind in ("binaria", "cripto"):
+            stats["senales"] += 1
+        elif kind == "resultado":
+            stats["ganadas" if parsed["result"].startswith("win") else "perdidas"] += 1
+        elif kind == "informe":
+            stats["ganadas"] += parsed["wins"]
+            stats["perdidas"] += parsed["losses"]
     return {
+        "channels": [{"chat": k, **v, **channel_score(verified.get(k, []))} for k, v in sorted(channels.items())],
+        "assets": _assets(db, TelegramSignal, binance_symbols(), binance_pair),
         "configured": bool(settings.telegram_api_id and settings.telegram_api_hash and _chats()),
         "signals": [
             {"chat": r.chat_title, "text": r.text[:280], "parsed": r.parsed, "outcome": r.outcome,
@@ -141,3 +193,16 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
             for r in rows
         ],
     }
+
+
+def _assets(db: Session, model, symbols: set[str], to_pair) -> list[dict[str, Any]]:
+    """Divisas que mencionan tus grupos y si existen en Binance para seguirlas allá."""
+    count: dict[tuple[str, bool], int] = {}
+    for (parsed,) in db.execute(select(model.parsed)):
+        if (parsed or {}).get("kind") == "binaria":
+            key = (parsed["asset"], bool(parsed.get("otc")))
+            count[key] = count.get(key, 0) + 1
+    return sorted(
+        ({"asset": a, "otc": otc, "senales": n, "binance": to_pair(a, symbols)} for (a, otc), n in count.items()),
+        key=lambda r: -r["senales"],
+    )

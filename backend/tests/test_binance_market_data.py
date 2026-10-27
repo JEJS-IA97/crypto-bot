@@ -54,8 +54,8 @@ class BinanceMarketDataClientTest(unittest.TestCase):
         self.now = 1000.0
         self.client = BinanceMarketDataClient(clock=lambda: self.now)
 
-    def test_default_base_url_is_api_binance_com(self) -> None:
-        self.assertEqual(self.client.base_url, "https://api.binance.com")
+    def test_default_base_url_is_public_data_mirror(self) -> None:
+        self.assertEqual(self.client.base_url, "https://data-api.binance.vision")
 
     def test_default_base_url_comes_from_settings(self) -> None:
         # Host configurable (p. ej. data-api.binance.vision en la nube).
@@ -76,10 +76,10 @@ class BinanceMarketDataClientTest(unittest.TestCase):
             "https://data-api.binance.vision",
         ):
             client = BinanceMarketDataClient(
-                base_url="https://api.binance.com",
+                base_url="https://data-api.binance.vision",
                 clock=lambda: self.now,
             )
-        self.assertEqual(client.base_url, "https://api.binance.com")
+        self.assertEqual(client.base_url, "https://data-api.binance.vision")
 
     @patch("app.services.binance_market_data_client.httpx.request")
     def test_klines_ok(self, request_mock) -> None:
@@ -99,7 +99,7 @@ class BinanceMarketDataClientTest(unittest.TestCase):
         _, kwargs = request_mock.call_args
         self.assertEqual(
             kwargs["url"],
-            "https://api.binance.com/api/v3/klines",
+            "https://data-api.binance.vision/api/v3/klines",
         )
         self.assertEqual(kwargs["params"]["symbol"], "BTCUSDT")
         self.assertEqual(kwargs["params"]["interval"], "15m")
@@ -181,7 +181,7 @@ class BinanceMarketDataClientTest(unittest.TestCase):
         _, kwargs = request_mock.call_args
         self.assertEqual(
             kwargs["url"],
-            "https://api.binance.com/api/v3/exchangeInfo",
+            "https://data-api.binance.vision/api/v3/exchangeInfo",
         )
         headers = kwargs.get("headers") or {}
         self.assertNotIn("X-MBX-APIKEY", headers)
@@ -253,7 +253,7 @@ class DepthAndTickerTests(unittest.TestCase):
 
         _, kwargs = request_mock.call_args
         self.assertEqual(
-            kwargs["url"], "https://api.binance.com/api/v3/depth"
+            kwargs["url"], "https://data-api.binance.vision/api/v3/depth"
         )
         self.assertEqual(kwargs["params"]["symbol"], "BTCUSDT")
         self.assertEqual(kwargs["params"]["limit"], 5)
@@ -307,7 +307,7 @@ class DepthAndTickerTests(unittest.TestCase):
         _, kwargs = request_mock.call_args
         self.assertEqual(
             kwargs["url"],
-            "https://api.binance.com/api/v3/ticker/24hr",
+            "https://data-api.binance.vision/api/v3/ticker/24hr",
         )
         self.assertEqual(kwargs["params"]["symbol"], "BTCUSDT")
         headers = kwargs.get("headers") or {}

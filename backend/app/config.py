@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     # Laboratorio: torneo de estrategias en paper (longs y shorts) en vivo
     # por WebSocket de Binance; 20/50/100 USD virtuales por estrategia.
     lab_enabled: bool = False
-    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT"
+    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
     # Cerebro: cada brain_interval_hours lee el torneo, consulta a Gemini,
     # examina estrategias nuevas y escribe diario/memoria en brain_dir.
@@ -81,9 +81,9 @@ class Settings(BaseSettings):
     binance_api_secret: str = ""
     binance_testnet_base_url: str = "https://testnet.binance.vision"
     binance_recv_window_ms: int = 5000
-    # Host de datos públicos (klines/exchangeInfo). En la nube puede ser
-    # data-api.binance.vision si api.binance.com bloquea la IP del proveedor.
-    binance_market_data_base_url: str = "https://api.binance.com"
+    # Host de datos públicos (klines/exchangeInfo): el espejo de Binance, porque
+    # api.binance.com responde 451 (bloqueo por ubicación) desde la PC de José.
+    binance_market_data_base_url: str = "https://data-api.binance.vision"
 
     okx_demo_api_key: str = ""
     okx_demo_api_secret: str = ""

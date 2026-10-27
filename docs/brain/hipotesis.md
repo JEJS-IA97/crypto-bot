@@ -106,3 +106,48 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-10-18 03:25 UTC · Estado: pendiente
 - Por qué: 
 - Cómo probarla: Modificar el take profit de la estrategia VWAP (5m) para que se ejecute estrictamente al alcanzar un R:B de 1:3, ignorando salidas prematuras excepto por stop loss.
+
+### Inmunidad a comisiones en marcos diarios
+- Fecha: 2026-10-20 20:36 UTC · Estado: pendiente
+- Por qué: Las estrategias en 1d realizan pocos giros y promedian ganancias sustancialmente mayores al costo de 0,20 % round-trip.
+- Cómo probarla: Evaluar tendencia en 1d con cruces lentos y stops amplios contra backtest de 365 días.
+
+### Momentum de medio plazo en activos directores
+- Fecha: 2026-10-20 20:36 UTC · Estado: pendiente
+- Por qué: Pares como BNB y DOGE muestran tendencia activa; un filtro de momentum porcentual en 1d captura tramos limpios.
+- Cómo probarla: Monitorear tasa de acierto y factor de beneficio de momentum lookback 20 en 1d en régimen de tendencia.
+
+### Transición a 4h en seguimiento de tendencia para estabilizar Monte Carlo
+- Fecha: 2026-10-21 10:55 UTC · Estado: pendiente
+- Por qué: Las medias móviles en 1d tienen un Sharpe aparente alto pero muy pocos trades, haciendo que el remuestreo de Monte Carlo falle; bajar a 4h multiplica las observaciones preservando capturas de tendencia superiores al 3 %.
+- Cómo probarla: Evaluar tendencia 4h con medias intermedias (34 y 144) sobre activos actualmente tendenciales como BNB y LTC.
+
+### Ruptura de canal Donchian multidiario (4h) con R:R asimétrico
+- Fecha: 2026-10-21 10:55 UTC · Estado: pendiente
+- Por qué: Un canal de 48 períodos en 4h equivale a los máximos de 8 días; con stop de 2,0 ATR y target de 5,0 ATR se protege contra falsas salidas y se cubre holgadamente la comisión spot.
+- Cómo probarla: Backtest de donchian 4h n=48 filtrando salidas prematuras con ATR amplio.
+
+### Reversión extrema a la media en 1h adaptada al régimen de rango
+- Fecha: 2026-10-21 10:55 UTC · Estado: pendiente
+- Por qué: Los activos principales están en rango; entradas únicamente en sobreventa extrema (RSI < 25) evitan trampas bajistas y permiten rebotar hacia el centro de la distribución.
+- Cómo probarla: Testear reversion 1h con rsi_low en 22 y ratio TP/SL mayor a 1.5 en pares en rango.
+
+### Cluster tendencial robusto en marco diario
+- Fecha: 2026-10-21 14:55 UTC · Estado: pendiente
+- Por qué: Las combinaciones de medias móviles rápidas (59-88) y lentas (124-184) en 1d han mostrado los únicos PF > 30 y retornos positivos consistentes, amortiguando completamente el arrastre de comisiones.
+- Cómo probarla: Ejecutar backtest y prueba Monte Carlo con parámetros centrados en fast=72 y slow=150 en 1d evitando la zona rechazada 65/160.
+
+### Momentum de mediano plazo en 4h para balancear frecuencia y fricción
+- Fecha: 2026-10-21 14:55 UTC · Estado: pendiente
+- Por qué: Momentum en 1d generó rechazo por MC p95 del 100% debido a escasez de muestras; una ventana intermedia de 4h con umbral moderado de retorno puede capturar swings sin sobreoperar.
+- Cómo probarla: Testear momentum en 4h con lookback=36 y min_ret=0.04 sobre activos en régimen de tendencia como BTC y BNB.
+
+### Eficiencia del seguimiento de tendencia en 1d con ventana media-larga
+- Fecha: 2026-10-22 12:28 UTC · Estado: pendiente
+- Por qué: Las mutaciones exitosas (59/139, 77/124, 90/163) demuestran que una rápida >= 60 y lenta entre 125-170 neutralizan el ruido de mercado y reducen los costes de transacción a mínimos viables.
+- Cómo probarla: Validar combinaciones en 1d cercanas a los núcleos ganadores de mutación, evaluando rigurosamente el drawdown p95 en Monte Carlo para evitar caídas catastróficas.
+
+### Momentum de mediano plazo en 1d para filtrar consolidaciones
+- Fecha: 2026-10-22 12:28 UTC · Estado: pendiente
+- Por qué: El momentum de lookback corto (21d) generó drawdowns inaceptables, pero un lookback más extenso (>= 40d) junto con un umbral de retorno moderado puede capturar fases macro alcistas sin sobreoperar.
+- Cómo probarla: Evaluar momentum en 1d con lookback de 42 días y retorno mínimo de 5 %, comprobando que supere el umbral de transacciones y rentabilidad positiva en entrenamiento.
