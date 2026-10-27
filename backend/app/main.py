@@ -29,6 +29,7 @@ from app.config import settings
 from app.database import Base, SessionLocal, engine
 from app.lab import live as lab_live
 from app.lab import models as lab_models  # noqa: F401 — registra las tablas del laboratorio
+from app.bets import engine as bets_engine  # noqa: F401 — registra la tabla de apuestas
 from app.services import bot_loop
 from app.services.ai_daily_analysis import daily_loop
 from app.services.keepalive_service import keepalive_loop, should_keepalive
@@ -131,6 +132,7 @@ async def lifespan(app: FastAPI):
     keepalive_task = None
     ai_task = None
 
+    # Núcleo de tendencia diaria (SMA50 y SMA200, BTC+ETH) sobre la cuenta principal de 40 USD.
     if settings.simulation_bot_enabled:
         bot_task = asyncio.create_task(
             bot_loop.run(stop_event=stop_event)
@@ -144,6 +146,15 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(brain_loop(stop_event)) if settings.brain_enabled else None
     )
     telegram_task = asyncio.create_task(telegram_loop(stop_event))
+    from app.signals.okx_watch import okx_loop
+
+    from app.lab.context import context_loop
+
+    okx_task = asyncio.create_task(okx_loop(stop_event)) if settings.lab_enabled else None
+    context_task = asyncio.create_task(context_loop(stop_event)) if settings.lab_enabled else None
+    from app.bets.engine import bets_loop
+
+    bets_task = asyncio.create_task(bets_loop(stop_event)) if settings.bets_enabled else None
 
     if settings.gemini_auto_analysis and settings.gemini_api_key.strip():
         ai_task = asyncio.create_task(
@@ -171,6 +182,12 @@ async def lifespan(app: FastAPI):
     if brain_task is not None:
         await brain_task
     await telegram_task
+    if okx_task is not None:
+        await okx_task
+    if context_task is not None:
+        await context_task
+    if bets_task is not None:
+        await bets_task
     if ai_task is not None:
         await ai_task
 

@@ -1,0 +1,215 @@
+{
+  "communities": {
+    "0": [
+      "diario_2026_10_18",
+      "diario_bnb_usdt",
+      "diario_btc_usdt",
+      "diario_estrategia_cruce_ema_9_21_ema200",
+      "diario_estrategia_ema_21_89_rsi",
+      "diario_estrategia_orb_ny_filtro",
+      "diario_estrategia_reversion_vwap_5m",
+      "diario_eth_usdt",
+      "diario_sol_usdt"
+    ],
+    "1": [
+      "estrategia_ema_21_89_rsi_4h",
+      "hipotesis_filtro_regimen_rango_bajo",
+      "hipotesis_migracion_htf_fees",
+      "hipotesis_migracion_htf_rango",
+      "hipotesis_migracion_swing_4h",
+      "hipotesis_opt_reversion_rango",
+      "hipotesis_priorizacion_h4"
+    ],
+    "2": [
+      "estrategia_reversion_vwap_5m",
+      "hipotesis_ampliacion_vwap_5m",
+      "hipotesis_filtro_inactividad_rango",
+      "hipotesis_migracion_tf_friccion",
+      "hipotesis_mitigacion_fee_drag",
+      "hipotesis_opt_rb_vwap"
+    ],
+    "3": [
+      "diario_2026_10_16",
+      "diario_2026_10_17",
+      "hipotesis",
+      "readme"
+    ],
+    "4": [
+      "diario_2026_10_19_btc_regimen",
+      "diario_2026_10_19_ema_rsi_strategy",
+      "diario_2026_10_19_omniroute_env_issue"
+    ],
+    "5": [
+      "estrategia_orb_ny",
+      "hipotesis_ampliacion_rb_comision",
+      "hipotesis_filtro_regimen_orb"
+    ],
+    "6": [
+      "diario_2026_10_19_eth_regimen",
+      "diario_2026_10_19_vwap_reversion_strategy"
+    ],
+    "7": [
+      "estrategia_cruce_ema_9_21",
+      "hipotesis_opt_rb_comisiones"
+    ],
+    "8": [
+      "diario_2026_10_19_bnb_regimen"
+    ],
+    "9": [
+      "diario_2026_10_19_orb_ny_strategy"
+    ],
+    "10": [
+      "diario_2026_10_19_sol_regimen"
+    ],
+    "11": [
+      "hipotesis_filtro_adx_volatilidad"
+    ],
+    "12": [
+      "hipotesis_filtro_atr_minimo"
+    ],
+    "13": [
+      "hipotesis_filtro_atr_ruido"
+    ],
+    "14": [
+      "hipotesis_inhibicion_ruptura_vol_baja"
+    ],
+    "15": [
+      "hipotesis_migracion_ventaja_backtest"
+    ],
+    "16": [
+      "hipotesis_opt_rb_rango"
+    ]
+  },
+  "cohesion": {
+    "0": 0.25,
+    "1": 0.2857142857142857,
+    "2": 0.3333333333333333,
+    "3": 0.6666666666666666,
+    "4": 0.6666666666666666,
+    "5": 0.6666666666666666,
+    "6": 1.0,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0
+  },
+  "gods": [
+    {
+      "id": "diario_2026_10_18",
+      "label": "Diario del cerebro \u2014 2026-10-18",
+      "degree": 9
+    },
+    {
+      "id": "estrategia_ema_21_89_rsi_4h",
+      "label": "EMA 21/89 + RSI (4h)",
+      "degree": 6
+    },
+    {
+      "id": "estrategia_reversion_vwap_5m",
+      "label": "Reversi\u00f3n al VWAP (5m)",
+      "degree": 5
+    },
+    {
+      "id": "hipotesis",
+      "label": "Hip\u00f3tesis del cerebro",
+      "degree": 4
+    },
+    {
+      "id": "diario_estrategia_ema_21_89_rsi",
+      "label": "EMA 21/89 + RSI (4h, video Claude)",
+      "degree": 2
+    },
+    {
+      "id": "diario_btc_usdt",
+      "label": "BTCUSDT",
+      "degree": 2
+    },
+    {
+      "id": "diario_2026_10_16",
+      "label": "Diario 2026-10-16",
+      "degree": 2
+    },
+    {
+      "id": "estrategia_orb_ny",
+      "label": "ORB NY + filtro de tendencia",
+      "degree": 2
+    },
+    {
+      "id": "diario_2026_10_19_ema_rsi_strategy",
+      "label": "EMA 21/89 + RSI (4h, video Claude)",
+      "degree": 2
+    },
+    {
+      "id": "diario_estrategia_cruce_ema_9_21_ema200",
+      "label": "Cruce EMA 9/21 + EMA200",
+      "degree": 1
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Migraci\u00f3n a marcos temporales altos (HTF) para fees",
+      "target": "EMA 21/89 + RSI (4h)",
+      "source_files": [
+        "hipotesis.md",
+        "diario/2026-10-16.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "conceptually_related_to",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `Migraci\u00f3n a marcos temporales altos (HTF) para fees` unexpectedly reaches hub `EMA 21/89 + RSI (4h)`"
+    },
+    {
+      "source": "Diario del cerebro \u2014 2026-10-18",
+      "target": "Hip\u00f3tesis del cerebro",
+      "source_files": [
+        "diario/2026-10-18.md",
+        "hipotesis.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Filtro de r\u00e9gimen para 'rango \u00b7 vol baja'",
+      "target": "EMA 21/89 + RSI (4h)",
+      "source_files": [
+        "hipotesis.md",
+        "diario/2026-10-16.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "why": "connects across different repos/directories; peripheral node `Filtro de r\u00e9gimen para 'rango \u00b7 vol baja'` unexpectedly reaches hub `EMA 21/89 + RSI (4h)`"
+    },
+    {
+      "source": "Migraci\u00f3n a temporalidades mayores en rango",
+      "target": "EMA 21/89 + RSI (4h)",
+      "source_files": [
+        "hipotesis.md",
+        "diario/2026-10-16.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "why": "connects across different repos/directories; peripheral node `Migraci\u00f3n a temporalidades mayores en rango` unexpectedly reaches hub `EMA 21/89 + RSI (4h)`"
+    },
+    {
+      "source": "Migraci\u00f3n a Swing 4h",
+      "target": "EMA 21/89 + RSI (4h)",
+      "source_files": [
+        "hipotesis.md",
+        "diario/2026-10-16.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "conceptually_related_to",
+      "why": "connects across different repos/directories; peripheral node `Migraci\u00f3n a Swing 4h` unexpectedly reaches hub `EMA 21/89 + RSI (4h)`"
+    }
+  ],
+  "tokens": {
+    "input": 3060,
+    "output": 2062
+  }
+}

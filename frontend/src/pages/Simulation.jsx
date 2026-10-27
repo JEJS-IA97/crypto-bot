@@ -70,6 +70,21 @@ function Simulation({ embedded = false }) {
     const accountBalance = balance || summary.balance || {};
     const availableBalance = accountBalance.available_usd || 0;
 
+    if (embedded) {
+        // Vista de la cuenta principal en la sala de control: solo lo que usa el núcleo de
+        // tendencia (señal de hoy, posiciones e historial). Las pestañas antiguas
+        // (Laboratorio, Estado, Consola, Learning) mostraban módulos apagados.
+        return (
+            <div className="account-view">
+                <TrendCard />
+                <div className="history-stack">
+                    <OpenPositions positions={positions} />
+                    <TradeHistory trades={trades} />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className={embedded ? "app-shell embedded" : "app-shell"}>
             {!embedded && <NavRail active={tab} onSelect={setTab} />}

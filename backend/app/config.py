@@ -132,6 +132,9 @@ class Settings(BaseSettings):
     # Clave vacia = DISABLED; NUNCA se habilita pago (punto 4 de la
     # constitucion). El modelo se confirma con la doc oficial al crearla.
     gemini_api_key: str = ""
+    # Apuestas (paper): clave gratis de the-odds-api.com para fútbol de América, NBA y MLB (opcional).
+    odds_api_key: str = ""
+    bets_enabled: bool = True
     gemini_model: str = "gemini-3.8-flash"
     gemini_base_url: str = (
         "https://generativelanguage.googleapis.com/v1beta"

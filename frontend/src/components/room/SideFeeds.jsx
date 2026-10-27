@@ -1,4 +1,4 @@
-import { getLabTrades, getTelegram } from "../../api/lab";
+import { getLabTrades, getOkxTraders, getTelegram } from "../../api/lab";
 import { clock, coin, price, signed, tone } from "./fmt";
 import usePoll from "./usePoll";
 
@@ -108,6 +108,51 @@ export function TelegramFeed() {
                     </li>
                 ))}
             </ul>
+        </section>
+    );
+}
+
+export function OkxFeed() {
+    const { data, error } = usePoll(getOkxTraders, 300000);
+    const rows = (data?.traders || []).filter((r) => r.pnl_copiadores_usd > 0).sort((a, b) => b.pnl_copiadores_usd - a.pnl_copiadores_usd);
+    return (
+        <section className="panel">
+            <h2>Traders que ganan (OKX, ≥180 días)</h2>
+            {error && <p className="note">{error}</p>}
+            {!rows.length && !error && <p className="note">El bot los revisa cada 12 h; todavía no hay datos.</p>}
+            {(data?.lecciones || []).slice(0, 2).map((l) => (
+                <p key={l} className="note">{l}</p>
+            ))}
+            {!!rows.length && (
+                <div className="feed-scroll">
+                    <table className="grid compact">
+                        <thead>
+                            <tr>
+                                <th>Trader</th>
+                                <th className="r" title="Porcentaje de operaciones ganadoras">Acierto</th>
+                                <th className="r" title="Ganancia media / pérdida media">Payoff</th>
+                                <th className="r" title="Lo que ganaron quienes lo copian">Copiadores</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.slice(0, 10).map((r) => (
+                                <tr key={r.codigo}>
+                                    <td>
+                                        {r.nombre}
+                                        <div className="dim small">
+                                            {r.mercado} · {r.dias} días{r.opera ? ` · ${r.opera.slice(0, 3).join(", ")}` : ""}
+                                            {r.apalancamiento_mediano ? ` · ${r.apalancamiento_mediano}x` : ""}
+                                        </div>
+                                    </td>
+                                    <td className="r num">{r.acierto != null ? `${r.acierto} %` : "—"}</td>
+                                    <td className="r num">{r.payoff ?? "—"}</td>
+                                    <td className="r num up">{signed(r.pnl_copiadores_usd)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </section>
     );
 }

@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/lab", tags=["Laboratorio"])
 
 @router.get("/strategies")
 def strategies() -> list[dict[str, Any]]:
-    strategies = getattr(live.runner, "strategies", STRATEGIES)
+    strategies = getattr(live.runner, "strategies", None) or STRATEGIES
     return [
         {"name": s.name, "label": s.label, "timeframe": s.timeframe, "description": s.description}
         for s in strategies
@@ -40,11 +40,10 @@ def backtest() -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _balances(db: Session, rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Saldo inicial y actual: cuenta principal (paper) y suma del torneo."""
+def _balances(db: Session, rows: list[dict[str, Any]], principal: dict[str, Any] | None) -> dict[str, Any]:
+    """Cuenta principal (núcleo de tendencia, 40 USD), la copiadora de ganadoras y el torneo."""
     from app.services.decision_store import get_metrics
 
-    main = None
     try:
         m = get_metrics(db, account_id=settings.simulation_bot_account_id)
         main = {
@@ -55,17 +54,27 @@ def _balances(db: Session, rows: list[dict[str, Any]]) -> dict[str, Any]:
             "unrealized": float(m["unrealized_pnl_usd"]),
             "open_positions": m["open_positions"],
         }
-    except Exception:  # noqa: BLE001 — sin cuenta principal se muestra solo el torneo
+    except Exception:  # noqa: BLE001
         main = None
     runner = live.runner
+    copier = None
+    if principal is not None:
+        account = runner.principal if runner else None
+        copier = {
+            "initial": principal["capital"],
+            "balance": round(float(account.equity(runner.prices)), 2) if account else principal["capital"] + principal["net_pnl"],
+            "available": round(float(account.cash), 2) if account else principal["cash"],
+            "realized": principal["net_pnl"],
+            "open_positions": principal["open_positions"],
+            "trades": principal["trades"],
+            "copies": sorted(runner.champions) if runner else [],
+        }
     initial = sum(r["capital"] for r in rows)
-    equity = (
-        sum(float(a.equity(runner.prices)) for a in runner.accounts.values())
-        if runner and runner.accounts
-        else initial + sum(r["net_pnl"] for r in rows)
-    )
+    active = [a for k, a in runner.accounts.items() if k[0] != live.PRINCIPAL] if runner and runner.accounts else []
+    equity = sum(float(a.equity(runner.prices)) for a in active) if active else initial + sum(r["net_pnl"] for r in rows)
     return {
         "main": main,
+        "copier": copier,
         "tournament": {"initial": initial, "balance": round(equity, 2), "realized": round(sum(r["net_pnl"] for r in rows), 2),
                        "accounts": len(rows)},
     }
@@ -75,10 +84,15 @@ def _balances(db: Session, rows: list[dict[str, Any]]) -> dict[str, Any]:
 def live_board(db: Session = Depends(get_db)) -> dict[str, Any]:
     runner = live.runner
     rows = store.leaderboard(db, labels())
+    if runner and runner.accounts:  # solo lo que sigue en el torneo; lo retirado queda en el historial
+        active = {(name, float(capital)) for name, capital in runner.accounts}
+        rows = [r for r in rows if (r["strategy"], r["capital"]) in active]
+    principal = next((r for r in rows if r["strategy"] == live.PRINCIPAL), None)
+    rows = [r for r in rows if r["strategy"] != live.PRINCIPAL]
     return {
         "feed": runner.status() if runner else {"connected": False, "enabled": False},
         "rows": rows,
-        "balances": _balances(db, rows),
+        "balances": _balances(db, rows, principal),
     }
 
 
@@ -163,7 +177,7 @@ def brain(db: Session = Depends(get_db)) -> dict[str, Any]:
 @router.get("/telegram")
 def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Últimos mensajes leídos de tus grupos y qué hizo el bot con cada uno."""
-    from app.signals.telegram import TelegramSignal, _chats
+    from app.signals.telegram import CHATS_FILE, TelegramSignal
 
     rows = db.scalars(select(TelegramSignal).order_by(TelegramSignal.id.desc()).limit(min(limit, 200))).all()
     from app.signals.verify import binance_pair, binance_symbols, channel_score
@@ -186,7 +200,8 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
     return {
         "channels": [{"chat": k, **v, **channel_score(verified.get(k, []))} for k, v in sorted(channels.items())],
         "assets": _assets(db, TelegramSignal, binance_symbols(), binance_pair),
-        "configured": bool(settings.telegram_api_id and settings.telegram_api_hash and _chats()),
+        "configured": bool(settings.telegram_api_id and settings.telegram_api_hash),
+        "dialogs": json.loads(CHATS_FILE.read_text(encoding="utf-8")) if CHATS_FILE.exists() else [],
         "signals": [
             {"chat": r.chat_title, "text": r.text[:280], "parsed": r.parsed, "outcome": r.outcome,
              "created_at": r.created_at.isoformat() if r.created_at else None}
@@ -206,3 +221,30 @@ def _assets(db: Session, model, symbols: set[str], to_pair) -> list[dict[str, An
         ({"asset": a, "otc": otc, "senales": n, "binance": to_pair(a, symbols)} for (a, otc), n in count.items()),
         key=lambda r: -r["senales"],
     )
+
+
+@router.get("/okx")
+def okx_traders() -> dict[str, Any]:
+    """Observatorio de traders de OKX con ≥180 días: estilo, resultado y lo que ganan sus copiadores."""
+    from app.signals.okx_watch import OUT
+
+    return json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {"traders": [], "lecciones": []}
+
+
+@router.get("/bets")
+def bets(limit: int = 60, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Apuestas en paper: resumen por estrategia y últimas apuestas."""
+    from app.bets.engine import BetPick, summary
+
+    picks = db.scalars(select(BetPick).order_by(BetPick.kickoff.desc()).limit(min(limit, 300))).all()
+    return {
+        "resumen": summary(db),
+        "odds_api": bool(settings.odds_api_key),
+        "apuestas": [
+            {"estrategia": p.strategy, "deporte": p.sport, "liga": p.league, "partido": p.match, "seleccion": p.selection,
+             "inicio": p.kickoff.isoformat(), "cuota": float(p.odds), "prob_justa": float(p.fair_prob) if p.fair_prob else None,
+             "estado": p.status, "pnl": float(p.pnl) if p.pnl is not None else None,
+             "clv": float(p.clv_pct) if p.clv_pct is not None else None}
+            for p in picks
+        ],
+    }

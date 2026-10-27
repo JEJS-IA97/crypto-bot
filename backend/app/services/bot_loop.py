@@ -93,6 +93,7 @@ from app.services.risk_guard_service import (
     record_cycle_success,
     record_realized_pnl,
     register_open,
+    reset_breaker,
 )
 from app.services.simulation_executor import SimulationExecutor
 from app.services.simulation_service import get_balance_record
@@ -261,6 +262,17 @@ def _trend_symbols() -> set[str]:
         for part in settings.trend_symbols.split(",")
         if part.strip()
     }
+
+
+BREAKER_PROBE_SECONDS = 600
+
+
+def _feed_ok(market_data) -> bool:
+    """¿Responde otra vez el proveedor de velas? (para liberar el freno por conexión)."""
+    try:
+        return bool(market_data.get_klines("BTCUSDT", interval="1d", limit=2))
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _utc_day_start(now: datetime) -> datetime:
@@ -1014,6 +1026,7 @@ async def run(
 
     controller._arm()
     last_purge = time.monotonic()
+    last_probe = 0.0
     try:
         while True:
             if stop_event is not None and stop_event.is_set():
@@ -1021,6 +1034,19 @@ async def run(
             db = factory()
             try:
                 runtime = get_runtime(db)
+                if (runtime.running and runtime.breaker_active
+                        and "consecutive cycle failures" in (runtime.breaker_reason or "")
+                        and time.monotonic() - last_probe >= BREAKER_PROBE_SECONDS):
+                    # El freno saltó por fallos de conexión: si los datos vuelven, se libera solo.
+                    last_probe = time.monotonic()
+                    if _feed_ok(data):
+                        reset_breaker(db)
+                        runtime = get_runtime(db)
+                        logger.warning("bot loop: breaker auto-reset, market data is back")
+                        from app.signals import alerts
+
+                        alerts.outbox.append("🔧 La cuenta principal se había frenado por fallos de conexión con Binance. "
+                                             "Los datos volvieron y se reactivó sola.")
                 if runtime.running and not runtime.breaker_active:
                     runner(
                         db,

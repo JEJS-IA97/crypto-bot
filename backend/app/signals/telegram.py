@@ -11,6 +11,7 @@ grupos ajenos. La sesión se crea una vez con `python telegram_login.py`.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import time
@@ -128,6 +129,8 @@ def apply_signal(chat_id: int, title: str, parsed: dict | None, runner=None, ses
         return "no abierta (stop incoherente, ya hay posición o nominal < 5 USD)"
     with factory() as db:
         store.save_open(db, account, opened)
+    if hasattr(runner, "mirror"):  # la cuenta principal copia si este chat ya demostró que gana
+        runner.mirror(source.name, symbol, parsed["side"], stop, tp, int(time.time() * 1000))
     return "abierta"
 
 
@@ -173,6 +176,45 @@ def restore_sources(runner) -> None:
         runner.accounts.update(store.load_accounts(db, [TelegramSource(c, t).name for c, t in chats.items()], (CAPITAL,)))
 
 
+CHATS_FILE = Path("data/telegram_chats.json")
+MIN_HIT_RATE = 55.0  # binarias con pago 0.85: por debajo de ~54 % se pierde dinero
+
+
+def chat_verdicts(db, trades=None) -> dict[int, str]:
+    """Chats a silenciar → motivo. Se decide con resultados, no con lo que prometen."""
+    from sqlalchemy import select
+
+    from app.signals.verify import channel_score
+
+    stats: dict[int, dict] = {}
+    for chat_id, parsed in db.execute(select(TelegramSignal.chat_id, TelegramSignal.parsed)):
+        s = stats.setdefault(chat_id, {"msgs": 0, "signals": 0, "otc": 0, "verified": []})
+        s["msgs"] += 1
+        parsed = parsed or {}
+        if parsed.get("kind") == "binaria" or ("symbol" in parsed and "stop" in parsed):
+            s["signals"] += 1
+            s["otc"] += 1 if parsed.get("otc") else 0
+        if parsed.get("verificada"):
+            s["verified"].append(parsed["verificada"])
+    pnl: dict[str, list] = {}
+    for t in trades if trades is not None else store.closed_trades(db):
+        if t.strategy.startswith("tg_"):
+            pnl.setdefault(t.strategy, []).append(t.pnl)
+    out = {}
+    for chat_id, s in stats.items():
+        score = channel_score(s["verified"])
+        mine = pnl.get(f"tg_{abs(chat_id)}", [])
+        if score["comprobadas"] >= 10 and score["acierto_real"] < MIN_HIT_RATE:
+            out[chat_id] = f"acierto real {score['acierto_real']} % en {score['comprobadas']} (< {MIN_HIT_RATE:.0f} %)"
+        elif len(mine) >= 5 and sum(mine) < 0:
+            out[chat_id] = f"en paper pierde {float(sum(mine)):+.2f} USD en {len(mine)} trades"
+        elif s["signals"] >= 20 and s["otc"] == s["signals"]:
+            out[chat_id] = "solo OTC: precio inventado por el broker, imposible de comprobar"
+        elif s["msgs"] >= 40 and s["signals"] == 0:
+            out[chat_id] = f"{s['msgs']} mensajes y ninguna señal operable"
+    return out
+
+
 def _chats() -> list[str | int]:
     out: list[str | int] = []
     for raw in settings.telegram_chats.split(","):
@@ -183,8 +225,8 @@ def _chats() -> list[str | int]:
 
 
 async def telegram_loop(stop_event: asyncio.Event) -> None:
-    """Escucha los chats configurados mientras el bot esté encendido."""
-    if not (settings.telegram_api_id and settings.telegram_api_hash and _chats()):
+    """Escucha TODOS tus grupos y canales (los nuevos entran solos) y silencia los que no sirven."""
+    if not (settings.telegram_api_id and settings.telegram_api_hash):
         logger.info("telegram: not configured (TELEGRAM_API_ID/HASH/CHATS)")
         return
     if not SESSION_PATH.with_suffix(".session").exists():
@@ -193,12 +235,18 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
     from telethon import TelegramClient, events
 
     client = TelegramClient(str(SESSION_PATH), settings.telegram_api_id, settings.telegram_api_hash)
+    configured = {c for c in _chats() if isinstance(c, int)}
+    muted: dict[int, str] = {}
 
-    @client.on(events.NewMessage(chats=_chats()))
+    @client.on(events.NewMessage())
     async def on_message(event) -> None:
+        if event.is_private or event.chat_id in muted:
+            return
         chat = await event.get_chat()
         title = getattr(chat, "title", None) or getattr(chat, "username", None) or str(event.chat_id)
         parsed, outcome = classify(event.chat_id, title, event.raw_text or "")
+        if parsed is None and event.chat_id not in configured:
+            return  # de grupos nuevos solo se guarda lo que parece señal (privacidad)
         with database.SessionLocal() as db:
             db.add(TelegramSignal(chat_id=event.chat_id, chat_title=title[:120], message_id=event.id,
                                   text=(event.raw_text or "")[:4000], parsed=parsed, outcome=outcome))
@@ -212,7 +260,23 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
         if live.runner:
             restore_sources(live.runner)
         logger.info("telegram: %s stored messages reclassified", reclassify())
-        logger.info("telegram: listening to %s chats", len(_chats()))
+
+        async def refresh() -> None:
+            with database.SessionLocal() as db:
+                muted.clear()
+                muted.update(await asyncio.to_thread(chat_verdicts, db))
+            dialogs = []
+            async for d in client.iter_dialogs():
+                if d.is_group or d.is_channel:
+                    dialogs.append({"id": d.id, "title": d.name, "kind": "canal" if d.is_channel and not d.is_group else "grupo",
+                                    "silenciado": muted.get(d.id), "configurado": d.id in configured})
+            CHATS_FILE.write_text(json.dumps(dialogs, ensure_ascii=False, indent=1), encoding="utf-8")
+            logger.info("telegram: %s groups/channels, %s muted", len(dialogs), sum(1 for d in dialogs if d["silenciado"]))
+
+        try:
+            await refresh()
+        except Exception:  # noqa: BLE001 — sin la lista se sigue escuchando igual
+            logger.warning("telegram: refresh failed", exc_info=True)
         from app.signals import alerts
         from app.signals.verify import verify_pending
 
@@ -224,6 +288,11 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
                     await client.send_message("me", text)
                 except Exception:  # noqa: BLE001
                     logger.warning("telegram: could not send alert", exc_info=True)
+            if tick and tick % 240 == 0:  # cada ~hora: grupos nuevos y quién se silencia
+                try:
+                    await refresh()
+                except Exception:  # noqa: BLE001
+                    logger.warning("telegram: refresh failed", exc_info=True)
             if tick % 20 == 0:  # cada ~5 min: veredicto de las señales de divisas reales
                 checked = await asyncio.to_thread(verify_pending)
                 if checked:

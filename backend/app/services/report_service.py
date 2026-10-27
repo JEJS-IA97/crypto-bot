@@ -100,16 +100,30 @@ def _lab_rows(db: Session, moment: datetime) -> tuple[tuple[str, str], ...]:
         genomes = db.scalars(select(BrainGenome)).all()
     except Exception:  # noqa: BLE001 — tablas aún no creadas
         return ()
+    from app.brain.evolve import live_strategies
+    from app.lab import live
+    from app.lab.strategies import STRATEGIES
+
     since = (moment.timestamp() - 86_400) * 1000
     day = [t for t in trades if t.closed_ts and t.closed_ts >= since]
+    evolved, benched = live_strategies(db)
+    active = {s.name for s in STRATEGIES} | {s.name for s in evolved}
+    mine = [t for t in trades if t.strategy == live.PRINCIPAL]
+    copies = live.champions(trades, benched)
+    principal = [
+        ("Copia de ganadoras (paper)", f"{_num(settings.configured_capital_usd + sum((t.pnl for t in mine), Decimal(0)))} USDT realizado"
+                             f" · {len(mine)} operaciones (empezó con {_num(settings.configured_capital_usd)})"),
+        ("Copia a", ", ".join(sorted(copies)) if copies else "nadie aún: ninguna fuente ganó ≥5 largos con PF ≥ 1.3, se queda en USDT"),
+    ]
     by: dict[str, list] = {}
     for t in trades:
-        by.setdefault(f"{t.strategy} ({t.capital:.0f})", []).append(t)
+        if t.strategy in active or t.strategy.startswith("tg_"):
+            by.setdefault(f"{t.strategy} ({t.capital:.0f})", []).append(t)
     ranked = sorted(
         ((k, sum(x.pnl for x in v) / v[0].capital * 100, len(v)) for k, v in by.items() if len(v) >= 3),
         key=lambda r: r[1], reverse=True,
     )
-    rows = [
+    rows = principal + [
         ("Operaciones 24 h", f"{len(day)} (PnL {_num(sum((t.pnl for t in day), Decimal(0)))} USDT)"),
         ("Operaciones totales", f"{len(trades)} · comisiones {_num(sum((t.fees for t in trades), Decimal(0)))} USDT"),
     ]

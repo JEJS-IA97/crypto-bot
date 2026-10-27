@@ -151,3 +151,18 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-10-22 12:28 UTC · Estado: pendiente
 - Por qué: El momentum de lookback corto (21d) generó drawdowns inaceptables, pero un lookback más extenso (>= 40d) junto con un umbral de retorno moderado puede capturar fases macro alcistas sin sobreoperar.
 - Cómo probarla: Evaluar momentum en 1d con lookback de 42 días y retorno mínimo de 5 %, comprobando que supere el umbral de transacciones y rentabilidad positiva en entrenamiento.
+
+### Resonancia en EMA RSI sobre 4h inspirada en la estrategia líder
+- Fecha: 2026-10-25 11:56 UTC · Estado: pendiente
+- Por qué: La configuración 21/89 en 4h ha demostrado ser la única rentable en tiempo real en entornos de baja volatilidad.
+- Cómo probarla: Evaluar una parametrización cercana en ema_rsi con ratios asimétricos de TP/SL para capturar expansiones respetando el rango.
+
+### Persistencia del momentum diario en activos seleccionados
+- Fecha: 2026-10-25 11:56 UTC · Estado: pendiente
+- Por qué: Momentum 1d con lookback intermedio y umbral positivo fue previamente validado en BNB con PF de 2.72.
+- Cómo probarla: Testear un lookback de 35 días con un umbral de retorno de 5% en 1d para filtrar ruido intradiario.
+
+### Zona óptima de cruce diario lento para mitigar drawdown Monte Carlo
+- Fecha: 2026-10-25 11:56 UTC · Estado: pendiente
+- Por qué: Los modelos de tendencia 1d con medias lentas entre 160 y 180 y rápidas sobre 70 han logrado superar el examen sin sobreajuste.
+- Cómo probarla: Simular un cruce 70/175 en 1d para mantener baja rotación y amortiguar los costes por comisión.

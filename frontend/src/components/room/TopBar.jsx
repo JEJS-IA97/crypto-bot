@@ -42,6 +42,7 @@ function TopBar({ view, onView, board }) {
             <nav className="views" aria-label="Vistas">
                 <button className={view === "room" ? "on" : ""} onClick={() => onView("room")}>Sala de control</button>
                 <button className={view === "account" ? "on" : ""} onClick={() => onView("account")}>Cuenta principal</button>
+                <button className={view === "bets" ? "on" : ""} onClick={() => onView("bets")}>Apuestas</button>
             </nav>
             <dl className="stats">
                 <div>

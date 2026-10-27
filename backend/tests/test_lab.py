@@ -23,7 +23,7 @@ from app.lab.engine import FEE_RATE, SLIPPAGE, Account
 from app.lab.metrics import summarize
 from app.lab.models import LabTrade
 from app.lab.regime import RegimeLookup, regime_series
-from app.lab.strategies import STRATEGIES, OrbNY, Signal, Strategy
+from app.lab.strategies import ALL_STRATEGIES, OrbNY, Signal, Strategy
 from app.main import app
 from app.services.risk_guard_service import get_runtime
 
@@ -90,7 +90,7 @@ class EngineTests(unittest.TestCase):
 class StrategyAndRegimeTests(unittest.TestCase):
     def test_all_strategies_run_on_flat_data_without_errors(self):
         bars = [bar(i * 300_000, 100, 101, 99, 100) for i in range(1200)]
-        for strategy in STRATEGIES:
+        for strategy in ALL_STRATEGIES:
             self.assertEqual(len(strategy.signals(bars)), len(bars), strategy.name)
 
     def test_orb_long_on_breakout_after_ten_ny(self):
@@ -165,6 +165,59 @@ class LiveRunnerTests(unittest.TestCase):
                 self.assertEqual((row.status, row.reason), ("CLOSED", "tp"))
                 self.assertGreater(row.pnl, 0)
 
+    def test_principal_copies_only_proven_long_sources(self):
+        from app.lab import store
+        from app.lab.engine import Trade
+
+        def t(name, side, pnl, i):
+            return Trade(name, D("100"), "BTCUSDT", side, D("1"), D("1"), D("1"), i, i + 1, D(str(pnl)), D("0"), None, "r", "tp")
+
+        winners = [t("a", "LONG", 2, i) for i in range(4)] + [t("a", "LONG", -1, 9)]
+        shorts = [t("b", "SHORT", 2, i) for i in range(6)]
+        dupes = [t("c", "LONG", 1, 0)] * 6  # la misma operación en 3 cuentas no cuenta 3 veces
+        self.assertEqual(live.champions(winners + shorts + dupes, set()), {"a"})
+        self.assertEqual(live.champions(winners, {"a"}), set())
+
+        with patch.object(live, "STRATEGIES", [AlwaysLong()]), patch.object(live.context, "macro_blackout", lambda: None):
+            self.runner.strategies = [AlwaysLong()]
+            with self.factory() as db:
+                self.runner.accounts = store.load_accounts(db, ["always_long"], [D("100")])
+                self.runner.accounts.update(store.load_accounts(db, [live.PRINCIPAL], [self.runner.principal_capital]))
+            self.runner.prices["BTCUSDT"] = D("100")
+            self.runner.champions = {"always_long"}
+            self.runner.bars[("BTCUSDT", "1d")] = [bar(i * 86_400_000, 1, 1, 1, 1 + i) for i in range(20)]
+            self.runner.handle(self._kline("BTCUSDT", "1h", 30 * H, 100))
+            self.assertIn("BTCUSDT", self.runner.principal.positions)
+            self.runner.handle({"data": {"e": "24hrMiniTicker", "s": "BTCUSDT", "c": "103"}})
+        with self.factory() as db:
+            rows = {r.strategy: r for r in db.scalars(select(LabTrade))}
+        self.assertEqual(rows[live.PRINCIPAL].status, "CLOSED")
+        self.assertEqual(rows[live.PRINCIPAL].regime, "always_long")
+        self.assertGreater(rows[live.PRINCIPAL].pnl, 0)
+
+    def test_orphan_positions_of_retired_strategies_get_closed(self):
+        from app.lab import store
+        from app.lab.engine import Account
+
+        old = Account("retired", D("100"))
+        pos = old.open(symbol="BTCUSDT", side="LONG", price=D("100"), stop=D("95"), take_profit=None, ts=1, regime="r")
+        with self.factory() as db:
+            store.load_accounts(db, ["retired"], [D("100")])
+            store.save_open(db, old, pos)
+        self.runner.prices["BTCUSDT"] = D("110")
+        self.assertEqual(self.runner.close_orphans(), 1)
+        with self.factory() as db:
+            row = db.scalars(select(LabTrade)).one()
+        self.assertEqual((row.status, row.reason), ("CLOSED", "retirada"))
+        self.assertGreater(row.pnl, 0)
+
+    def test_losing_streak_pauses_strategy_48h(self):
+        for i in range(10):
+            self.runner._record("x", i >= 5, 1000 + i)  # 5 pérdidas y 5 ganancias
+        self.assertTrue(self.runner.paused("x", 1009 + 3_600_000))
+        self.assertFalse(self.runner.paused("x", 1009 + 49 * 3_600_000))
+        self.assertEqual(self.runner.streak["x"], [])
+
     def test_kill_switch_blocks_new_entries(self):
         with self.factory() as db:
             get_runtime(db).running = False
@@ -204,7 +257,7 @@ class LabApiTests(unittest.TestCase):
             body = self.client.get("/api/lab/live").json()
         self.assertFalse(body["feed"]["connected"])
         self.assertEqual(body["rows"], [])
-        self.assertEqual(len(self.client.get("/api/lab/strategies").json()), 10)
+        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
 
 
 if __name__ == "__main__":

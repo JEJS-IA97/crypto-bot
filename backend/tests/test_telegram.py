@@ -46,6 +46,29 @@ class TelegramTests(unittest.TestCase):
         self.assertEqual(runner.strategies[0].label, "Telegram · Señales VIP")
         self.assertTrue(telegram.apply_signal(-100123, "x", {"symbol": "PEPEUSDT", "side": "LONG", "stop": 1}, runner).startswith("par no seguido"))
 
+    def test_chat_verdicts_mute_by_results_not_promises(self):
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        bad = {"kind": "binaria", "asset": "EUR/USD", "otc": False}
+        with factory() as db:
+            for i in range(12):  # 3 de 12 reales: 25 %
+                db.add(telegram.TelegramSignal(chat_id=-1, chat_title="A", message_id=i, text="x", outcome="binaria",
+                                               parsed={**bad, "verificada": {"result": "gana" if i < 3 else "pierde"}}))
+            for i in range(41):
+                db.add(telegram.TelegramSignal(chat_id=-2, chat_title="B", message_id=i, text="hola", outcome="no es señal"))
+            for i in range(20):
+                db.add(telegram.TelegramSignal(chat_id=-3, chat_title="C", message_id=i, text="x", outcome="binaria",
+                                               parsed={**bad, "otc": True}))
+            db.add(telegram.TelegramSignal(chat_id=-4, chat_title="D", message_id=1, text="x", outcome="abierta",
+                                           parsed={"symbol": "BTCUSDT", "side": "LONG", "stop": 1}))
+            db.commit()
+            verdicts = telegram.chat_verdicts(db, trades=[])
+        self.assertIn("acierto real 25.0", verdicts[-1])
+        self.assertIn("ninguna señal", verdicts[-2])
+        self.assertIn("OTC", verdicts[-3])
+        self.assertNotIn(-4, verdicts)
+
 
 if __name__ == "__main__":
     unittest.main()
