@@ -1,16 +1,37 @@
 [
  {
-  "id": -1002107344934,
-  "title": "📊 José Álvarez | Señales Gratis 📊",
+  "id": -1001753318356,
+  "title": "Cupones Udemy - Aprende Todo GRATIS",
   "kind": "canal",
-  "silenciado": "solo OTC: precio inventado por el broker, imposible de comprobar",
-  "configurado": true
+  "silenciado": null,
+  "configurado": false
  },
  {
   "id": -1002073344572,
   "title": "📊 GUILHERME TRADER - SENALES",
   "kind": "canal",
   "silenciado": null,
+  "configurado": true
+ },
+ {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1003642095241,
+  "title": "Mundo Deportivo",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1002107344934,
+  "title": "📊 José Álvarez | Señales Gratis 📊",
+  "kind": "canal",
+  "silenciado": "solo OTC: precio inventado por el broker, imposible de comprobar",
   "configurado": true
  },
  {
@@ -28,20 +49,6 @@
   "configurado": true
  },
  {
-  "id": -1001753318356,
-  "title": "Cupones Udemy - Aprende Todo GRATIS",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
   "id": -1002076646063,
   "title": "Nelson - Opero en Vivo GRATIS 🎁",
   "kind": "canal",
@@ -54,13 +61,6 @@
   "kind": "canal",
   "silenciado": null,
   "configurado": true
- },
- {
-  "id": -1003642095241,
-  "title": "Mundo Deportivo",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
  },
  {
   "id": -1003694841301,

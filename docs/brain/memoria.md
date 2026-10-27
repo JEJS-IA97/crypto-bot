@@ -92,3 +92,10 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Mine13 (378 días, copiadores +420,861 USD): acierto 78.8 %, payoff 4.99, 61 % largos, 187.1 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
 - BestMax (846 días, copiadores +99,025 USD): acierto 72.0 %, payoff 2.26, 100 % largos, 5.6 h, 20.0x, opera XRP, SOL, PUMP, HYPE.
 - IS.K (183 días, copiadores +24,537 USD): acierto 51.0 %, payoff 1.52, 43 % largos, 19.2 h, 30.0x, opera HYPE, SNDK, ZEC, XRP, CL.
+
+## 2026-10-27 17:55 UTC
+- Observatorio OKX: 10 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 80 %, payoff mediano 1.95, largos 64 %, duración mediana 26.0 h, apalancamiento mediano 20x.
+- Mine13 (378 días, copiadores +420,861 USD): acierto 78.8 %, payoff 4.99, 61 % largos, 187.1 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (846 días, copiadores +99,025 USD): acierto 72.0 %, payoff 2.26, 100 % largos, 5.6 h, 20.0x, opera XRP, SOL, PUMP, HYPE.
+- IS.K (183 días, copiadores +24,537 USD): acierto 51.0 %, payoff 1.52, 43 % largos, 19.2 h, 30.0x, opera HYPE, SNDK, ZEC, XRP, CL.
