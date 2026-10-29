@@ -93,6 +93,9 @@ class LabRunner:
     def restore(self) -> None:
         with self.session_factory() as db:
             self.accounts = store.load_accounts(db, [s.name for s in STRATEGIES], (LIVE_CAPITAL,))
+            for strategy in STRATEGIES:
+                if strategy.fee_rate is not None and (strategy.name, LIVE_CAPITAL) in self.accounts:
+                    self.accounts[(strategy.name, LIVE_CAPITAL)].fee_rate = strategy.fee_rate
             self.accounts.update(store.load_accounts(db, [PRINCIPAL], (self.principal_capital,)))
         self.sync_brain()
 
@@ -353,7 +356,8 @@ class LabRunner:
                 for s in self.strategies if getattr(s, "regime_filter", False) == "bear" and self.btc_ok()
             } | {
                 name: "pausa de 48 h: perdió 5 de sus últimas 10"
-                for name, until in self.paused_until.items() if until > time.time() * 1000
+                for name, until in self.paused_until.items()
+                if until > time.time() * 1000 and name in {s.name for s in self.strategies}
             },
             "regimes": {
                 s: r.labels[-1] if r.labels else "sin datos" for s, r in self.regimes.items()

@@ -182,9 +182,14 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
     rows = db.scalars(select(TelegramSignal).order_by(TelegramSignal.id.desc()).limit(min(limit, 200))).all()
     from app.signals.verify import binance_pair, binance_symbols, channel_score
 
+    from app.signals.bet_tips import channel_bets
+
     channels: dict[str, dict[str, int]] = {}
     verified: dict[str, list[dict]] = {}
+    tips: dict[str, list[dict]] = {}
     for title, parsed in db.execute(select(TelegramSignal.chat_title, TelegramSignal.parsed)):
+        if (parsed or {}).get("kind") == "apuesta":
+            tips.setdefault(title, []).append(parsed)
         if (parsed or {}).get("verificada"):
             verified.setdefault(title, []).append(parsed["verificada"])
         stats = channels.setdefault(title, {"mensajes": 0, "senales": 0, "ganadas": 0, "perdidas": 0})
@@ -199,6 +204,7 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
             stats["perdidas"] += parsed["losses"]
     return {
         "channels": [{"chat": k, **v, **channel_score(verified.get(k, []))} for k, v in sorted(channels.items())],
+        "pronosticos": [{"chat": k, **channel_bets(v)} for k, v in sorted(tips.items())],
         "assets": _assets(db, TelegramSignal, binance_symbols(), binance_pair),
         "configured": bool(settings.telegram_api_id and settings.telegram_api_hash),
         "dialogs": json.loads(CHATS_FILE.read_text(encoding="utf-8")) if CHATS_FILE.exists() else [],

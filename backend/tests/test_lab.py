@@ -257,7 +257,7 @@ class LabApiTests(unittest.TestCase):
             body = self.client.get("/api/lab/live").json()
         self.assertFalse(body["feed"]["connected"])
         self.assertEqual(body["rows"], [])
-        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
+        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
 
 
 if __name__ == "__main__":

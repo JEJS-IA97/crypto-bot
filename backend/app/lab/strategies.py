@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from app.lab import indicators as ind
@@ -26,6 +27,7 @@ class Signal:
 
 
 class Strategy:
+    fee_rate = None  # None = comisión spot; Decimal("0.0002") = futuros con órdenes límite (maker)
     regime_filter = False  # True: solo entra si BTC diario cierra sobre su SMA20 (lo aplica el torneo)
     name = ""
     label = ""
@@ -399,8 +401,69 @@ class Momentum48hShort1h(Strategy):
         return out
 
 
+class Reversal4hFutures(Strategy):
+    """Corto plazo (research/intradia.py, 10 pares, ~1 año de velas de 5 min): tras un movimiento de 4 h
+    mayor a 3 desviaciones, el precio tiende a devolverse en las 4 h siguientes. Con comisión de futuros
+    maker (0,02 %/lado) pasó entreno (+0,05 %/op) y examen (+0,24 %/op, 59 % de acierto, ~1 op/día).
+    Con comisión spot (0,10 %) NO pasa. Paper: largo tras caída fuerte, corto tras subida fuerte."""
+
+    name = "reversion_4h_futuros"
+    label = "Reversión tras movimiento extremo de 4 h (futuros, paper)"
+    timeframe = "1h"
+    warmup = 200
+    max_hold = 4
+    fee_rate = Decimal("0.0002")
+    description = "Si las últimas 4 h se movieron más de 3 desviaciones, opera en contra 4 h. Comisión maker de futuros."
+
+    def signals(self, bars):
+        c = [b.c for b in bars]
+        r4 = [None] * 4 + [c[i] / c[i - 4] - 1 for i in range(4, len(c))]
+        sd = ind.stdev([x or 0.0 for x in r4], 168)
+        a = ind.atr(bars)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(180, len(bars)):
+            if sd[i] is None or r4[i] is None or a[i] is None or sd[i] == 0:
+                continue
+            if r4[i] > 3 * sd[i]:
+                out[i] = Signal("SHORT", c[i] + 4 * a[i], None)  # stop de seguridad lejano; sale a las 4 h
+            elif r4[i] < -3 * sd[i]:
+                out[i] = Signal("LONG", c[i] - 4 * a[i], None)
+        return out
+
+
+class SessionMomentum16(Strategy):
+    """Inspirada en Quantumxx (BingX, el trader que copia José): entradas a hora fija, objetivo corto,
+    ~1 h. Research (research/sesion.py, 10 pares, ~1 año): a las 16:00 UTC, a favor del movimiento de
+    las 4 h previas si fue ≥1 %, TP 0,4 %, stop 1,5 %, máx. 60 min. Comisión de futuros maker:
+    entreno +0,044 %/op (70 % acierto), examen +0,033 %/op (64 %). Ventaja muy fina: paper."""
+
+    name = "sesion_16utc_futuros"
+    label = "Sesión 16:00 UTC a favor de las 4 h previas (futuros, paper)"
+    timeframe = "5m"
+    warmup = 60
+    max_hold = 12
+    fee_rate = Decimal("0.0002")
+    description = "A las 16:00 UTC, si las 4 h previas se movieron ≥1 %, entra a favor. TP 0,4 %, stop 1,5 %, máx. 60 min."
+
+    def signals(self, bars):
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(48, len(bars)):
+            closes_at = datetime.fromtimestamp((bars[i].ts + 300_000) / 1000, tz=timezone.utc)
+            if closes_at.hour != 16 or closes_at.minute != 0:
+                continue
+            c = bars[i].c
+            move = c / bars[i - 47].o - 1
+            if move >= 0.01:
+                out[i] = Signal("LONG", c * 0.985, c * 1.004)
+            elif move <= -0.01:
+                out[i] = Signal("SHORT", c * 1.015, c * 0.996)
+        return out
+
+
 ALL_STRATEGIES: list[Strategy] = [
     BollingerTrend1h(),
+    SessionMomentum16(),
+    Reversal4hFutures(),
     Momentum48hShort1h(),
     Breakout168h1h(),
     Momentum48h1h(),
@@ -417,7 +480,7 @@ ALL_STRATEGIES: list[Strategy] = [
 ]
 # Torneo en vivo: solo las fijas que no perdieron en vivo (2026-10-24, ~240 trades).
 # Las demás quedan en ALL_STRATEGIES para backtest y en el cerebro como "retirada".
-STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto")]
+STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto", "reversion_4h_futuros", "sesion_16utc_futuros")]
 RETIRED = {
     "orb_ny": "PF 0.60 en 10 trades", "orb_ny_trend": "PF 0.95 en 12 trades, comisiones > ganancia",
     "impulse_pullback": "PF 0.60 en 11 trades", "ema_cross": "PF 0.46 en 10 trades",

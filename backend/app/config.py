@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     telegram_api_id: int = 0
     telegram_api_hash: str = ""
     telegram_chats: str = ""
+    # Canales que el bot sigue por su cuenta (pronósticos gratis para medirlos en paper).
+    telegram_join: str = "https://t.me/+dHsbV-4Dw1FhYjNk,https://t.me/+1SjtO2s2ufdjZDI0"
     # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
     brain_graphify_model: str = "gemini-3.8-flash"
     trading_interval_seconds: int = 60

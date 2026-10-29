@@ -28,6 +28,7 @@ from app.database import Base
 from app.lab import live, store
 from app.lab.strategies import Strategy
 from app.models import utc_now
+from app.signals.bet_tips import channel_bets, parse_tip, result_of
 from app.signals.binary import describe, parse_binary
 
 logger = logging.getLogger(__name__)
@@ -139,6 +140,8 @@ def classify(chat_id: int, title: str, text: str) -> tuple[dict | None, str]:
     parsed = parse_signal(text)
     if parsed is None:
         parsed = parse_binary(text)
+        if parsed is None and (tip := parse_tip(text)):
+            return tip, "pronóstico deportivo"
         return parsed, describe(parsed)
     try:
         return parsed, apply_signal(chat_id, title, parsed)
@@ -200,8 +203,20 @@ def chat_verdicts(db, trades=None) -> dict[int, str]:
     for t in trades if trades is not None else store.closed_trades(db):
         if t.strategy.startswith("tg_"):
             pnl.setdefault(t.strategy, []).append(t.pnl)
+    tips: dict[int, list[dict]] = {}
+    for chat_id, parsed in db.execute(select(TelegramSignal.chat_id, TelegramSignal.parsed)):
+        if (parsed or {}).get("kind") == "apuesta":
+            tips.setdefault(chat_id, []).append(parsed)
     out = {}
+    for chat_id, bets in tips.items():
+        b = channel_bets(bets)
+        if b["con_resultado"] >= 30 and (b["roi"] or 0) < 0:
+            out[chat_id] = f"pronósticos: {b['roi']} % de ROI en {b['con_resultado']} con resultado"
+        elif b["picks"] >= 20 and b["sin_reportar"] > b["picks"] / 2:
+            out[chat_id] = f"pronósticos: no reporta el resultado de {b['sin_reportar']} de {b['picks']}"
     for chat_id, s in stats.items():
+        if chat_id in out:
+            continue
         score = channel_score(s["verified"])
         mine = pnl.get(f"tg_{abs(chat_id)}", [])
         if score["comprobadas"] >= 10 and score["acierto_real"] < MIN_HIT_RATE:
@@ -213,6 +228,25 @@ def chat_verdicts(db, trades=None) -> dict[int, str]:
         elif s["msgs"] >= 40 and s["signals"] == 0:
             out[chat_id] = f"{s['msgs']} mensajes y ninguna señal operable"
     return out
+
+
+async def join_channels(client) -> None:
+    """Se une a los canales de TELEGRAM_JOIN (enlaces t.me/+hash o @usuario). Si ya está, no hace nada."""
+    from telethon.errors import UserAlreadyParticipantError
+    from telethon.tl.functions.channels import JoinChannelRequest
+    from telethon.tl.functions.messages import ImportChatInviteRequest
+
+    for link in [x.strip() for x in settings.telegram_join.split(",") if x.strip()]:
+        try:
+            if "/+" in link or "joinchat/" in link:
+                await client(ImportChatInviteRequest(link.rsplit("/", 1)[-1].lstrip("+")))
+            else:
+                await client(JoinChannelRequest(link.rsplit("/", 1)[-1].lstrip("@")))
+            logger.info("telegram: joined %s", link)
+        except UserAlreadyParticipantError:
+            pass
+        except Exception as exc:  # noqa: BLE001 — un enlace vencido no frena el lector
+            logger.warning("telegram: could not join %s (%s)", link, type(exc).__name__)
 
 
 def _chats() -> list[str | int]:
@@ -244,7 +278,19 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
             return
         chat = await event.get_chat()
         title = getattr(chat, "title", None) or getattr(chat, "username", None) or str(event.chat_id)
-        parsed, outcome = classify(event.chat_id, title, event.raw_text or "")
+        text = event.raw_text or ""
+        if event.is_reply and len(text) < 200 and (result := result_of(text)):
+            from sqlalchemy import select
+
+            with database.SessionLocal() as db:  # el canal responde ✅/❌ a su propio pick
+                row = db.scalars(select(TelegramSignal).where(TelegramSignal.chat_id == event.chat_id,
+                                                              TelegramSignal.message_id == event.reply_to_msg_id)).first()
+                if row is not None and (row.parsed or {}).get("kind") == "apuesta" and "resultado" not in row.parsed:
+                    row.parsed = {**row.parsed, "resultado": result}
+                    row.outcome = f"pronóstico {result}"
+                    db.commit()
+                    return
+        parsed, outcome = classify(event.chat_id, title, text)
         if parsed is None and event.chat_id not in configured:
             return  # de grupos nuevos solo se guarda lo que parece señal (privacidad)
         with database.SessionLocal() as db:
@@ -257,6 +303,7 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
         if not await client.is_user_authorized():
             logger.warning("telegram: session expired, run python telegram_login.py")
             return
+        await join_channels(client)
         if live.runner:
             restore_sources(live.runner)
         logger.info("telegram: %s stored messages reclassified", reclassify())
