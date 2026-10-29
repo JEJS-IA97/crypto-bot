@@ -166,3 +166,108 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-10-25 11:56 UTC · Estado: pendiente
 - Por qué: Los modelos de tendencia 1d con medias lentas entre 160 y 180 y rápidas sobre 70 han logrado superar el examen sin sobreajuste.
 - Cómo probarla: Simular un cruce 70/175 en 1d para mantener baja rotación y amortiguar los costes por comisión.
+
+### Pullbacks con confirmación RSI en 4h filtran falsos quiebres en rangos
+- Fecha: 2026-10-27 22:00 UTC · Estado: pendiente
+- Por qué: La configuración EMA 21/89 con RSI en 4h sobrevive al entorno lateral porque exige retroceso y sobreventa relativa antes de comprar, a diferencia del Donchian que compra techos.
+- Cómo probarla: Backtest en 365d de EMA RSI en 4h acotando stop_atr a 2.0 y testeando ratios riesgo/beneficio mayores a 2.0.
+
+### Momentum diario con filtro de retorno mínimo aísla activos con flujo real
+- Fecha: 2026-10-27 22:00 UTC · Estado: pendiente
+- Por qué: Con la mayoría de pares en rango, solo aquellos con retornos acumulados superiores al 7-10 % en 30-50 días poseen suficiente inercia para compensar las comisiones spot.
+- Cómo probarla: Evaluar momentum en 1d con lookback entre 30 y 50 y min_ret >= 0.08 sobre ETH, XRP y BNB.
+
+### Momentum de ciclo intermedio en TF diario filtra el ruido lateral
+- Fecha: 2026-10-28 02:00 UTC · Estado: pendiente
+- Por qué: Un lookback cercano a 30 días en gráfico diario logra capturar tendencias reales como las de XRP/LINK evitando la volatilidad intradía de los rangos.
+- Cómo probarla: Evaluar momentum en 1d con lookback=30 y umbral mínimo de retorno de 0.05 sobre el universo spot.
+
+### Donchian de período largo en 4h reduce falsas entradas en consolidación
+- Fecha: 2026-10-28 02:00 UTC · Estado: pendiente
+- Por qué: Ampliar la ventana de Donchian a 90 períodos exige rupturas más consolidadas, reduciendo trades perdedores en rangos.
+- Cómo probarla: Simular Donchian breakout en 4h con n=90 y un stop ATR holgado de 2.5.
+
+### Reversión a la media en 15m para corregir sub-muestreo
+- Fecha: 2026-10-28 06:00 UTC · Estado: pendiente
+- Por qué: La configuración previa en 1h generó apenas 7 trades; reducir a 15m capturará oscilaciones intradía típicas del régimen de rango sin penalizar en exceso comisiones.
+- Cómo probarla: Backtest de 365 días en Binance spot con rsi_low=28, stop_atr=1.5 y tp_atr=2.2 evaluando un mínimo de 50 operaciones y PF > 1.3.
+
+### EMA + RSI en 1h alineado a la duración mediana de traders líderes (19h)
+- Fecha: 2026-10-28 06:00 UTC · Estado: pendiente
+- Por qué: Los traders más consistentes cierran trades en torno a 19-26h; un filtro EMA/RSI en 1h captura este horizonte temporal mejorando la agilidad frente al 4h.
+- Cómo probarla: Evaluar fast=14, slow=70 en tf 1h contrastando métricas de expectancy y drawdown respecto al modelo de 4h.
+
+### Momentum relativo en 4h sobre activos seleccionados
+- Fecha: 2026-10-28 06:00 UTC · Estado: pendiente
+- Por qué: DOGE, LINK y AVAX mantienen regímenes tendenciales a pesar del letargo de BTC/ETH, haciendo propicio el momentum en 4h con umbral moderado.
+- Cómo probarla: Ejecutar momentum lookback=30 y min_ret=0.06 en 4h filtrando por pares con régimen de tendencia.
+
+### Sistemas EMA+RSI en 4h aprovechan mejor las tendencias con baja volatilidad
+- Fecha: 2026-10-28 10:00 UTC · Estado: pendiente
+- Por qué: El único modelo con retorno positivo constante en el ranking vivo es EMA 21/89 + RSI en 4h, filtrando entradas falsas.
+- Cómo probarla: Evaluar la combinación de cruces de medias móviles rápidas/lentas con filtro RSI en timeframes de 4h con parámetros de TP moderados.
+
+### Filtros Donchian en 1h con TP ajustado capturan micro-tendencias sin sobreexposición
+- Fecha: 2026-10-28 10:00 UTC · Estado: pendiente
+- Por qué: Reducir la ventana N a 40 períodos en 1h permite entrar antes que en 4h evitando fallas por bajo volumen.
+- Cómo probarla: Correr backtest de Donchian 1h con N=40 y ratio R:R de 1:2.
+
+### Reversión a la media con RSI extremo en 15m
+- Fecha: 2026-10-28 14:00 UTC · Estado: pendiente
+- Por qué: Dado el régimen de rango predominante, capturar agotamientos en niveles extremos de RSI (<=20) con stops ceñidos puede capturar rebotes sin quedar atrapado en tendencias falsas.
+- Cómo probarla: Validar backtest en 15m exigiendo rsi_low=20 y ratio beneficio/riesgo prudente (1.2 stop / 2.0 tp).
+
+### Canales Donchian más estrechos con R/R moderado
+- Fecha: 2026-10-28 14:00 UTC · Estado: pendiente
+- Por qué: Los canales largos (90 periodos) fallaron por tardíos. Un canal de 30 periodos en 4h puede capturar pequeños micro-impulsos dentro del rango.
+- Cómo probarla: Evaluar Donchian n=30 en 4h comprobando si reduce el impacto de las tarifas y mejora el PF.
+
+### Filtro de momentum con umbral elevado en 4h
+- Fecha: 2026-10-28 18:00 UTC · Estado: pendiente
+- Por qué: Los mercados en rango penalizan las rupturas débiles; exigir mayor aceleración reduce operaciones falsas.
+- Cómo probarla: Implementar familia momentum en tf 4h con min_ret superior a 0.08 y lookback medio.
+
+### Optimización de medias móviles rápidas con control ATR
+- Fecha: 2026-10-28 18:00 UTC · Estado: pendiente
+- Por qué: La combinación de cruces con stop loss dinámico basado en volatilidad protege el capital en rangos estrechos.
+- Cómo probarla: Probar la familia ema_rsi en tf 4h ajustando fast/slow hacia la zona validada por el éxito previo.
+
+### Filtro RSI en TF de 4h reduce falsas rupturas en mercados laterales
+- Fecha: 2026-10-28 22:00 UTC · Estado: pendiente
+- Por qué: La estrategia líder en vivo (EMA 21/89 + RSI 4h) demuestra que exigiéndole confirmación de impulso al RSI se evitan entradas durante rangos estrechos.
+- Cómo probarla: Evaluar una variante de ema_rsi con TF 4h, parámetros intermedios y una relación riesgo-beneficio de al menos 1:2.
+
+### Momentum diario con lookback amplio aísla activos con tendencia real
+- Fecha: 2026-10-28 22:00 UTC · Estado: pendiente
+- Por qué: El momentum en 4h falla constantemente por el ruido intradía, pero una ventana más amplia en 1d captura movimientos sostenidos como el de LTC.
+- Cómo probarla: Probar momentum en 1d con lookback de 40 días y filtro de retorno mínimo del 8%.
+
+### Filtro RSI en TF medio atenúa falsas entradas en rango
+- Fecha: 2026-10-29 02:00 UTC · Estado: pendiente
+- Por qué: Las medias móviles por sí solas compran techos localmente en mercados en rango. Exigir RSI en zona óptima reduce operaciones perdedoras.
+- Cómo probarla: Evaluar la familia ema_rsi en TF 4h ajustando parámetros de medias moderadas (15/75).
+
+### Migración de Reversión a 1h para reducir impacto de comisiones
+- Fecha: 2026-10-29 02:00 UTC · Estado: pendiente
+- Por qué: En 15m el ruido genera demasiadas señales falsas y pocos trades limpios tras fees. En 1h la relación riesgo/beneficio es más estable.
+- Cómo probarla: Probar reversión con rsi_low en 25 en timeframe 1h con Take Profit holgado.
+
+### Momentum diario calibrado a menor umbral supera el umbral de rentabilidad
+- Fecha: 2026-10-29 10:56 UTC · Estado: pendiente
+- Por qué: El momentum 1d previo (lookback 40, min_ret 0.08) obtuvo PF 0.97. Reducir ligeramente el filtro de retorno exigido a 0.04 y acortar el lookback a 30 días permitirá capturar giros con menor retraso evitando los falsos quiebres intradía.
+- Cómo probarla: Entrenar momentum en 1d con lookback 30 y min_ret 0.04 evaluando si el PF supera 1.20 con al menos 15 trades históricos.
+
+### Filtro RSI en 1h con stop amplio sobrevive al régimen de rango y volatilidad
+- Fecha: 2026-10-29 10:56 UTC · Estado: pendiente
+- Por qué: Dado el éxito vivo del modelo EMA/RSI en 4h, trasladar la lógica a 1h con stop_atr de 2.5 y tp_atr de 5.0 generará mayor frecuencia estadística sin quedar atrapado en el ruido de 15m.
+- Cómo probarla: Comparar métricas en entrenamiento de ema_rsi 1h (13/65) contra el benchmark de 4h exigiendo factor de beneficio > 1.3.
+
+### Filtro oscilatorio RSI previene trampas de mercado lateral en cruces EMA
+- Fecha: 2026-10-29 14:56 UTC · Estado: pendiente
+- Por qué: La estrategia EMA 21/89 + RSI en 4h es la única con retorno positivo constante en el torneo en vivo mientras las demás fallan.
+- Cómo probarla: Validar variantes de cruces EMA en temporalidad 4h combinados con exigencias de RSI en sobreventa/impulso y objetivos de ganancia holgados en ATR.
+
+### Reversión extrema en 15m supera el problema de baja frecuencia de trades
+- Fecha: 2026-10-29 14:56 UTC · Estado: pendiente
+- Por qué: La idea previa de reversión en 1h fue rechazada por realizar solo 7 operaciones; reducir el timeframe a 15m debería aumentar la muestra manteniendo la ventaja en rangos.
+- Cómo probarla: Evaluar una estrategia de reversión en 15m con RSI muy bajo (< 20) sobre pares en rango de alta volatilidad como BNB, LINK o LTC.

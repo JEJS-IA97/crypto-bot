@@ -1,4 +1,4 @@
-import { getBets } from "../../api/lab";
+import { getBets, getTelegram } from "../../api/lab";
 import { signed, tone } from "./fmt";
 import usePoll from "./usePoll";
 
@@ -6,6 +6,8 @@ const STATE = { abierta: "", ganada: "up", perdida: "down", nula: "" };
 
 function BetsView() {
     const { data, error } = usePoll(getBets, 60000);
+    const { data: tg } = usePoll(getTelegram, 120000);
+    const tipsters = tg?.pronosticos || [];
     return (
         <main className="bets-view">
             <section className="panel">
@@ -47,6 +49,45 @@ function BetsView() {
                         ))}
                     </tbody>
                 </table>
+            </section>
+            <section className="panel">
+                <h2>Pronosticadores de Telegram · seguimiento (1 unidad por pick)</h2>
+                <p className="note">
+                    El bot guarda cada pick antes del partido y toma el resultado que el propio canal responde (✅/❌).
+                    "Sin reportar" alto = el canal esconde sus fallos. Un canal se silencia solo si pierde tras 30 picks
+                    o si no reporta más de la mitad.
+                </p>
+                {!tipsters.length && <p className="note">Todavía no llegaron pronósticos.</p>}
+                {!!tipsters.length && (
+                    <table className="grid">
+                        <thead>
+                            <tr>
+                                <th>Canal</th>
+                                <th className="r">Picks</th>
+                                <th className="r">Con resultado</th>
+                                <th className="r">Sin reportar</th>
+                                <th className="r">Acierto %</th>
+                                <th className="r">Cuota media</th>
+                                <th className="r">Unidades</th>
+                                <th className="r">ROI %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tipsters.map((t) => (
+                                <tr key={t.chat}>
+                                    <td>{t.chat}</td>
+                                    <td className="r num">{t.picks}</td>
+                                    <td className="r num">{t.con_resultado}</td>
+                                    <td className="r num">{t.sin_reportar}</td>
+                                    <td className="r num">{t.acierto ?? "—"}</td>
+                                    <td className="r num">{t.cuota_media ?? "—"}</td>
+                                    <td className={`r num ${tone(t.unidades)}`}>{signed(t.unidades)}</td>
+                                    <td className={`r num ${tone(t.roi)}`}>{t.roi ?? "—"}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </section>
             <section className="panel">
                 <h2>Últimas apuestas</h2>

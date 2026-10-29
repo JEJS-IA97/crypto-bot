@@ -89,6 +89,7 @@ class Account:
     positions: dict[str, Position] = field(default_factory=dict)
     trades: list[Trade] = field(default_factory=list)
     skipped: int = 0
+    fee_rate: Decimal = FEE_RATE  # spot 0,10 %; las de futuros simulan maker 0,02 %
 
     def __post_init__(self) -> None:
         if not self.cash:
@@ -127,13 +128,13 @@ class Account:
             # Binance (con 20 USD el 25 % no llega a 5 USD).
             budget = max(self.equity(prices) * STOPLESS_ALLOCATION, MIN_NOTIONAL * Decimal("1.01"))
             qty = budget / entry
-        max_qty = self.cash / (entry * (1 + FEE_RATE))
+        max_qty = self.cash / (entry * (1 + self.fee_rate))
         qty = min(qty, max_qty).quantize(QTY_PLACES, rounding=ROUND_DOWN)
         notional = qty * entry
         if notional < MIN_NOTIONAL:
             self.skipped += 1
             return None
-        fee = notional * FEE_RATE
+        fee = notional * self.fee_rate
         self.cash -= notional + fee
         position = Position(
             symbol=symbol,
@@ -161,7 +162,7 @@ class Account:
         else:
             exit_price = price * (1 + SLIPPAGE)
             gross = position.notional + position.qty * (position.entry - exit_price)
-        exit_fee = position.qty * exit_price * FEE_RATE
+        exit_fee = position.qty * exit_price * self.fee_rate
         proceeds = gross - exit_fee
         self.cash += proceeds
         pnl = proceeds - position.notional - position.entry_fee

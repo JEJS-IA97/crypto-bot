@@ -1,19 +1,5 @@
 [
  {
-  "id": -1002079856682,
-  "title": "Sofia Market Analysis 💘",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1001753318356,
-  "title": "Cupones Udemy - Aprende Todo GRATIS",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
   "id": -1001227529558,
   "title": "Cupones y Cursos Gratis",
   "kind": "canal",
@@ -21,29 +7,22 @@
   "configurado": false
  },
  {
+  "id": -1002107344934,
+  "title": "📊 José Álvarez | Señales Gratis 📊",
+  "kind": "canal",
+  "silenciado": "solo OTC: precio inventado por el broker, imposible de comprobar",
+  "configurado": true
+ },
+ {
   "id": -1002073344572,
   "title": "📊 GUILHERME TRADER - SENALES",
   "kind": "canal",
-  "silenciado": null,
+  "silenciado": "solo OTC: precio inventado por el broker, imposible de comprobar",
   "configurado": true
  },
  {
   "id": -1004313945352,
   "title": "ARTHUR TRADER 📊",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1002037853278,
-  "title": "📊 ELITE - EQUIPO DE TRADERS",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1002107344934,
-  "title": "📊 José Álvarez | Señales Gratis 📊",
   "kind": "canal",
   "silenciado": "solo OTC: precio inventado por el broker, imposible de comprobar",
   "configurado": true
@@ -56,11 +35,25 @@
   "configurado": true
  },
  {
-  "id": -1003642095241,
-  "title": "Mundo Deportivo",
+  "id": -1001196272579,
+  "title": "TopTradingSignals(Best Forex & Gold Signals)",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
+ },
+ {
+  "id": -1001753318356,
+  "title": "Cupones Udemy - Aprende Todo GRATIS",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
+ },
+ {
+  "id": -1002079856682,
+  "title": "Sofia Market Analysis 💘",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
  },
  {
   "id": -1002076646063,
@@ -68,6 +61,34 @@
   "kind": "canal",
   "silenciado": null,
   "configurado": true
+ },
+ {
+  "id": -1003642095241,
+  "title": "Mundo Deportivo",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1002037853278,
+  "title": "📊 ELITE - EQUIPO DE TRADERS",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
+ },
+ {
+  "id": -1001683083792,
+  "title": "👑MURALLA Resumen De Academia👑",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
+ },
+ {
+  "id": -1002063753004,
+  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
+  "kind": "grupo",
+  "silenciado": null,
+  "configurado": false
  },
  {
   "id": -1003694841301,
@@ -84,25 +105,11 @@
   "configurado": false
  },
  {
-  "id": -1001196272579,
-  "title": "TopTradingSignals(Best Forex & Gold Signals)",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1002063753004,
-  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
+  "id": -1001239614102,
+  "title": "Mayami",
   "kind": "grupo",
   "silenciado": null,
   "configurado": false
- },
- {
-  "id": -1001683083792,
-  "title": "👑MURALLA Resumen De Academia👑",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
  },
  {
   "id": -1003695960484,
@@ -115,13 +122,6 @@
   "id": -1002014276394,
   "title": "Sandreke | Data & Programación 👨‍💻",
   "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1001239614102,
-  "title": "Mayami",
-  "kind": "grupo",
   "silenciado": null,
   "configurado": false
  },

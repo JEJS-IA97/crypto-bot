@@ -33,7 +33,7 @@ from app.models import utc_now
 
 logger = logging.getLogger(__name__)
 
-FD = "https://www.football-data.co.uk"
+FD = "https://football-data.co.uk"  # www redirige (302)
 ODDS = "https://api.the-odds-api.com/v4"
 ODDS_SPORTS = ("soccer_brazil_campeonato", "soccer_argentina_primera_division", "basketball_nba")
 # Plan gratis: 500 créditos/mes. Buscar cada 12 h (3 créditos) y liquidar cada 24 h (≤6) ≈ 360/mes.
@@ -153,7 +153,8 @@ def parlays(favs: list[tuple[str, dict]]) -> list[dict]:
 # --- fútbol europeo (football-data) -------------------------------------------------------
 
 def _csv(client, path: str) -> list[dict]:
-    response = client.get(FD + path, timeout=30, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    response = client.get(FD + path, timeout=30, follow_redirects=True,
+                          headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
     if response.status_code != 200:
         logger.warning("bets: %s -> HTTP %s", path, response.status_code)
         return []
@@ -338,13 +339,17 @@ def run_once(session_factory=None) -> dict:
 
 
 async def bets_loop(stop_event: asyncio.Event) -> None:
-    """Cada 6 h: busca apuestas de las próximas 48 h y liquida las terminadas."""
+    """Cada 6 h de reloj (aunque la PC se haya suspendido): busca apuestas de las próximas 48 h y liquida."""
+    last: datetime | None = None
     while not stop_event.is_set():
+        now = datetime.now(timezone.utc)
+        if last is None or now - last >= timedelta(hours=6):
+            last = now
+            try:
+                logger.info("bets: %s", await asyncio.to_thread(run_once))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("bets: cycle failed (%s)", exc)
         try:
-            logger.info("bets: %s", await asyncio.to_thread(run_once))
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("bets: cycle failed (%s)", exc)
-        try:
-            await asyncio.wait_for(stop_event.wait(), timeout=6 * 3600)
+            await asyncio.wait_for(stop_event.wait(), timeout=900)
         except TimeoutError:
             pass
