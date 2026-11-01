@@ -1,5 +1,12 @@
 [
  {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1001753318356,
   "title": "Cupones Udemy - Aprende Todo GRATIS",
   "kind": "canal",
@@ -7,8 +14,8 @@
   "configurado": false
  },
  {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
+  "id": -1003642095241,
+  "title": "Mundo Deportivo",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
@@ -30,13 +37,6 @@
  {
   "id": -1003694841301,
   "title": "Trabajo Remoto - Empleoverse 🌎",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1003642095241,
-  "title": "Mundo Deportivo",
   "kind": "canal",
   "silenciado": null,
   "configurado": false

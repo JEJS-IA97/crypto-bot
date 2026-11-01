@@ -446,3 +446,13 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-11-01 09:29 UTC · Estado: pendiente
 - Por qué: Un canal Donchian de período largo (n=60 en 4h) captura solo impulsos estructurales reales, ignorando variaciones de baja volatilidad.
 - Cómo probarla: Correr backtest de donchian 4h con n=60, stop_atr=2.5 y tp_atr=5.0 en los activos de mayor volatilidad relativa.
+
+### Filtro de temporalidad 4h para tendencia
+- Fecha: 2026-11-01 13:38 UTC · Estado: pendiente
+- Por qué: Las tendencias en 1d reaccionan demasiado tarde al rango actual mientras que 1h produce señales falsas; 4h equilibra la duración de trade (~40h) observada en perfiles ganadores.
+- Cómo probarla: Evaluar cruce EMA en 4h con parámetros de suavizado medio (25/100) en activos con volumen como BTC y ETH.
+
+### Extremos de sobreventa en marcos intradiarios
+- Fecha: 2026-11-01 13:38 UTC · Estado: pendiente
+- Por qué: En rangos de baja volatilidad, las reversiones solo superan el umbral de tarifas si el RSI baja a niveles extremos (<25) con ratio beneficio/riesgo mayor a 1.5.
+- Cómo probarla: Backtest de RSI < 20 en 15m con stop_atr holgado de 2.0 y objetivo de 3.0 ATR.

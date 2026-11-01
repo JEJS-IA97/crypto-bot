@@ -12,6 +12,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
+from app.api.cache import swr
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -86,6 +87,7 @@ def start_bot(
 
 
 @router.get("/status")
+@swr(5)
 def bot_status(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Estado para el panel: fase, kill switch, breaker y bloqueos (RF-18)."""
     runtime = get_runtime(db)
@@ -109,6 +111,7 @@ _ACTION_TEXT = {
 
 
 @router.get("/trend")
+@swr(10)
 def trend_status(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Qué hará el bot hoy: señal de tendencia diaria por par y su posición."""
     now = utc_now()
