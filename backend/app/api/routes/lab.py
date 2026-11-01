@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.api.cache import swr
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/api/lab", tags=["Laboratorio"])
 
 
 @router.get("/strategies")
+@swr(600)
 def strategies() -> list[dict[str, Any]]:
     strategies = getattr(live.runner, "strategies", None) or STRATEGIES
     return [
@@ -33,6 +35,7 @@ def strategies() -> list[dict[str, Any]]:
 
 
 @router.get("/backtest")
+@swr(600)
 def backtest() -> dict[str, Any]:
     path = Path(REPORT_JSON)
     if not path.exists():
@@ -81,6 +84,7 @@ def _balances(db: Session, rows: list[dict[str, Any]], principal: dict[str, Any]
 
 
 @router.get("/live")
+@swr(5)
 def live_board(db: Session = Depends(get_db)) -> dict[str, Any]:
     runner = live.runner
     rows = store.leaderboard(db, labels())
@@ -97,6 +101,7 @@ def live_board(db: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.get("/trades")
+@swr(10)
 def trades(limit: int = 50, symbol: str | None = None, db: Session = Depends(get_db)) -> list[dict[str, Any]]:
     query = select(LabTrade).order_by(LabTrade.id.desc()).limit(min(limit, 500))
     if symbol:
@@ -141,6 +146,7 @@ def candles(symbol: str = "BTCUSDT", tf: str = "1h", limit: int = 300) -> dict[s
 
 
 @router.get("/brain")
+@swr(60)
 def brain(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Lo que el cerebro probó, aprobó, retiró y lo que recuerda."""
     rows = db.scalars(select(evolve.BrainGenome).order_by(evolve.BrainGenome.id.desc())).all()
@@ -175,6 +181,7 @@ def brain(db: Session = Depends(get_db)) -> dict[str, Any]:
 
 
 @router.get("/telegram")
+@swr(30)
 def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Últimos mensajes leídos de tus grupos y qué hizo el bot con cada uno."""
     from app.signals.telegram import CHATS_FILE, TelegramSignal
@@ -230,6 +237,7 @@ def _assets(db: Session, model, symbols: set[str], to_pair) -> list[dict[str, An
 
 
 @router.get("/okx")
+@swr(300)
 def okx_traders() -> dict[str, Any]:
     """Observatorio de traders de OKX con ≥180 días: estilo, resultado y lo que ganan sus copiadores."""
     from app.signals.okx_watch import OUT
@@ -272,6 +280,7 @@ def market_pair(symbol: str) -> dict[str, Any]:
 
 
 @router.get("/bingx")
+@swr(300)
 def bingx_trades() -> dict[str, Any]:
     """Tus posiciones cerradas en BingX (clave de solo lectura) y su estilo."""
     from app.signals.bingx_watch import OUT
@@ -280,6 +289,7 @@ def bingx_trades() -> dict[str, Any]:
 
 
 @router.get("/bets")
+@swr(30)
 def bets(limit: int = 60, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Apuestas en paper: resumen por estrategia y últimas apuestas."""
     from app.bets.engine import BetPick, summary

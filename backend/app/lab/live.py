@@ -167,19 +167,28 @@ class LabRunner:
         return opened
 
     def seed(self) -> None:
+        """Carga el historial de velas en paralelo (en serie tardaba ~2 min tras cada reinicio)."""
+        from concurrent.futures import ThreadPoolExecutor
+
         now_ms = int(time.time() * 1000)
+
+        def load(job: tuple[str, str]) -> None:
+            symbol, tf = job
+            candles = self.market.get_klines(symbol, interval=tf, limit=HISTORY)
+            tf_ms = TF_MINUTES[tf] * 60_000
+            bars = [
+                Bar(
+                    int(c.open_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
+                    float(c.open), float(c.high), float(c.low), float(c.close), float(c.volume),
+                )
+                for c in candles
+            ]
+            self.bars[(symbol, tf)] = [b for b in bars if b.ts + tf_ms <= now_ms]
+
+        jobs = [(s, tf) for s in self.symbols for tf in self.timeframes]
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(load, jobs))  # una falla se propaga como antes (reintenta el bucle)
         for symbol in self.symbols:
-            for tf in self.timeframes:
-                candles = self.market.get_klines(symbol, interval=tf, limit=HISTORY)
-                tf_ms = TF_MINUTES[tf] * 60_000
-                bars = [
-                    Bar(
-                        int(c.open_time.replace(tzinfo=timezone.utc).timestamp() * 1000),
-                        float(c.open), float(c.high), float(c.low), float(c.close), float(c.volume),
-                    )
-                    for c in candles
-                ]
-                self.bars[(symbol, tf)] = [b for b in bars if b.ts + tf_ms <= now_ms]
             hourly = self.bars.get((symbol, "1h"), [])
             self.regimes[symbol] = RegimeLookup(hourly)
             if hourly:

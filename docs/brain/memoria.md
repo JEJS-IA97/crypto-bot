@@ -369,3 +369,23 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
 - BestMax (851 días, copiadores +104,527 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
 - IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-01 13:38 UTC
+- Idea de Gemini rechazada, tendencia 4h · 25 / 100: no gana en entrenamiento (PF 0.59).
+- Idea de Gemini rechazada, donchian 4h · 60 / 3.0 / 6.0: no gana en entrenamiento (PF 0.62).
+- Idea de Gemini rechazada, reversion 15m · 20 / 2.0 / 3.0: pocas operaciones en entrenamiento (10).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 2%, momentum 4%, reversion 2%.
+
+## 2026-11-01 14:00 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.67, largos 44 %, duración mediana 42.6 h, apalancamiento mediano 20x.
+- Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (851 días, copiadores +104,527 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-01 14:05 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.67, largos 44 %, duración mediana 42.6 h, apalancamiento mediano 20x.
+- Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (851 días, copiadores +104,527 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
