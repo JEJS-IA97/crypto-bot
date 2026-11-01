@@ -202,3 +202,170 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Idea de Gemini rechazada, reversion 15m · 20 / 1.5 / 2.5: pocas operaciones en entrenamiento (4).
 - Idea de Gemini rechazada, donchian 4h · 30 / 2.0 / 4.0: no gana en entrenamiento (PF 0.32).
 - Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 8%, donchian 3%, ema_rsi 3%, momentum 6%, reversion 3%.
+
+## 2026-10-29 15:32 UTC
+- Observatorio OKX: 10 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 83 %, payoff mediano 2.45, largos 55 %, duración mediana 26.6 h, apalancamiento mediano 20x.
+- Mine13 (380 días, copiadores +421,091 USD): acierto 75.0 %, payoff 5.42, 54 % largos, 236.6 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- xiaojian888999 (218 días, copiadores +64,228 USD): acierto 85.0 %, payoff 1.39, 29 % largos, 20.3 h, 10.0x, opera BTC, ETH, CL, SNDK, CRCL.
+- IS.K (185 días, copiadores +25,539 USD): acierto 52.0 %, payoff 1.51, 44 % largos, 20.4 h, 30.0x, opera HYPE, SNDK, ZEC, XRP, CL.
+
+## 2026-10-29 18:56 UTC
+- Idea de Gemini rechazada, reversion 1h · 30 / 1.5 / 3.0: no gana en entrenamiento (PF 0.59).
+- Idea de Gemini rechazada, momentum 4h · 12 / 0.03: no gana en entrenamiento (PF 0.52).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 3%, ema_rsi 3%, momentum 5%, reversion 3%.
+
+## 2026-10-30 01:27 UTC
+- Idea de Gemini rechazada, tendencia 4h · 20 / 80: no gana en entrenamiento (PF 0.41).
+- Idea de Gemini rechazada, momentum 1d · 14 / 0.08: no gana en entrenamiento (PF 0.55).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 3%, ema_rsi 3%, momentum 5%, reversion 3%.
+
+## 2026-10-30 03:33 UTC
+- Observatorio OKX: 10 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 79 %, payoff mediano 2.18, largos 61 %, duración mediana 26.0 h, apalancamiento mediano 25x.
+- Mine13 (380 días, copiadores +459,480 USD): acierto 76.7 %, payoff 5.72, 50 % largos, 241.9 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (848 días, copiadores +101,598 USD): acierto 74.0 %, payoff 1.83, 100 % largos, 1.1 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (185 días, copiadores +26,635 USD): acierto 51.0 %, payoff 1.58, 47 % largos, 19.2 h, 30.0x, opera HYPE, SNDK, ZEC, XRP, CL.
+
+## 2026-10-30 05:27 UTC
+- Idea de Gemini rechazada, reversion 1h · 25 / 2.0 / 3.5: pocas operaciones en entrenamiento (7).
+- Idea de Gemini rechazada, momentum 4h · 24 / 0.05: no gana en entrenamiento (PF 0.27).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 3%, ema_rsi 3%, momentum 5%, reversion 3%.
+
+## 2026-10-30 09:27 UTC
+- Idea de Gemini rechazada, donchian 1h · 80 / 2.5 / 5.0: no gana en entrenamiento (PF 0.72).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 3%, ema_rsi 2%, momentum 5%, reversion 3%.
+
+## 2026-10-30 13:27 UTC
+- Idea de Gemini rechazada, reversion 1h · 32 / 1.8 / 2.5: no gana en entrenamiento (PF 0.54).
+- Idea de Gemini rechazada, tendencia 1d · 30 / 120: ya hay 2 tendencia 1d vivas (no diversifica).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 3%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-30 15:30 UTC
+- Observatorio OKX: 10 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 79 %, payoff mediano 2.70, largos 52 %, duración mediana 31.4 h, apalancamiento mediano 25x.
+- Mine13 (381 días, copiadores +459,223 USD): acierto 78.8 %, payoff 5.88, 45 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (849 días, copiadores +104,233 USD): acierto 67.0 %, payoff 1.67, 100 % largos, 1.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (186 días, copiadores +44,304 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-30 17:27 UTC
+- evo_tendencia_1d_59_162 ahora opera solo en BNBUSDT.
+- evo_tendencia_1d_85_168 ahora opera solo en BNBUSDT.
+- evo_momentum_1d_42_0p05 ahora opera solo en LINKUSDT.
+- Retirada evo_momentum_1d_51_0p09: no pasó el re-examen: no gana en entrenamiento (PF 0.95).
+- Idea de Gemini rechazada, donchian 4h · 40 / 2.0 / 5.0: no gana en entrenamiento (PF 0.64).
+- Idea de Gemini rechazada, tendencia 4h · 15 / 60: no gana en entrenamiento (PF 0.87).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-30 21:27 UTC
+- Idea de Gemini rechazada, ema_rsi 4h · 12 / 75 / 2.5 / 4.5: no gana en entrenamiento (PF 0.86).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 7%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-31 00:22 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (381 días, copiadores +504,932 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (849 días, copiadores +104,560 USD): acierto 66.0 %, payoff 1.74, 100 % largos, 1.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (186 días, copiadores +43,746 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-31 01:27 UTC
+- evo_tendencia_1d_85_168 ahora opera solo en BNBUSDT, NEARUSDT.
+- Idea de Gemini rechazada, ema_rsi 4h · 16 / 96 / 2.0 / 4.0: no gana en entrenamiento (PF 0.77).
+- Aprobada (mutación) momentum 1d · 38 / 0.05: examen +19.01 USD, PF 1.78, 19 trades · opera solo en ADA, BNB, ETH, ZEC. Entra al torneo en vivo con 100 USD.
+- Probé 10 estrategias nuevas, aprobaron 1. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 6%, reversion 2%.
+
+## 2026-10-31 05:27 UTC
+- Idea de Gemini rechazada, donchian 4h · 60 / 2.5 / 5.0: no gana en entrenamiento (PF 0.61).
+- Idea de Gemini rechazada, ema_rsi 4h · 20 / 100 / 2.0 / 4.0: no gana en entrenamiento (PF 0.74).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 6%, reversion 2%.
+
+## 2026-10-31 09:27 UTC
+- Idea de Gemini rechazada, reversion 15m · 25 / 1.5 / 2.5: no gana en entrenamiento (PF 0.43).
+- Idea de Gemini rechazada, ema_rsi 1h · 12 / 75 / 2.0 / 3.5: no gana en entrenamiento (PF 0.7).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 6%, reversion 2%.
+
+## 2026-10-31 12:23 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (382 días, copiadores +504,672 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (850 días, copiadores +104,567 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (187 días, copiadores +43,743 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-31 13:27 UTC
+- Idea de Gemini rechazada, momentum 4h · 48 / 0.08: no gana en entrenamiento (PF 0.61).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-31 17:27 UTC
+- Idea de Gemini rechazada, momentum 4h · 40 / 0.08: no gana en entrenamiento (PF 0.47).
+- Idea de Gemini rechazada, reversion 1h · 20 / 2.0 / 3.0: pocas operaciones en entrenamiento (2).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-31 20:49 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (382 días, copiadores +504,669 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (850 días, copiadores +104,556 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (187 días, copiadores +43,739 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-31 21:28 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (382 días, copiadores +504,669 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (850 días, copiadores +104,556 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (187 días, copiadores +43,739 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-31 21:29 UTC
+- Idea de Gemini rechazada, reversion 1h · 30 / 1.5 / 2.5: no gana en entrenamiento (PF 0.67).
+- Idea de Gemini rechazada, tendencia 4h · 24 / 72: no gana en entrenamiento (PF 0.65).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-10-31 22:13 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (382 días, copiadores +504,669 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (850 días, copiadores +104,556 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (187 días, copiadores +43,739 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-10-31 22:42 UTC
+- Observatorio OKX: 9 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 77 %, payoff mediano 2.57, largos 47 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (382 días, copiadores +504,669 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (850 días, copiadores +104,556 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (187 días, copiadores +43,739 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-01 01:29 UTC
+- Idea de Gemini rechazada, ema_rsi 4h · 12 / 50 / 2.0 / 4.0: no gana en entrenamiento (PF 0.61).
+- Idea de Gemini rechazada, reversion 1h · 25 / 1.5 / 2.5: no gana en entrenamiento (PF 0.55).
+- Idea de Gemini rechazada, tendencia 1d · 20 / 100: ya hay 2 tendencia 1d vivas (no diversifica).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-11-01 05:29 UTC
+- Idea de Gemini rechazada, ema_rsi 4h · 12 / 75 / 2.0 / 3.5: no gana en entrenamiento (PF 0.78).
+- Idea de Gemini rechazada, momentum 4h · 14 / 0.03: no gana en entrenamiento (PF 0.77).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 6%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-11-01 09:29 UTC
+- Idea de Gemini rechazada, momentum 1d · 20 / 0.05: no gana en entrenamiento (PF 0.88).
+- Idea de Gemini rechazada, ema_rsi 1h · 21 / 89 / 2.0 / 4.0: no gana en entrenamiento (PF 0.62).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 2%, momentum 4%, reversion 2%.
+
+## 2026-11-01 10:43 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.67, largos 44 %, duración mediana 42.6 h, apalancamiento mediano 20x.
+- Mine13 (383 días, copiadores +504,658 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (851 días, copiadores +104,534 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-01 13:33 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.67, largos 44 %, duración mediana 42.6 h, apalancamiento mediano 20x.
+- Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (851 días, copiadores +104,534 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-01 13:37 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.67, largos 44 %, duración mediana 42.6 h, apalancamiento mediano 20x.
+- Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
+- BestMax (851 días, copiadores +104,527 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.

@@ -177,6 +177,8 @@ class LiveRunnerTests(unittest.TestCase):
         dupes = [t("c", "LONG", 1, 0)] * 6  # la misma operación en 3 cuentas no cuenta 3 veces
         self.assertEqual(live.champions(winners + shorts + dupes, set()), {"a"})
         self.assertEqual(live.champions(winners, {"a"}), set())
+        both = [t("rev_futuros", "SHORT", 2, i) for i in range(3)] + [t("rev_futuros", "LONG", 1, i + 10) for i in range(2)]
+        self.assertEqual(live.champions(both, set()), {"rev_futuros"})  # futuros: cuentan ambos lados
 
         with patch.object(live, "STRATEGIES", [AlwaysLong()]), patch.object(live.context, "macro_blackout", lambda: None):
             self.runner.strategies = [AlwaysLong()]
@@ -262,3 +264,19 @@ class LabApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PairViewTests(unittest.TestCase):
+    def test_pair_view_and_activity(self):
+        from app.lab.bars import Bar
+
+        runner = live.LabRunner(session_factory=lambda: None, market=object())
+        bars = [Bar(i * 3_600_000, 100 + i % 7, 101 + i % 7, 99 + i % 7, 100 + i % 7, 1) for i in range(400)]
+        runner.bars[("BTCUSDT", "1h")] = bars
+        runner.prices["BTCUSDT"] = D("103")
+        view = runner.pair_view("BTCUSDT")
+        self.assertEqual(view["par"], "BTCUSDT")
+        self.assertIn("movimiento_4h_sigma", view)
+        self.assertTrue(all("estado" in v for v in view["estrategias"]))
+        runner.note("abre", "x abrió LONG", "BTCUSDT")
+        self.assertEqual(runner.activity[0]["tipo"], "abre")

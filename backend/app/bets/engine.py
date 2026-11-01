@@ -30,6 +30,7 @@ from app import database
 from app.config import settings
 from app.database import Base
 from app.models import utc_now
+from app.bets import safe
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,11 @@ STRATEGIES = {
     "valor": "Valor: la mejor cuota paga ≥2 % más que la cuota justa (cuota ≤3)",
     "favorito_130": "Control: favorito 'seguro' (cuota ≤1,30) a cuota media",
     "parley3_130": "Control: parley de 3 favoritos ≤1,30",
+    "seguro": "Seguras (goles, córners, tarjetas, faltas, marca) con prob. ≥85 %, a cuota mínima",
+    "parley_seguro": "Parley de 3 seguras de partidos distintos, a cuota mínima",
 }
+PARLAYS = ("parley3_130", "parley_seguro")
+_stats: dict[str, tuple[datetime, dict]] = {}
 
 
 class BetPick(Base):
@@ -161,11 +166,24 @@ def _csv(client, path: str) -> list[dict]:
     return list(csv.DictReader(io.StringIO(response.content.decode("utf-8-sig", "replace"))))
 
 
+def league_stats(client, div: str, now: datetime) -> dict:
+    """Estadísticas de la liga (temporada actual + anterior), refrescadas cada 24 h."""
+    cached = _stats.get(div)
+    if cached and now - cached[0] < timedelta(hours=24):
+        return cached[1]
+    rows = []
+    for day in (now, now - timedelta(days=365)):
+        rows += _csv(client, f"/mmz4281/{season_code(day)}/{div}.csv")
+    stats = safe.build_stats(rows)
+    _stats[div] = (now, stats)
+    return stats
+
+
 def scan_europe(db: Session, client=None, now: datetime | None = None) -> int:
     client = client or httpx
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     known = {(p.strategy, p.match, p.selection) for p in db.scalars(select(BetPick).where(BetPick.status == "abierta"))}
-    new, favs = 0, []
+    new, favs, safes = 0, [], []
     for row in _csv(client, "/fixtures.csv"):
         start = kickoff(row)
         if start is None or not (now < start < now + timedelta(hours=48)):
@@ -175,6 +193,13 @@ def scan_europe(db: Session, client=None, now: datetime | None = None) -> int:
         if fav:
             picks.append(fav)
             favs.append((key(row), fav))
+        try:
+            sure = safe.safe_picks(league_stats(client, row["Div"], now), row)
+        except Exception as exc:  # noqa: BLE001 — sin estadísticas de esa liga no hay seguras
+            logger.warning("bets: stats %s failed (%s)", row.get("Div"), exc)
+            sure = []
+        picks += sure
+        safes += [(key(row), p) for p in sure]
         for p in picks:
             if (p["strategy"], key(row), p["selection"]) in known:
                 continue
@@ -182,12 +207,13 @@ def scan_europe(db: Session, client=None, now: datetime | None = None) -> int:
                            kickoff=start, odds=Decimal(str(p["odds"])),
                            fair_prob=Decimal(str(round(p["fair_prob"], 4))) if p.get("fair_prob") else None))
             new += 1
-    already = {m for (s, m, _) in known if s == "parley3_130"}
-    taken = {part for m in already for part in m.split(" + ")}
-    for p in parlays([f for f in favs if f[0] not in taken]):
-        db.add(BetPick(strategy=p["strategy"], sport="fútbol", league="varias", match=p["match"][:160], selection=p["selection"],
-                       kickoff=now + timedelta(hours=48), odds=Decimal(str(p["odds"]))))
-        new += 1
+    for name, build, items in (("parley3_130", parlays, favs), ("parley_seguro", safe.safe_parlays, safes)):
+        taken = {part for (s, m, _) in known if s == name for part in m.split(" + ")}
+        for p in build([f for f in items if f[0] not in taken]):
+            db.add(BetPick(strategy=p["strategy"], sport="fútbol", league="varias", match=p["match"][:160], selection=p["selection"],
+                           kickoff=now + timedelta(hours=48), odds=Decimal(str(p["odds"])),
+                           fair_prob=Decimal(str(round(p["fair_prob"], 4))) if p.get("fair_prob") else None))
+            new += 1
     db.commit()
     return new
 
@@ -211,17 +237,22 @@ def settle_europe(db: Session, client=None, now: datetime | None = None) -> int:
     done = 0
     for pick in db.scalars(select(BetPick).where(BetPick.status == "abierta", BetPick.sport == "fútbol")):
         legs = pick.match.split(" + ")
-        sides = pick.selection.split(",") if pick.strategy == "parley3_130" else [pick.selection]
+        sides = pick.selection.split(",") if pick.strategy in PARLAYS else [pick.selection]
         rows = [lookup(k) for k in legs]
         if any(r is None for r in rows):
             if pick.kickoff < now - timedelta(days=10):
                 pick.status, pick.pnl = "nula", Decimal(0)  # sin resultado publicado: se anula
                 done += 1
             continue
-        won = all(r["FTR"] == s for r, s in zip(rows, sides))
+        hits = [r["FTR"] == s if s in ("H", "D", "A") else safe.hit(s, r) for r, s in zip(rows, sides)]
+        if any(h is None for h in hits):
+            pick.status, pick.pnl = "nula", Decimal(0)  # la liga no publicó ese dato (córners, tarjetas…)
+            done += 1
+            continue
+        won = all(hits)
         pick.status = "ganada" if won else "perdida"
         pick.pnl = (pick.odds - 1) * pick.stake if won else -pick.stake
-        if len(rows) == 1:
+        if len(rows) == 1 and sides[0] in ("H", "D", "A"):
             close = reference(rows[0], closing=True)
             if close:
                 pick.clv_pct = Decimal(str(round((float(pick.odds) * close["HDA".index(sides[0])] - 1) * 100, 2)))

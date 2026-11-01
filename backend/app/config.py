@@ -55,7 +55,9 @@ class Settings(BaseSettings):
     # Laboratorio: torneo de estrategias en paper (longs y shorts) en vivo
     # por WebSocket de Binance; 20/50/100 USD virtuales por estrategia.
     lab_enabled: bool = False
-    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT"
+    # Pares que solo están en BingX (API pública): "símbolo BingX:nombre interno".
+    lab_bingx_symbols: str = "HYPE-USDT:HYPEUSDT,NCCOGOLD2USD-USDT:GOLDUSDT,NCCO1OILBRENT2USD-USDT:BRENTUSDT"
+    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT,ZECUSDT,NEARUSDT,SUIUSDT,TRXUSDT,ENAUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
     # Cerebro: cada brain_interval_hours lee el torneo, consulta a Gemini,
     # examina estrategias nuevas y escribe diario/memoria en brain_dir.
@@ -67,6 +69,12 @@ class Settings(BaseSettings):
     telegram_api_id: int = 0
     telegram_api_hash: str = ""
     telegram_chats: str = ""
+    # Canales que no aportaron (OTC sin comprobar, sin señales o perdiendo): el bot sale de ellos y borra sus mensajes.
+    telegram_leave: str = ("-1004313945352,-1002107344934,-1002073344572,-1003397271144,-1001196272579,"
+                           "-1002037853278,-1002079856682,-1003695960484,-1001683083792")
+    # BingX: clave de SOLO LECTURA para aprender de tus operaciones (nunca opera).
+    bingx_api_key: str = ""
+    bingx_api_secret: str = ""
     # Canales que el bot sigue por su cuenta (pronósticos gratis para medirlos en paper).
     telegram_join: str = "https://t.me/+dHsbV-4Dw1FhYjNk,https://t.me/+1SjtO2s2ufdjZDI0"
     # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).

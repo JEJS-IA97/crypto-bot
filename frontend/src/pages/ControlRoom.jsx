@@ -11,9 +11,10 @@ import TopBar from "../components/room/TopBar";
 import usePoll from "../components/room/usePoll";
 import Simulation from "./Simulation";
 import BetsView from "../components/room/BetsView";
+import Exchange from "./Exchange";
 
 function ControlRoom() {
-    const [view, setView] = useState("room");
+    const [view, setView] = useState("market");
     const [brain, setBrain] = useState(null);
     const { data: board, error } = usePoll(getLabLive, 10000);
 
@@ -21,7 +22,9 @@ function ControlRoom() {
         <div className="room">
             <TopBar view={view} onView={setView} board={board} />
             {error && <p className="banner">No hay conexión con el bot en 127.0.0.1:8000. ¿Está encendido? ({error})</p>}
-            {view === "bets" ? (
+            {view === "market" ? (
+                <Exchange board={board} />
+            ) : view === "bets" ? (
                 <BetsView />
             ) : view === "account" ? (
                 <div className="legacy">

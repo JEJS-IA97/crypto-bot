@@ -150,7 +150,15 @@ class TrendLoopTests(unittest.TestCase):
         self.assertEqual(report.opened, 2)
         for position in self._positions():
             notional = position.quantity * position.average_entry_price
-            self.assertGreater(notional, Decimal("15"))
+            self.assertGreater(notional, Decimal("9.9"))  # 50 % del saldo actual (20 USD en el test), sin recorte
+
+    def test_size_follows_current_equity(self) -> None:
+        from app.services import bot_loop
+
+        with patch("app.services.decision_store.get_metrics", lambda db, account_id: {"balance_usd": "80"}):
+            self.assertEqual(bot_loop.trend_equity(self.db, 1), Decimal("80"))
+        with patch("app.services.decision_store.get_metrics", side_effect=RuntimeError):
+            self.assertEqual(bot_loop.trend_equity(self.db, 1), settings.configured_capital_usd)
 
     def test_rejected_buy_is_not_retried_the_same_day(self) -> None:
         market = FakeMarket({"BTCUSDT": daily("110")}, {"BTCUSDT": "110"})

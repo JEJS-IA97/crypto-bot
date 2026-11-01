@@ -62,10 +62,11 @@ function markers(trades, candles, step) {
     return out.sort((a, b) => a.time - b.time);
 }
 
-function CandleChart() {
+function CandleChart({ symbol: fixed }) {
     const box = useRef(null);
     const series = useRef(null);
-    const [symbol, setSymbol] = useState("BTCUSDT");
+    const [picked, setSymbol] = useState("BTCUSDT");
+    const symbol = fixed || picked;
     const [tf, setTf] = useState("1h");
     const [info, setInfo] = useState({ last: null, change: null, count: 0, trades: 0 });
     const [error, setError] = useState("");
@@ -134,17 +135,17 @@ function CandleChart() {
     return (
         <section className="panel chart-panel" aria-label="Gráfico de velas">
             <header className="chart-head">
-                <div className="seg" role="tablist" aria-label="Par">
+                {!fixed && <div className="seg" role="tablist" aria-label="Par">
                     {SYMBOLS.map((s) => (
                         <button key={s} role="tab" aria-selected={s === symbol} className={s === symbol ? "on" : ""} onClick={() => setSymbol(s)}>
                             {coin(s)}
                         </button>
                     ))}
-                </div>
-                <div className="quote">
+                </div>}
+                {!fixed && <div className="quote">
                     <span className="num big">{price(info.last)}</span>
                     <span className={`num ${tone(info.change)}`}>{signed(info.change, " %")} 24 h</span>
-                </div>
+                </div>}
                 <div className="legend">
                     <span><i style={{ background: C.sma50 }} />SMA50</span>
                     <span><i style={{ background: C.sma200 }} />SMA200</span>

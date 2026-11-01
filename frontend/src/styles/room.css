@@ -722,3 +722,54 @@ body {
 .feed-scroll.tall {
     max-height: 60vh;
 }
+
+/* --- Vista Mercados (estilo exchange) --- */
+.exchange { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 24px; }
+.ex-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+.ex-list { background: var(--surface); border: 1px solid var(--divider); border-radius: 6px; max-height: calc(100vh - 220px); overflow: auto; position: sticky; top: 12px; }
+.ex-list-head, .ex-row { display: grid; grid-template-columns: 1.3fr 1fr 0.8fr; gap: 6px; padding: 8px 12px; align-items: center; }
+.ex-list-head { font-size: 11px; color: var(--text-secondary); border-bottom: 1px solid var(--divider); position: sticky; top: 0; background: var(--surface); }
+.ex-row .num { white-space: nowrap; }
+.ex-row { width: 100%; background: none; border: 0; border-left: 2px solid transparent; color: var(--text); text-align: right; cursor: pointer; font-size: 13px; }
+.ex-row:hover { background: var(--surface-active); }
+.ex-row.on { background: var(--surface-active); border-left-color: var(--accent); }
+.ex-coin { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.ex-coin small { color: var(--text-secondary); font-size: 10px; }
+.pill { font-style: normal; font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--surface-active); }
+.pill.up, .up { color: var(--positive); }
+.pill.down, .down { color: var(--negative); }
+.ex-detail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ex-quote { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px; }
+.ex-quote h1 { font-size: 22px; margin: 0; }
+.ex-quote h1 small { color: var(--text-secondary); font-size: 14px; font-weight: 400; }
+.ex-quote .big { font-size: 22px; }
+.tag { font-size: 12px; color: var(--text-secondary); border: 1px solid var(--divider); border-radius: 10px; padding: 2px 8px; }
+.ex-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ex-cards h2, .ex-activity h2 { font-size: 14px; margin: 0 0 10px; }
+.ex-think, .ex-pos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.ex-think li { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: baseline; }
+.ex-think li.dim { display: block; }
+.ex-pos li { display: grid; grid-template-columns: 80px 1fr auto auto; gap: 10px; }
+.ex-gauge { margin-bottom: 12px; font-size: 12px; color: var(--text-secondary); }
+.ex-gauge-bar { height: 6px; background: var(--surface-active); border-radius: 3px; overflow: hidden; margin-bottom: 4px; }
+.ex-gauge-bar i { display: block; height: 100%; background: var(--text-secondary); }
+.ex-gauge-bar i.warm { background: var(--orange); }
+.ex-gauge-bar i.hot { background: var(--accent); }
+.ex-activity { max-height: calc(100vh - 220px); overflow: auto; position: sticky; top: 12px; }
+.ex-activity ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ex-activity li { font-size: 12px; border-left: 2px solid var(--divider); padding-left: 8px; }
+.ex-activity li time { color: var(--text-secondary); margin-right: 6px; }
+.ex-activity li p { margin: 2px 0 0; color: var(--text); }
+.ex-activity .ev-abre { border-left-color: var(--positive); }
+.ex-activity .ev-cierra { border-left-color: var(--accent); }
+.ex-activity .ev-bloqueada { border-left-color: var(--orange); }
+.ex-activity .ev-copia { border-left-color: var(--positive); }
+@media (max-width: 1100px) {
+    .ex-grid { grid-template-columns: 260px minmax(0, 1fr); }
+    .ex-activity { grid-column: 1 / -1; position: static; max-height: none; }
+}
+@media (max-width: 720px) {
+    .exchange { padding: 8px 16px 24px; }
+    .ex-grid, .ex-cards { grid-template-columns: 1fr; }
+    .ex-list { position: static; max-height: 260px; }
+}
