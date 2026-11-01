@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections import deque
 import logging
 import time
 from datetime import timezone
@@ -42,8 +43,14 @@ CHAMPION_MIN_PF = Decimal("1.3")
 STREAK_WINDOW, STREAK_LOSSES, STREAK_PAUSE_MS = 10, 5, 48 * 3_600_000  # video "win rate": 5 de 10 → parar
 
 
+def two_sided(name: str) -> bool:
+    """Estrategias de futuros (1x, paper): la copia las sigue en largo y en corto y sin el filtro
+    de BTC (ya traen el suyo; la reversión justamente entra contra el movimiento)."""
+    return name.endswith("_futuros")
+
+
 def champions(trades, benched: set[str]) -> set[str]:
-    """Fuentes con ventaja comprobada en LARGOS (Binance Spot no permite cortos).
+    """Fuentes con ventaja comprobada: en LARGOS (spot) o en ambos lados si son de futuros.
 
     Cuenta cada operación una vez (antes había 3 cuentas por estrategia) y exige
     ≥5 cierres, PnL neto > 0 y factor de beneficio ≥ 1.3 ya con comisiones.
@@ -51,7 +58,7 @@ def champions(trades, benched: set[str]) -> set[str]:
     seen, by = set(), {}
     for t in trades:
         key = (t.strategy, t.symbol, t.opened_ts)
-        if t.side != "LONG" or t.strategy == PRINCIPAL or key in seen:
+        if (t.side != "LONG" and not two_sided(t.strategy)) or t.strategy == PRINCIPAL or key in seen:
             continue
         seen.add(key)
         by.setdefault(t.strategy, []).append(t.pnl)
@@ -88,6 +95,11 @@ class LabRunner:
         self.last_tick: float | None = None
         self.ticks = 0
         self.started_at = time.time()
+        self.activity: deque[dict] = deque(maxlen=300)  # lo que hizo o decidió, en frases (panel "Actividad")
+        self._checked = {"barras": 0, "senales": 0, "bloqueadas": 0}
+
+    def note(self, kind: str, text: str, symbol: str | None = None) -> None:
+        self.activity.appendleft({"ts": int(time.time() * 1000), "tipo": kind, "par": symbol, "texto": text})
 
     # --- arranque -----------------------------------------------------
     def restore(self) -> None:
@@ -137,12 +149,13 @@ class LabRunner:
         return self.accounts.get((PRINCIPAL, self.principal_capital))
 
     def mirror(self, source: str, symbol: str, side: str, stop, take_profit, ts: int):
-        """La cuenta principal entra solo si la fuente está comprobada (y en largo)."""
+        """La cuenta de copia entra solo si la fuente está comprobada (largo; o ambos lados si es de futuros)."""
         account = self.principal
-        if (account is None or side != "LONG" or source not in self.champions
+        futures = two_sided(source)
+        if (account is None or (side != "LONG" and not futures) or source not in self.champions
                 or f"{source}|{symbol}" in self.benched or symbol in account.positions
                 or len(account.positions) >= PRINCIPAL_MAX_OPEN or symbol not in self.prices
-                or not self.btc_ok()  # con BTC bajo su SMA20 la cuenta principal no compra
+                or (not futures and not self.btc_ok())  # spot: con BTC bajo su SMA20 no compra
                 or context.macro_blackout()):  # ni 12 h antes / 6 h después de FOMC o CPI
             return None
         opened = account.open(symbol=symbol, side=side, price=self.prices[symbol], stop=stop,
@@ -245,6 +258,12 @@ class LabRunner:
         close_ts = bar.ts + tf_ms
         price = self.prices.get(symbol, dec(bar.c))
         running = self._running()
+        if tf == "1h" and symbol == "BTCUSDT":
+            c = self._checked
+            self.note("revision", f"Revisión de la hora: {len(self.strategies)} estrategias sobre {len(self.prices)} pares, "
+                                  f"{c['barras']} velas cerradas, {c['senales']} señales, {c['bloqueadas']} bloqueadas por filtros.")
+            self._checked = {"barras": 0, "senales": 0, "bloqueadas": 0}
+        self._checked["barras"] += 1
         for strategy in self.strategies:
             if strategy.timeframe != tf:
                 continue
@@ -262,9 +281,16 @@ class LabRunner:
                     continue
                 allowed = getattr(strategy, "symbols", None)
                 regime = getattr(strategy, "regime_filter", False)
+                if signal is not None:
+                    self._checked["senales"] += 1
                 if signal is not None and ((regime is True and not self.btc_ok()) or (regime == "bear" and self.btc_ok())):
+                    self._checked["bloqueadas"] += 1
+                    self.note("bloqueada", f"{strategy.name} quería {signal.side} en {symbol}, pero BTC "
+                                           f"{'está bajo' if regime is True else 'está sobre'} su SMA20 diaria.", symbol)
                     continue
                 if signal is not None and self.paused(strategy.name, close_ts):
+                    self._checked["bloqueadas"] += 1
+                    self.note("bloqueada", f"{strategy.name} quería {signal.side} en {symbol}, pero está en pausa (perdió 5 de 10).", symbol)
                     continue
                 if (signal is None or not running or strategy.name in self.benched
                         or f"{strategy.name}|{symbol}" in self.benched or (allowed and symbol not in allowed)):
@@ -282,13 +308,20 @@ class LabRunner:
                 if opened:
                     with self.session_factory() as db:
                         store.save_open(db, account, opened)
-                    self.mirror(strategy.name, symbol, signal.side, opened.stop, opened.take_profit, close_ts)
+                    self.note("abre", f"{strategy.name} abrió {signal.side} en {symbol} a {price} "
+                                      f"({float(opened.notional):.2f} USD).", symbol)
+                    copied = self.mirror(strategy.name, symbol, signal.side, opened.stop, opened.take_profit, close_ts)
+                    if copied:
+                        self.note("copia", f"La cuenta de copia siguió a {strategy.name}: {signal.side} en {symbol}.", symbol)
 
     def _close(self, account, symbol: str, price: Decimal, reason: str) -> None:
         db_id = account.positions[symbol].db_id
         trade = account.close(symbol, price, int(time.time() * 1000), reason)
         with self.session_factory() as db:
             store.save_close(db, account, db_id, trade)
+        if trade is not None:
+            self.note("cierra", f"{account.strategy} cerró {trade.side} en {symbol} ({reason}): "
+                                f"{'+' if trade.pnl > 0 else ''}{float(trade.pnl):.2f} USD.", symbol)
         alerts.on_close(account.strategy, "Cuenta principal", symbol, trade)
         if trade is not None:
             self._record(account.strategy, trade.pnl > 0, trade.closed_ts)
@@ -334,6 +367,57 @@ class LabRunner:
                 except TimeoutError:
                     pass
                 delay = min(delay * 2, 60)
+
+    def pair_view(self, symbol: str) -> dict:
+        """Lo que el bot ve y piensa de un par: tendencia, movimiento, posiciones y cada estrategia."""
+        h1 = self.bars.get((symbol, "1h"), [])
+        d1 = self.bars.get((symbol, "1d"), [])
+        last = float(self.prices.get(symbol) or (h1[-1].c if h1 else 0))
+        out: dict = {"par": symbol, "precio": last,
+                     "cambio_24h": round((last / h1[-24].c - 1) * 100, 2) if len(h1) >= 24 and last else None,
+                     "regimen": self.regimes[symbol].labels[-1] if symbol in self.regimes and self.regimes[symbol].labels else "sin datos"}
+        closes = [b.c for b in d1]
+        if len(closes) >= 200:
+            sma50, sma200 = sum(closes[-50:]) / 50, sum(closes[-200:]) / 200
+            out["tendencia"] = ("alcista" if last > sma50 > sma200 else "bajista" if last < sma50 < sma200 else "mixta")
+        # movimiento de 4 h en desviaciones (la regla de la reversión entra a ±3σ)
+        c = [b.c for b in h1]
+        if len(c) > 300:
+            moves = [c[i] / c[i - 4] - 1 for i in range(len(c) - 300, len(c))]
+            mean = sum(moves) / len(moves)
+            sd = (sum((m - mean) ** 2 for m in moves) / len(moves)) ** 0.5
+            out["movimiento_4h_sigma"] = round(moves[-1] / sd, 2) if sd else None
+        out["posiciones"] = [
+            {"cuenta": name, "lado": p.side, "entrada": float(p.entry), "abierta": p.opened_ts,
+             "pnl": round(float(p.value(self.prices.get(symbol, p.entry)) - p.notional), 2),
+             "stop": float(p.stop) if p.stop is not None else None, "objetivo": float(p.take_profit) if p.take_profit is not None else None}
+            for (name, _), acc in self.accounts.items() for sym, p in acc.positions.items() if sym == symbol
+        ]
+        views = []
+        waiting = self.status()["waiting"]
+        for st in self.strategies:
+            allowed = getattr(st, "symbols", None)
+            if allowed and symbol not in allowed:
+                continue
+            series = self.bars.get((symbol, st.timeframe), [])
+            try:
+                sig = st.signals(series)[-1] if len(series) >= 2 else None
+            except Exception:  # noqa: BLE001
+                sig = None
+            held = any(n == st.name and symbol in a.positions for (n, _), a in self.accounts.items())
+            if held:
+                text = "en posición"
+            elif st.name in self.benched or f"{st.name}|{symbol}" in self.benched:
+                text = "en la banca (no abre)"
+            elif sig is not None:
+                text = f"señal {sig.side} en la última vela de {st.timeframe}"
+            elif st.name in waiting:
+                text = waiting[st.name]
+            else:
+                text = f"sin señal (revisa cada vela de {st.timeframe})"
+            views.append({"estrategia": st.name, "temporalidad": st.timeframe, "estado": text})
+        out["estrategias"] = views
+        return out
 
     def status(self) -> dict:
         return {

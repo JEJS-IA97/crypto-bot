@@ -72,3 +72,21 @@ class TelegramTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LeaveTests(unittest.TestCase):
+    def test_purge_left_deletes_only_left_channels(self):
+        from unittest.mock import patch
+
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        with factory() as db:
+            for chat in (-100, -200):
+                db.add(telegram.TelegramSignal(chat_id=chat, chat_title="c", message_id=1, text="x", outcome="no es señal"))
+            db.commit()
+        with patch.object(telegram.settings, "telegram_leave", "-100"):
+            self.assertEqual(telegram.leave_ids(), {-100})
+            self.assertEqual(telegram.purge_left(factory), 1)
+        with factory() as db:
+            self.assertEqual([r.chat_id for r in db.query(telegram.TelegramSignal)], [-200])

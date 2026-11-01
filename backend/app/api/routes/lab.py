@@ -237,6 +237,48 @@ def okx_traders() -> dict[str, Any]:
     return json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {"traders": [], "lecciones": []}
 
 
+@router.get("/activity")
+def activity(limit: int = 80) -> dict[str, Any]:
+    """Lo último que hizo o decidió el torneo, en frases."""
+    runner = live.runner
+    return {"eventos": list(runner.activity)[:limit] if runner else []}
+
+
+@router.get("/market")
+def market() -> dict[str, Any]:
+    """Lista de pares estilo exchange: precio, 24 h y qué hace el bot en cada uno."""
+    runner = live.runner
+    if runner is None:
+        return {"pares": []}
+    out = []
+    order = runner.symbols + sorted(s for s in runner.prices if s not in runner.symbols)
+    for symbol in (s for s in order if s in runner.prices):
+        h1 = runner.bars.get((symbol, "1h"), [])
+        price = float(runner.prices[symbol])
+        held = [(n, p.side) for (n, _), a in runner.accounts.items() for s, p in a.positions.items() if s == symbol]
+        out.append({"par": symbol, "precio": price,
+                    "cambio_24h": round((price / h1[-24].c - 1) * 100, 2) if len(h1) >= 24 else None,
+                    "fuente": "BingX" if symbol not in runner.symbols else "Binance",
+                    "posiciones": len(held), "lados": sorted({side for _, side in held})})
+    return {"pares": out}
+
+
+@router.get("/market/{symbol}")
+def market_pair(symbol: str) -> dict[str, Any]:
+    runner = live.runner
+    if runner is None or symbol.upper() not in runner.prices:
+        raise HTTPException(404, "Par no seguido")
+    return runner.pair_view(symbol.upper())
+
+
+@router.get("/bingx")
+def bingx_trades() -> dict[str, Any]:
+    """Tus posiciones cerradas en BingX (clave de solo lectura) y su estilo."""
+    from app.signals.bingx_watch import OUT
+
+    return json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else {"resumen": {}, "posiciones": []}
+
+
 @router.get("/bets")
 def bets(limit: int = 60, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Apuestas en paper: resumen por estrategia y últimas apuestas."""

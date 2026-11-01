@@ -138,19 +138,27 @@ async def lifespan(app: FastAPI):
             bot_loop.run(stop_event=stop_event)
         )
 
-    lab_task = None
+    lab_task = bingx_feed_task = None
     if settings.lab_enabled:
         lab_live.runner = lab_live.LabRunner()
         lab_task = asyncio.create_task(lab_live.runner.run(stop_event))
+        from app.lab.bingx_feed import bingx_feed_loop
+
+        bingx_feed_task = asyncio.create_task(bingx_feed_loop(lab_live.runner, stop_event))
     brain_task = (
         asyncio.create_task(brain_loop(stop_event)) if settings.brain_enabled else None
     )
     telegram_task = asyncio.create_task(telegram_loop(stop_event))
+    from app.services.restart_watch import restart_loop
+
+    restart_task = asyncio.create_task(restart_loop(stop_event))
+    from app.signals.bingx_watch import bingx_loop
     from app.signals.okx_watch import okx_loop
 
     from app.lab.context import context_loop
 
     okx_task = asyncio.create_task(okx_loop(stop_event)) if settings.lab_enabled else None
+    bingx_task = asyncio.create_task(bingx_loop(stop_event)) if settings.lab_enabled else None
     context_task = asyncio.create_task(context_loop(stop_event)) if settings.lab_enabled else None
     from app.bets.engine import bets_loop
 
@@ -184,6 +192,11 @@ async def lifespan(app: FastAPI):
     await telegram_task
     if okx_task is not None:
         await okx_task
+    if bingx_task is not None:
+        await bingx_task
+    if bingx_feed_task is not None:
+        await bingx_feed_task
+    await restart_task
     if context_task is not None:
         await context_task
     if bets_task is not None:

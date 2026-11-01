@@ -249,6 +249,34 @@ async def join_channels(client) -> None:
             logger.warning("telegram: could not join %s (%s)", link, type(exc).__name__)
 
 
+def leave_ids() -> set[int]:
+    return {int(x) for x in settings.telegram_leave.split(",") if x.strip().lstrip("-").isdigit()}
+
+
+def purge_left(session_factory=None) -> int:
+    """Borra los mensajes guardados de los canales que se dejaron."""
+    from sqlalchemy import delete
+
+    ids = leave_ids()
+    if not ids:
+        return 0
+    with (session_factory or database.SessionLocal)() as db:
+        n = db.execute(delete(TelegramSignal).where(TelegramSignal.chat_id.in_(ids))).rowcount
+        db.commit()
+    return n or 0
+
+
+async def leave_channels(client) -> None:
+    """Sale de los canales de TELEGRAM_LEAVE (si ya salió, no hace nada)."""
+    async for d in client.iter_dialogs():
+        if d.id in leave_ids():
+            try:
+                await client.delete_dialog(d.entity)
+                logger.info("telegram: left %s", d.name)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("telegram: could not leave %s (%s)", d.name, type(exc).__name__)
+
+
 def _chats() -> list[str | int]:
     out: list[str | int] = []
     for raw in settings.telegram_chats.split(","):
@@ -269,12 +297,12 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
     from telethon import TelegramClient, events
 
     client = TelegramClient(str(SESSION_PATH), settings.telegram_api_id, settings.telegram_api_hash)
-    configured = {c for c in _chats() if isinstance(c, int)}
+    configured = {c for c in _chats() if isinstance(c, int) and c not in leave_ids()}
     muted: dict[int, str] = {}
 
     @client.on(events.NewMessage())
     async def on_message(event) -> None:
-        if event.is_private or event.chat_id in muted:
+        if event.is_private or event.chat_id in muted or event.chat_id in leave_ids():
             return
         chat = await event.get_chat()
         title = getattr(chat, "title", None) or getattr(chat, "username", None) or str(event.chat_id)
@@ -304,6 +332,8 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
             logger.warning("telegram: session expired, run python telegram_login.py")
             return
         await join_channels(client)
+        await leave_channels(client)
+        logger.info("telegram: %s messages from left channels deleted", await asyncio.to_thread(purge_left))
         if live.runner:
             restore_sources(live.runner)
         logger.info("telegram: %s stored messages reclassified", reclassify())

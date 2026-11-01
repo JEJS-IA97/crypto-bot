@@ -16,3 +16,6 @@ export const getTelegram = async () => (await api.get("/api/lab/telegram")).data
 
 export const getOkxTraders = async () => (await api.get("/api/lab/okx")).data;
 export const getBets = async () => (await api.get("/api/lab/bets")).data;
+export const getMarket = async () => (await api.get("/api/lab/market")).data;
+export const getPair = async (symbol) => (await api.get(`/api/lab/market/${symbol}`)).data;
+export const getActivity = async () => (await api.get("/api/lab/activity")).data;

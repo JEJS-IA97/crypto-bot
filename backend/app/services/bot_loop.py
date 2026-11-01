@@ -335,6 +335,19 @@ def _mark_external_closed(
     db.commit()
 
 
+
+def trend_equity(db: Session, account_id: int) -> Decimal:
+    """Saldo actual de la cuenta (efectivo + posiciones a precio de mercado): el tamaño crece y
+    baja con la cuenta (interés compuesto). Si no se puede leer, usa el capital inicial."""
+    try:
+        from app.services.decision_store import get_metrics
+
+        equity = Decimal(str(get_metrics(db, account_id=account_id)["balance_usd"]))
+        return equity if equity > 0 else settings.configured_capital_usd
+    except Exception:  # noqa: BLE001
+        logger.warning("trend: could not read equity, using configured capital", exc_info=True)
+        return settings.configured_capital_usd
+
 def _try_open(
     db: Session,
     *,
@@ -395,7 +408,7 @@ def _try_open(
     if quantity is None and trend:
         sizing = allocation_order_size(
             price=price,
-            target_usd=settings.configured_capital_usd
+            target_usd=trend_equity(db, account_id)
             * settings.trend_allocation_pct
             / Decimal(100),
             available_usd=balance.available_usd,
