@@ -34,3 +34,13 @@ class SafeMarketsTests(unittest.TestCase):
         parlays = safe.safe_parlays(legs)
         self.assertEqual(len(parlays), 1)
         self.assertEqual(parlays[0]["match"].count(" + "), 2)
+
+
+class FiveLegTests(unittest.TestCase):
+    def test_five_leg_parlay(self):
+        legs = [(f"m{i}", {"strategy": "seguro", "selection": "goles_o0.5", "fair_prob": 0.9, "odds": 1.14}) for i in range(11)]
+        out = safe.safe_parlays(legs, size=5)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0]["strategy"], "parley5_seguro")
+        self.assertEqual(out[0]["match"].count(" + "), 4)
+        self.assertAlmostEqual(out[0]["fair_prob"], 0.9 ** 5)

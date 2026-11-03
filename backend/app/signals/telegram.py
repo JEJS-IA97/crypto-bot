@@ -180,6 +180,8 @@ def restore_sources(runner) -> None:
 
 
 CHATS_FILE = Path("data/telegram_chats.json")
+# Chats de pronósticos deportivos: sus imágenes se leen con Gemini.
+TIPSTER = re.compile(r"pick|pron[oó]stic|apuesta|fija|parley|parlay|tipster|\bbet|gainblers", re.I)
 MIN_HIT_RATE = 55.0  # binarias con pago 0.85: por debajo de ~54 % se pierde dinero
 
 
@@ -318,6 +320,23 @@ async def telegram_loop(stop_event: asyncio.Event) -> None:
                     row.outcome = f"pronóstico {result}"
                     db.commit()
                     return
+        if getattr(event, "photo", None) and TIPSTER.search(title):
+            # pronósticos en imagen: Gemini los lee; el bot los liquida luego con football-data
+            from app.signals.pick_vision import extract_picks
+
+            try:
+                image = await event.download_media(file=bytes)
+                picks = await asyncio.to_thread(extract_picks, image, "image/jpeg", text)
+            except Exception:  # noqa: BLE001
+                logger.warning("telegram: could not read pick image", exc_info=True)
+                picks = []
+            if picks:
+                with database.SessionLocal() as db:
+                    db.add(TelegramSignal(chat_id=event.chat_id, chat_title=title[:120], message_id=event.id,
+                                          text=text[:4000], parsed={"kind": "apuesta_img", "picks": picks},
+                                          outcome=f"{len(picks)} pronósticos (imagen)"))
+                    db.commit()
+                return
         parsed, outcome = classify(event.chat_id, title, text)
         if parsed is None and event.chat_id not in configured:
             return  # de grupos nuevos solo se guarda lo que parece señal (privacidad)

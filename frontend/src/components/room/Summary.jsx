@@ -15,8 +15,8 @@ function Summary({ board }) {
     }
     const pct = (bal, ini) => (ini ? ((bal - ini) / ini) * 100 : 0);
     const items = [];
-    if (b.main) items.push(["Cuenta principal", b.main.balance, b.main.initial, b.main.open_positions ? `${b.main.open_positions} posiciones` : "En USDT, esperando tendencia"]);
-    if (b.copier) items.push(["Copia de ganadoras", b.copier.balance, b.copier.initial, b.copier.copies?.length ? `Copia a ${b.copier.copies.join(", ")}` : "Sin ganadoras aún"]);
+    if (b.copier) items.push(["Tu cuenta · copia a las ganadoras", b.copier.balance, b.copier.initial, b.copier.open_positions ? `${b.copier.open_positions} abiertas` : b.copier.copies?.length ? `Sigue a ${b.copier.copies.join(", ")}` : "Sin ganadoras aún"]);
+    if (b.main) items.push(["Núcleo de tendencia BTC+ETH", b.main.balance, b.main.initial, b.main.open_positions ? `${b.main.open_positions} posiciones` : "En USDT, esperando tendencia"]);
     items.push([`Torneo · ${b.tournament.accounts} estrategias`, b.tournament.balance, b.tournament.initial, `Cerradas ${signed(b.tournament.realized)} USD`]);
     return (
         <div className="ui-stats">

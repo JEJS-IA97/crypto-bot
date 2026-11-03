@@ -456,3 +456,18 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-11-01 13:38 UTC · Estado: pendiente
 - Por qué: En rangos de baja volatilidad, las reversiones solo superan el umbral de tarifas si el RSI baja a niveles extremos (<25) con ratio beneficio/riesgo mayor a 1.5.
 - Cómo probarla: Backtest de RSI < 20 en 15m con stop_atr holgado de 2.0 y objetivo de 3.0 ATR.
+
+### Eficiencia de la reversión en rangos de 1h
+- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
+- Por qué: La mayoría de los activos se encuentran en régimen de rango, lo que favorece entradas en sobreventa utilizando RSI y filtros de volatilidad ATR.
+- Cómo probarla: Desplegar estrategia de reversión en marco de 1h con umbrales de RSI ajustados para capturar rebotes en la parte baja del rango.
+
+### Robustez de cruces EMA y RSI en 4h
+- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
+- Por qué: La combinación de tendencia moderada y confirmación de momentum en 4h ha mostrado el mejor desempeño relativo frente a marcos diarios puros.
+- Cómo probarla: Optimizar los parámetros de las EMAs rápida y lenta dentro de los rangos permitidos para el marco de 4h.
+
+### Filtro de momentum alcista en activos con baja volatilidad
+- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
+- Por qué: Los activos en rango con baja volatilidad ofrecen mejores puntos de entrada para impulsos de corto plazo sin incurrir en deslizamientos excesivos.
+- Cómo probarla: Evaluar la familia de momentum en marcos de 4h enfocándose en activos específicos con retornos mínimos positivos.

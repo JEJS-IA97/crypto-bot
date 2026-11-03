@@ -389,3 +389,44 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Mine13 (383 días, copiadores +504,659 USD): acierto 77.4 %, payoff 5.64, 42 % largos, 242.2 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.
 - BestMax (851 días, copiadores +104,527 USD): acierto 66.0 %, payoff 1.75, 100 % largos, 1.4 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
 - IS.K (188 días, copiadores +43,751 USD): acierto 51.0 %, payoff 2.57, 47 % largos, 18.4 h, 30.0x, opera HYPE, SNDK, ZEC, CL, XAU.
+
+## 2026-11-03 15:42 UTC
+- Observatorio OKX: 11 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 84 %, payoff mediano 2.26, largos 48 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- BestMax (853 días, copiadores +104,915 USD): acierto 67.0 %, payoff 1.29, 100 % largos, 2.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (190 días, copiadores +40,904 USD): acierto 50.0 %, payoff 2.27, 48 % largos, 23.3 h, 30.0x, opera HYPE, SNDK, ZEC, CL, PEPE.
+- 1491 (1145 días, copiadores +30,357 USD): acierto 95.0 %, payoff 5.47, 19 % largos, 53.8 h, 10.0x, opera SKHYNIX, SNDK, MU, BTC, ETH.
+
+## 2026-11-03 15:50 UTC
+- Observatorio OKX: 11 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 84 %, payoff mediano 2.26, largos 48 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- BestMax (853 días, copiadores +104,915 USD): acierto 67.0 %, payoff 1.29, 100 % largos, 2.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (190 días, copiadores +40,904 USD): acierto 50.0 %, payoff 2.27, 48 % largos, 23.3 h, 30.0x, opera HYPE, SNDK, ZEC, CL, PEPE.
+- 1491 (1145 días, copiadores +30,357 USD): acierto 95.0 %, payoff 5.47, 19 % largos, 53.8 h, 10.0x, opera SKHYNIX, SNDK, MU, BTC, ETH.
+
+## 2026-11-03 15:50 UTC
+- evo_tendencia_1d_85_168 ahora opera solo en BNBUSDT.
+- Idea de Gemini rechazada, reversion 1h · 30 / 2.0 / 3.0: no gana en entrenamiento (PF 0.69).
+- Idea de Gemini rechazada, momentum 4h · 24 / 0.02: no gana en entrenamiento (PF 0.66).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 2%, momentum 4%, reversion 2%.
+
+## 2026-11-03 16:35 UTC
+- Observatorio OKX: 11 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 84 %, payoff mediano 2.26, largos 48 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- BestMax (853 días, copiadores +104,915 USD): acierto 67.0 %, payoff 1.29, 100 % largos, 2.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (190 días, copiadores +40,904 USD): acierto 50.0 %, payoff 2.27, 48 % largos, 23.3 h, 30.0x, opera HYPE, SNDK, ZEC, CL, PEPE.
+- 1491 (1145 días, copiadores +30,357 USD): acierto 95.0 %, payoff 5.47, 19 % largos, 53.8 h, 10.0x, opera SKHYNIX, SNDK, MU, BTC, ETH.
+
+## 2026-11-03 17:04 UTC
+- Observatorio OKX: 11 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 84 %, payoff mediano 2.26, largos 48 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- BestMax (853 días, copiadores +104,915 USD): acierto 67.0 %, payoff 1.29, 100 % largos, 2.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (190 días, copiadores +40,904 USD): acierto 50.0 %, payoff 2.27, 48 % largos, 23.3 h, 30.0x, opera HYPE, SNDK, ZEC, CL, PEPE.
+- 1491 (1145 días, copiadores +30,357 USD): acierto 95.0 %, payoff 5.47, 19 % largos, 53.8 h, 10.0x, opera SKHYNIX, SNDK, MU, BTC, ETH.
+
+## 2026-11-03 17:10 UTC
+- Observatorio OKX: 11 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 84 %, payoff mediano 2.26, largos 48 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- BestMax (853 días, copiadores +104,915 USD): acierto 67.0 %, payoff 1.29, 100 % largos, 2.3 h, 20.0x, opera PUMP, XRP, HYPE, SOL.
+- IS.K (190 días, copiadores +40,904 USD): acierto 50.0 %, payoff 2.27, 48 % largos, 23.3 h, 30.0x, opera HYPE, SNDK, ZEC, CL, PEPE.
+- 1491 (1145 días, copiadores +30,357 USD): acierto 95.0 %, payoff 5.47, 19 % largos, 53.8 h, 10.0x, opera SKHYNIX, SNDK, MU, BTC, ETH.

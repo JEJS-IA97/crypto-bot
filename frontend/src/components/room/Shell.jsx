@@ -9,7 +9,7 @@ import usePoll from "./usePoll";
 export const VIEWS = [
     ["market", "Mercados", CandlestickChart],
     ["room", "Torneo", Trophy],
-    ["account", "Cuenta principal", Wallet],
+    ["account", "Tu cuenta", Wallet],
     ["bets", "Apuestas", Ticket],
 ];
 

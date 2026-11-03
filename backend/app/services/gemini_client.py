@@ -88,7 +88,7 @@ class GeminiClient:
         )
         self.max_retries = max(0, retries)
 
-    def generate(self, prompt: str, *, request_id: str) -> GeminiReply:
+    def generate(self, prompt: str, *, request_id: str, image: tuple[bytes, str] | None = None) -> GeminiReply:
         """Llama al modelo y devuelve texto + uso; nunca filtra la clave."""
         if not prompt or not prompt.strip():
             raise ValueError("prompt must not be empty")
@@ -96,8 +96,13 @@ class GeminiClient:
             raise ValueError("request_id is required")
 
         url = f"{self.base_url}/models/{self.model}:generateContent"
+        parts: list[dict] = [{"text": prompt}]
+        if image is not None:  # (bytes, mime): pronósticos que vienen en imagen
+            import base64
+
+            parts.append({"inline_data": {"mime_type": image[1], "data": base64.b64encode(image[0]).decode()}})
         payload = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "contents": [{"role": "user", "parts": parts}],
             "generationConfig": {"responseMimeType": "application/json"},
         }
         headers = {

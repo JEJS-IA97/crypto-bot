@@ -72,11 +72,13 @@ class Settings(BaseSettings):
     # Canales que no aportaron (OTC sin comprobar, sin señales o perdiendo): el bot sale de ellos y borra sus mensajes.
     telegram_leave: str = ("-1004313945352,-1002107344934,-1002073344572,-1003397271144,-1001196272579,"
                            "-1002037853278,-1002079856682,-1003695960484,-1001683083792")
+    # Discord: token del bot de José (solo lee su propio servidor, donde "sigue" canales de anuncios).
+    discord_bot_token: str = ""
     # BingX: clave de SOLO LECTURA para aprender de tus operaciones (nunca opera).
     bingx_api_key: str = ""
     bingx_api_secret: str = ""
     # Canales que el bot sigue por su cuenta (pronósticos gratis para medirlos en paper).
-    telegram_join: str = "https://t.me/+dHsbV-4Dw1FhYjNk,https://t.me/+1SjtO2s2ufdjZDI0"
+    telegram_join: str = "https://t.me/+dHsbV-4Dw1FhYjNk,https://t.me/+1SjtO2s2ufdjZDI0,https://t.me/+HPtzClpgoI4wZmI5"
     # Tras cada entrada, graphify indexa docs/brain con Gemini (GEMINI_API_KEY).
     brain_graphify_model: str = "gemini-3.8-flash"
     trading_interval_seconds: int = 60

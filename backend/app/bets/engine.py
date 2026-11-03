@@ -49,8 +49,9 @@ STRATEGIES = {
     "parley3_130": "Control: parley de 3 favoritos ≤1,30",
     "seguro": "Seguras (goles, córners, tarjetas, faltas, marca) con prob. ≥85 %, a cuota mínima",
     "parley_seguro": "Parley de 3 seguras de partidos distintos, a cuota mínima",
+    "parley5_seguro": "Parley de 5 seguras de partidos distintos, a cuota mínima (paga más, falla más)",
 }
-PARLAYS = ("parley3_130", "parley_seguro")
+PARLAYS = ("parley3_130", "parley_seguro", "parley5_seguro")
 _stats: dict[str, tuple[datetime, dict]] = {}
 
 
@@ -61,8 +62,8 @@ class BetPick(Base):
     strategy: Mapped[str] = mapped_column(String(20), index=True)
     sport: Mapped[str] = mapped_column(String(40))
     league: Mapped[str] = mapped_column(String(40))
-    match: Mapped[str] = mapped_column(String(160), index=True)  # clave "liga|fecha|local|visitante" (o varias, si es parley)
-    selection: Mapped[str] = mapped_column(String(60))  # H / D / A, o nombre del equipo
+    match: Mapped[str] = mapped_column(String(400), index=True)  # clave "liga|fecha|local|visitante" (o varias, si es parley)
+    selection: Mapped[str] = mapped_column(String(120))  # H / D / A, o nombre del equipo
     kickoff: Mapped[datetime] = mapped_column(DateTime)
     odds: Mapped[Decimal] = mapped_column(Numeric(10, 3))
     fair_prob: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
@@ -207,10 +208,11 @@ def scan_europe(db: Session, client=None, now: datetime | None = None) -> int:
                            kickoff=start, odds=Decimal(str(p["odds"])),
                            fair_prob=Decimal(str(round(p["fair_prob"], 4))) if p.get("fair_prob") else None))
             new += 1
-    for name, build, items in (("parley3_130", parlays, favs), ("parley_seguro", safe.safe_parlays, safes)):
+    for name, build, items in (("parley3_130", parlays, favs), ("parley_seguro", safe.safe_parlays, safes),
+                               ("parley5_seguro", lambda x: safe.safe_parlays(x, size=5), safes)):
         taken = {part for (s, m, _) in known if s == name for part in m.split(" + ")}
         for p in build([f for f in items if f[0] not in taken]):
-            db.add(BetPick(strategy=p["strategy"], sport="fútbol", league="varias", match=p["match"][:160], selection=p["selection"],
+            db.add(BetPick(strategy=p["strategy"], sport="fútbol", league="varias", match=p["match"][:400], selection=p["selection"],
                            kickoff=now + timedelta(hours=48), odds=Decimal(str(p["odds"])),
                            fair_prob=Decimal(str(round(p["fair_prob"], 4))) if p.get("fair_prob") else None))
             new += 1
@@ -331,6 +333,57 @@ def settle_odds_api(db: Session, client=None, now: datetime | None = None) -> in
     return done
 
 
+# --- pronósticos en imagen de Telegram (los liquida el bot, no el canal) --------------------
+
+MAIN_DIVS = ("E0", "E1", "E2", "E3", "EC", "SC0", "SC1", "D1", "D2", "I1", "I2", "SP1", "SP2", "F1", "F2",
+             "N1", "B1", "P1", "T1", "G1")
+NEW_LEAGUES = ("ARG", "BRA", "MEX", "USA", "COL", "CHL", "URU", "PER", "ECU", "VEN", "JPN", "SWE", "NOR", "DNK", "IRL")
+
+
+def results_pool(client, now: datetime) -> list[dict]:
+    """Resultados recientes de todas las ligas de football-data (formato común HomeTeam/FTHG…)."""
+    rows = []
+    for div in MAIN_DIVS:
+        rows += _csv(client, f"/mmz4281/{season_code(now)}/{div}.csv")
+    for code in NEW_LEAGUES:
+        for r in _csv(client, f"/new/{code}.csv"):
+            if r.get("Res"):
+                rows.append({"Div": code, "Date": r.get("Date", ""), "HomeTeam": r.get("Home", ""), "AwayTeam": r.get("Away", ""),
+                             "FTHG": r.get("HG"), "FTAG": r.get("AG"), "FTR": r.get("Res")})
+    return rows
+
+
+def settle_image_picks(db: Session, client=None, now: datetime | None = None) -> int:
+    from app.signals.pick_vision import match_row, settle_pick
+    from app.signals.telegram import TelegramSignal
+
+    client = client or httpx
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
+    pending = [r for r in db.scalars(select(TelegramSignal).where(TelegramSignal.outcome.like("%(imagen)%")))
+               if any("resultado" not in p for p in (r.parsed or {}).get("picks", []))
+               and r.created_at and r.created_at < now - timedelta(hours=3)]
+    if not pending:
+        return 0
+    pool = results_pool(client, now)
+    done = 0
+    for row in pending:
+        picks = []
+        for p in row.parsed.get("picks", []):
+            if "resultado" not in p:
+                match = match_row(p, pool)
+                if match is not None:
+                    won = settle_pick(p, match)
+                    p = {**p, "resultado": "ganada" if won else "perdida" if won is False else "no comprobable",
+                         "marcador": f"{match['HomeTeam']} {match['FTHG']}-{match['FTAG']} {match['AwayTeam']}"}
+                    done += 1
+                elif row.created_at < now - timedelta(days=5):
+                    p = {**p, "resultado": "no encontrado"}
+            picks.append(p)
+        row.parsed = {**row.parsed, "picks": picks}  # reasignar: SQLAlchemy no ve cambios dentro del JSON
+    db.commit()
+    return done
+
+
 # --- resumen y bucle ------------------------------------------------------------------------
 
 def summary(db: Session) -> list[dict]:
@@ -360,7 +413,7 @@ def run_once(session_factory=None) -> dict:
             except Exception as exc:  # noqa: BLE001 — una fuente caída no frena a la otra
                 db.rollback()
                 logger.warning("bets: scan %s failed (%s)", name, exc)
-        for name, fn in (("europa", settle_europe), ("america", settle_odds_api)):
+        for name, fn in (("europa", settle_europe), ("america", settle_odds_api), ("tipsters", settle_image_picks)):
             try:
                 out[f"liquidadas_{name}"] = fn(db)
             except Exception as exc:  # noqa: BLE001
@@ -375,11 +428,15 @@ async def bets_loop(stop_event: asyncio.Event) -> None:
     while not stop_event.is_set():
         now = datetime.now(timezone.utc)
         if last is None or now - last >= timedelta(hours=6):
-            last = now
             try:
-                logger.info("bets: %s", await asyncio.to_thread(run_once))
+                out = await asyncio.to_thread(run_once)
+                logger.info("bets: %s", out)
+                # si falló una fuente (sin red al despertar la PC), reintenta en 15 min y no en 6 h
+                ok = "nuevas_europa" in out and "liquidadas_europa" in out
+                last = now if ok else now - timedelta(hours=6) + timedelta(minutes=15)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("bets: cycle failed (%s)", exc)
+                last = now - timedelta(hours=6) + timedelta(minutes=15)
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=900)
         except TimeoutError:

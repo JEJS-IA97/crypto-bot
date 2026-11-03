@@ -13,8 +13,8 @@ const MARKET = {
     "tarjetas_o1.5": "Más de 1,5 tarjetas", "tarjetas_o2.5": "Más de 2,5 tarjetas", "tarjetas_u6.5": "Menos de 6,5 tarjetas",
     "faltas_o18.5": "Más de 18,5 faltas", H: "Gana el local", D: "Empate", A: "Gana el visitante",
 };
-const SHORT = { seguro: "Seguras", parley_seguro: "Parley de seguras", valor: "Valor", favorito_130: "Favorito ≤1,30", parley3_130: "Parley de favoritos" };
-const FILTERS = [["todas", "Todas"], ["seguro", "Seguras"], ["parley_seguro", "Parleys"], ["valor", "Valor"], ["favorito_130", "Favoritos"]];
+const SHORT = { seguro: "Seguras", parley_seguro: "Parley de 3 seguras", parley5_seguro: "Parley de 5 seguras", valor: "Valor", favorito_130: "Favorito ≤1,30", parley3_130: "Parley de favoritos" };
+const FILTERS = [["todas", "Todas"], ["seguro", "Seguras"], ["parley_seguro", "Parley 3"], ["parley5_seguro", "Parley 5"], ["valor", "Valor"], ["favorito_130", "Favoritos"]];
 
 const teams = (key) => key.split("|").slice(2, 4).join(" – ");
 const pick = (s) => s.split(",").map((x) => MARKET[x] || x);
