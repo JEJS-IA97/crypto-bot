@@ -14,9 +14,9 @@
   "configurado": false
  },
  {
-  "id": -1003642095241,
-  "title": "Mundo Deportivo",
-  "kind": "canal",
+  "id": -1002063753004,
+  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
+  "kind": "grupo",
   "silenciado": null,
   "configurado": false
  },
@@ -28,9 +28,23 @@
   "configurado": true
  },
  {
-  "id": -1002063753004,
-  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
-  "kind": "grupo",
+  "id": -1003642095241,
+  "title": "Mundo Deportivo",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001410368992,
+  "title": "Gainblers",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1003704030679,
+  "title": "Lafiebredelpick",
+  "kind": "canal",
   "silenciado": null,
   "configurado": false
  },
@@ -52,13 +66,6 @@
   "id": -1001239614102,
   "title": "Mayami",
   "kind": "grupo",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1001410368992,
-  "title": "Gainblers",
-  "kind": "canal",
   "silenciado": null,
   "configurado": false
  },

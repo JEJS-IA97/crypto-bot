@@ -80,9 +80,17 @@ def add_missing_columns(bind: Engine) -> None:
         for table in Base.metadata.sorted_tables:
             if not inspector.has_table(table.name):
                 continue
-            existing = {c["name"] for c in inspector.get_columns(table.name)}
+            cols = {c["name"]: c for c in inspector.get_columns(table.name)}
+            existing = set(cols)
             for column in table.columns:
                 if column.name in existing:
+                    # ensanchar VARCHAR si el modelo pide más largo (solo crece, nunca recorta)
+                    new_len = getattr(column.type, "length", None)
+                    old_len = getattr(cols[column.name]["type"], "length", None)
+                    if bind.dialect.name == "postgresql" and new_len and old_len and new_len > old_len:
+                        conn.execute(text(f"ALTER TABLE {preparer.quote(table.name)} ALTER COLUMN "
+                                          f"{preparer.quote(column.name)} TYPE VARCHAR({new_len})"))
+                        logger.warning("schema drift fixed: widened %s.%s to %s", table.name, column.name, new_len)
                     continue
                 # shortcut: solo la columna (sin índices/unique); migrar con
                 # Alembic cuando haga falta replicar constraints.
@@ -150,6 +158,9 @@ async def lifespan(app: FastAPI):
     )
     telegram_task = asyncio.create_task(telegram_loop(stop_event))
     from app.services.restart_watch import restart_loop
+    from app.signals.discord_watch import discord_loop
+
+    discord_task = asyncio.create_task(discord_loop(stop_event))
 
     restart_task = asyncio.create_task(restart_loop(stop_event))
     from app.signals.bingx_watch import bingx_loop
@@ -197,6 +208,7 @@ async def lifespan(app: FastAPI):
     if bingx_feed_task is not None:
         await bingx_feed_task
     await restart_task
+    await discord_task
     if context_task is not None:
         await context_task
     if bets_task is not None:

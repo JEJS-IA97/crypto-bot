@@ -71,6 +71,13 @@ def _balances(db: Session, rows: list[dict[str, Any]], principal: dict[str, Any]
             "open_positions": principal["open_positions"],
             "trades": principal["trades"],
             "copies": sorted(runner.champions) if runner else [],
+            "positions": [
+                {"par": sym, "lado": p.side, "entrada": float(p.entry), "fuente": p.regime, "abierta": p.opened_ts,
+                 "stop": float(p.stop) if p.stop is not None else None,
+                 "objetivo": float(p.take_profit) if p.take_profit is not None else None,
+                 "pnl": round(float(p.value(runner.prices.get(sym, p.entry)) - p.notional), 2)}
+                for sym, p in (account.positions.items() if account else [])
+            ],
         }
     initial = sum(r["capital"] for r in rows)
     active = [a for k, a in runner.accounts.items() if k[0] != live.PRINCIPAL] if runner and runner.accounts else []
@@ -197,6 +204,11 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
     for title, parsed in db.execute(select(TelegramSignal.chat_title, TelegramSignal.parsed)):
         if (parsed or {}).get("kind") == "apuesta":
             tips.setdefault(title, []).append(parsed)
+        if (parsed or {}).get("kind") == "apuesta_img":  # cada pick de la imagen cuenta como uno
+            for p in parsed.get("picks", []):
+                res = p.get("resultado")
+                tips.setdefault(title, []).append({"kind": "apuesta", "cuota": float(p.get("cuota") or 1.0),
+                                                   "resultado": res if res in ("ganada", "perdida") else None})
         if (parsed or {}).get("verificada"):
             verified.setdefault(title, []).append(parsed["verificada"])
         stats = channels.setdefault(title, {"mensajes": 0, "senales": 0, "ganadas": 0, "perdidas": 0})

@@ -113,20 +113,20 @@ def safe_picks(stats: dict, row: dict) -> list[dict]:
     return sorted(found, key=lambda x: -x["fair_prob"])[:PER_MATCH]
 
 
-def safe_parlays(picks: list[tuple[str, dict]]) -> list[dict]:
-    """Parley de 3 seguras de partidos distintos (las más probables primero)."""
+def safe_parlays(picks: list[tuple[str, dict]], size: int = 3) -> list[dict]:
+    """Parley de `size` seguras de partidos distintos (las más probables primero)."""
     best: dict[str, dict] = {}
     for match_key, p in picks:
         if match_key not in best or p["fair_prob"] > best[match_key]["fair_prob"]:
             best[match_key] = p
     ranked = sorted(best.items(), key=lambda x: -x[1]["fair_prob"])
     out = []
-    for i in range(0, len(ranked) - 2, 3):
-        group = ranked[i:i + 3]
+    for i in range(0, len(ranked) - size + 1, size):
+        group = ranked[i:i + size]
         prob, odds = 1.0, 1.0
         for _, p in group:
             prob *= p["fair_prob"]
             odds *= p["odds"]
-        out.append({"strategy": "parley_seguro", "match": " + ".join(k for k, _ in group),
+        out.append({"strategy": "parley_seguro" if size == 3 else f"parley{size}_seguro", "match": " + ".join(k for k, _ in group),
                     "selection": ",".join(p["selection"] for _, p in group), "odds": round(odds, 3), "fair_prob": prob})
     return out
