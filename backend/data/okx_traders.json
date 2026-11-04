@@ -1,5 +1,5 @@
 {
- "actualizado": "2026-11-04T15:45:16.882174+00:00",
+ "actualizado": "2026-11-04T16:34:34.195327+00:00",
  "traders": [
   {
    "mercado": "Spot",
@@ -274,7 +274,7 @@
    "dias": 530,
    "pnl_usd": 354724,
    "retorno_pct": 52.3,
-   "copiadores": 51,
+   "copiadores": 50,
    "pnl_copiadores_usd": 691,
    "dias_gana": 74,
    "dias_pierde": 76,
@@ -300,7 +300,7 @@
    "dias": 605,
    "pnl_usd": 207849,
    "retorno_pct": 61.5,
-   "copiadores": 40,
+   "copiadores": 39,
    "pnl_copiadores_usd": 1135,
    "dias_gana": 111,
    "dias_pierde": 121,
@@ -330,8 +330,8 @@
    "dias_gana": 100,
    "dias_pierde": 96,
    "posiciones": 100,
-   "acierto": 72.0,
-   "payoff": 4.97,
+   "acierto": 75.0,
+   "payoff": 4.71,
    "largos_pct": 59,
    "horas_mediana": 201.9,
    "apalancamiento_mediano": 5.0,
@@ -488,26 +488,26 @@
    "pnl_copiadores_usd": 495169,
    "dias_gana": 187,
    "dias_pierde": 169,
-   "posiciones": 28,
-   "acierto": 75.0,
-   "payoff": 5.99,
-   "largos_pct": 36,
-   "horas_mediana": 242.1,
+   "posiciones": 27,
+   "acierto": 74.1,
+   "payoff": 6.1,
+   "largos_pct": 33,
+   "horas_mediana": 241.9,
    "apalancamiento_mediano": 10.0,
    "opera": [
     "BTC",
-    "CL",
     "NBIS",
+    "CL",
     "CRCL",
     "MSTR"
    ],
-   "en_nuestros_pares_pct": 61
+   "en_nuestros_pares_pct": 63
   }
  ],
  "lecciones": [
   "Observatorio OKX: 10 traders con ≥180 días cuyos copiadores ganan.",
   "Acierto mediano 76 %, payoff mediano 1.39, largos 56 %, duración mediana 19.5 h, apalancamiento mediano 20x.",
-  "Mine13 (386 días, copiadores +495,169 USD): acierto 75.0 %, payoff 5.99, 36 % largos, 242.1 h, 10.0x, opera BTC, CL, NBIS, CRCL, MSTR.",
+  "Mine13 (386 días, copiadores +495,169 USD): acierto 74.1 %, payoff 6.1, 33 % largos, 241.9 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.",
   "BestMax (854 días, copiadores +106,048 USD): acierto 76.0 %, payoff 1.39, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.",
   "01pp (247 días, copiadores +68,871 USD): acierto 61.0 %, payoff 0.97, 79 % largos, 10.5 h, 10.0x, opera CRCL, ETH, ZEC, BTC, MSTR."
  ]

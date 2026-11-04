@@ -259,7 +259,7 @@ class LabApiTests(unittest.TestCase):
             body = self.client.get("/api/lab/live").json()
         self.assertFalse(body["feed"]["connected"])
         self.assertEqual(body["rows"], [])
-        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
+        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "reversion_2h_futuros", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
 
 
 if __name__ == "__main__":
@@ -280,3 +280,14 @@ class PairViewTests(unittest.TestCase):
         self.assertTrue(all("estado" in v for v in view["estrategias"]))
         runner.note("abre", "x abrió LONG", "BTCUSDT")
         self.assertEqual(runner.activity[0]["tipo"], "abre")
+
+
+class Reversal2hTests(unittest.TestCase):
+    def test_fades_extreme_two_hour_move(self):
+        from app.lab.strategies import Reversal2hFutures
+
+        closes = [100 + (0.1 if i % 2 else -0.1) for i in range(600)] + [100, 106]  # +6 % en 2 h
+        bars = [bar(i * H, c, c + 0.2, c - 0.2, c) for i, c in enumerate(closes)]
+        sig = Reversal2hFutures().signals(bars)
+        self.assertEqual(sig[-1].side, "SHORT")
+        self.assertIsNone(sig[-3])

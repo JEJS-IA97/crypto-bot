@@ -431,6 +431,37 @@ class Reversal4hFutures(Strategy):
         return out
 
 
+class Reversal2hFutures(Strategy):
+    """Versión rápida de la reversión (pedido de José, 4-nov: operar más seguido). Research con
+    velas de 1 h, 15 pares, ~375 días (entreno 2/3, examen 1/3), comisión maker 0,02 %/lado:
+    movimiento de 2 h > 3σ (σ de las últimas 500 h) → en contra 2 h. Entreno +0,054 %/op (1.119),
+    examen +0,052 %/op (598), ~5 operaciones al día entre los 15 pares. Con comisión taker pierde:
+    solo vale con órdenes límite. Ventaja fina: paper."""
+
+    name = "reversion_2h_futuros"
+    label = "Reversión rápida: movimiento extremo de 2 h (futuros, paper)"
+    timeframe = "1h"
+    warmup = 520
+    max_hold = 2
+    fee_rate = Decimal("0.0002")
+    description = "Si las últimas 2 h se movieron más de 3 desviaciones (σ de 500 h), opera en contra 2 h. Maker de futuros."
+
+    def signals(self, bars):
+        c = [b.c for b in bars]
+        r2 = [None] * 2 + [c[i] / c[i - 2] - 1 for i in range(2, len(c))]
+        sd = ind.stdev([x or 0.0 for x in r2], 500)
+        a = ind.atr(bars)
+        out: list[Signal | None] = [None] * len(bars)
+        for i in range(510, len(bars)):
+            if sd[i] is None or r2[i] is None or a[i] is None or sd[i] == 0:
+                continue
+            if r2[i] > 3 * sd[i]:
+                out[i] = Signal("SHORT", c[i] + 4 * a[i], None)
+            elif r2[i] < -3 * sd[i]:
+                out[i] = Signal("LONG", c[i] - 4 * a[i], None)
+        return out
+
+
 class SessionMomentum16(Strategy):
     """Inspirada en Quantumxx (BingX, el trader que copia José): entradas a hora fija, objetivo corto,
     ~1 h. Research (research/sesion.py, 10 pares, ~1 año): a las 16:00 UTC, a favor del movimiento de
@@ -464,6 +495,7 @@ ALL_STRATEGIES: list[Strategy] = [
     BollingerTrend1h(),
     SessionMomentum16(),
     Reversal4hFutures(),
+    Reversal2hFutures(),
     Momentum48hShort1h(),
     Breakout168h1h(),
     Momentum48h1h(),
@@ -480,7 +512,7 @@ ALL_STRATEGIES: list[Strategy] = [
 ]
 # Torneo en vivo: solo las fijas que no perdieron en vivo (2026-10-24, ~240 trades).
 # Las demás quedan en ALL_STRATEGIES para backtest y en el cerebro como "retirada".
-STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto", "reversion_4h_futuros", "sesion_16utc_futuros")]
+STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto", "reversion_4h_futuros", "reversion_2h_futuros", "sesion_16utc_futuros")]
 RETIRED = {
     "orb_ny": "PF 0.60 en 10 trades", "orb_ny_trend": "PF 0.95 en 12 trades, comisiones > ganancia",
     "impulse_pullback": "PF 0.60 en 11 trades", "ema_cross": "PF 0.46 en 10 trades",

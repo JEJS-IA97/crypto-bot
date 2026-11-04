@@ -1,5 +1,12 @@
 [
  {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1001753318356,
   "title": "Cupones Udemy - Aprende Todo GRATIS",
   "kind": "canal",
@@ -12,6 +19,13 @@
   "kind": "canal",
   "silenciado": null,
   "configurado": true
+ },
+ {
+  "id": -1001377218448,
+  "title": "Trabajo en Remoto",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
  },
  {
   "id": -1003642095241,
@@ -28,8 +42,8 @@
   "configurado": false
  },
  {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
+  "id": -1002427758528,
+  "title": "Trabajos Remotos 🌎 LATAM",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
@@ -49,6 +63,13 @@
   "configurado": false
  },
  {
+  "id": -1001300618474,
+  "title": "Ofertas para Devs en Colombia",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1003694841301,
   "title": "Trabajo Remoto - Empleoverse 🌎",
   "kind": "canal",
@@ -63,6 +84,13 @@
   "configurado": false
  },
  {
+  "id": -1001745057910,
+  "title": "Vacantes Remotas | Trabajos Remotos",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1001239614102,
   "title": "Mayami",
   "kind": "grupo",
@@ -70,8 +98,36 @@
   "configurado": false
  },
  {
+  "id": -1001314766367,
+  "title": "Trabajos remotos 🌎",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1002014276394,
   "title": "Sandreke | Data & Programación 👨‍💻",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001436176020,
+  "title": "Ofertas Laborales Prog Vzla",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1002036478713,
+  "title": "Trabajos Remotos en español e ingles.",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1002032238638,
+  "title": "Remote & Web3 Jobs Worldwide | Bossjob",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
