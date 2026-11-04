@@ -165,7 +165,7 @@ class LiveRunnerTests(unittest.TestCase):
                 self.assertEqual((row.status, row.reason), ("CLOSED", "tp"))
                 self.assertGreater(row.pnl, 0)
 
-    def test_principal_copies_only_proven_long_sources(self):
+    def test_principal_copies_only_proven_sources(self):
         from app.lab import store
         from app.lab.engine import Trade
 
@@ -175,7 +175,7 @@ class LiveRunnerTests(unittest.TestCase):
         winners = [t("a", "LONG", 2, i) for i in range(4)] + [t("a", "LONG", -1, 9)]
         shorts = [t("b", "SHORT", 2, i) for i in range(6)]
         dupes = [t("c", "LONG", 1, 0)] * 6  # la misma operación en 3 cuentas no cuenta 3 veces
-        self.assertEqual(live.champions(winners + shorts + dupes, set()), {"a"})
+        self.assertEqual(live.champions(winners + shorts + dupes, set()), {"a", "b"})  # cortos también cuentan
         self.assertEqual(live.champions(winners, {"a"}), set())
         both = [t("rev_futuros", "SHORT", 2, i) for i in range(3)] + [t("rev_futuros", "LONG", 1, i + 10) for i in range(2)]
         self.assertEqual(live.champions(both, set()), {"rev_futuros"})  # futuros: cuentan ambos lados

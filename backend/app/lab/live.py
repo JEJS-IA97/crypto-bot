@@ -44,9 +44,10 @@ STREAK_WINDOW, STREAK_LOSSES, STREAK_PAUSE_MS = 10, 5, 48 * 3_600_000  # video "
 
 
 def two_sided(name: str) -> bool:
-    """Estrategias de futuros (1x, paper): la copia las sigue en largo y en corto y sin el filtro
-    de BTC (ya traen el suyo; la reversión justamente entra contra el movimiento)."""
-    return name.endswith("_futuros")
+    """La copia es paper 1x estilo futuros: sigue a las ganadoras en largo y en corto, y sin un
+    filtro de BTC propio (cada estrategia ya aplica el suyo). Pedido de José, 4-nov: copiar lo que
+    funciona en el torneo, no solo los largos."""
+    return True
 
 
 def champions(trades, benched: set[str]) -> set[str]:
@@ -352,9 +353,12 @@ class LabRunner:
         delay = 1
         while not stop_event.is_set():
             try:
-                await asyncio.to_thread(self.seed)
+                # tras un corte corto no hace falta recargar 75 historiales: solo si pasaron >30 min
+                if time.time() - getattr(self, "_seeded_at", 0) > 1800:
+                    await asyncio.to_thread(self.seed)
+                    self._seeded_at = time.time()
                 await asyncio.to_thread(self.close_orphans)
-                async with websockets.connect(self.stream_url(), ping_interval=20) as ws:
+                async with websockets.connect(self.stream_url(), ping_interval=30, ping_timeout=60) as ws:
                     self.connected, delay = True, 1
                     logger.info("lab: websocket connected (%s symbols)", len(self.symbols))
                     while not stop_event.is_set():

@@ -457,17 +457,57 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Por qué: En rangos de baja volatilidad, las reversiones solo superan el umbral de tarifas si el RSI baja a niveles extremos (<25) con ratio beneficio/riesgo mayor a 1.5.
 - Cómo probarla: Backtest de RSI < 20 en 15m con stop_atr holgado de 2.0 y objetivo de 3.0 ATR.
 
-### Eficiencia de la reversión en rangos de 1h
-- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
-- Por qué: La mayoría de los activos se encuentran en régimen de rango, lo que favorece entradas en sobreventa utilizando RSI y filtros de volatilidad ATR.
-- Cómo probarla: Desplegar estrategia de reversión en marco de 1h con umbrales de RSI ajustados para capturar rebotes en la parte baja del rango.
+### Reversión rápida en marcos de 1h con sobreventa RSI
+- Fecha: 2026-11-03 19:50 UTC · Estado: pendiente
+- Por qué: Los activos en rango con alta volatilidad tienden a rebotar con fuerza desde niveles de soporte locales identificables mediante RSI bajo.
+- Cómo probarla: Implementar la familia reversion en 1h con un rsi_low conservador y validar que el profit factor supere 1.5 en validación cruzada.
 
-### Robustez de cruces EMA y RSI en 4h
-- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
-- Por qué: La combinación de tendencia moderada y confirmación de momentum en 4h ha mostrado el mejor desempeño relativo frente a marcos diarios puros.
-- Cómo probarla: Optimizar los parámetros de las EMAs rápida y lenta dentro de los rangos permitidos para el marco de 4h.
+### Filtro de tendencia EMA con confirmación de momentum
+- Fecha: 2026-11-03 19:50 UTC · Estado: pendiente
+- Por qué: Combinar una EMA rápida y lenta en 4h ayuda a filtrar los falsos positivos cuando el mercado oscila lateralmente.
+- Cómo probarla: Probar la familia ema_rsi en 4h ajustando las medias para capturar impulsos medianos manteniendo un stop loss acotado por ATR.
 
-### Filtro de momentum alcista en activos con baja volatilidad
-- Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
-- Por qué: Los activos en rango con baja volatilidad ofrecen mejores puntos de entrada para impulsos de corto plazo sin incurrir en deslizamientos excesivos.
-- Cómo probarla: Evaluar la familia de momentum en marcos de 4h enfocándose en activos específicos con retornos mínimos positivos.
+### Momento direccional condicionado a retornos mínimos positivos
+- Fecha: 2026-11-03 19:50 UTC · Estado: pendiente
+- Por qué: Exigir un retorno mínimo porcentual evita entrar en activos con baja fuerza direccional durante periodos de indecisión.
+- Cómo probarla: Ejecutar la familia momentum en 4h con un lookback medio y evaluar la reducción del drawdown máximo.
+
+### Filtro RSI en 4h mitiga serruchos en mercados en rango
+- Fecha: 2026-11-03 23:50 UTC · Estado: pendiente
+- Por qué: La combinación EMA 21/89 con RSI muestra el mejor rendimiento en vivo al exigir confirmación de momentum antes de entrar.
+- Cómo probarla: Evaluar la familia ema_rsi en TF 4h comparando su profit factor contra un cruce EMA simple.
+
+### Momentum diario ampliado filtra el ruido intradía
+- Fecha: 2026-11-03 23:50 UTC · Estado: pendiente
+- Por qué: Lookbacks cortos en 4h fallaron en entrenamiento (PF 0.73). Una ventana de 30 días en TF 1d captura tendencias más maduras.
+- Cómo probarla: Testear la familia momentum en TF 1d con lookback de 30 y min_ret de 5% sobre pares en tendencia.
+
+### Reversión a la media en 1h optimiza el volumen de señales
+- Fecha: 2026-11-03 23:50 UTC · Estado: pendiente
+- Por qué: TF 15m generó solo 10 operaciones. Aumentar a 1h incrementa la duración y significancia de los rebotes de sobreventa.
+- Cómo probarla: Backtestear la familia reversion en TF 1h con rsi_low en 25 y medir la muestra de operaciones generadas.
+
+### Ajuste reactivo en EMA/RSI en 4h
+- Fecha: 2026-11-04 11:40 UTC · Estado: pendiente
+- Por qué: Un cruce de medias más rápido combinado con filtros RSI aprovecha mejor la volatilidad actual sin quedar atrapado en rangos extendidos.
+- Cómo probarla: Evaluar una combinación EMA rápida 12 y lenta 50 con take profit y stop loss calculados por ATR.
+
+### Filtro de retorno acumulado en momentum
+- Fecha: 2026-11-04 11:40 UTC · Estado: pendiente
+- Por qué: Exigir un umbral mínimo de retorno superior al 5% en 24 periodos (4h) evita entradas falsas en activos laterales y captura el flujo hacia pares tendenciales como ZEC o NEAR.
+- Cómo probarla: Testear lookback de 24 velas 4h con min_ret del 5%.
+
+### Optimización de momentum a corto plazo en activos con tendencia
+- Fecha: 2026-11-04 15:46 UTC · Estado: pendiente
+- Por qué: Las pruebas previas muestran éxito relativo en momentum cuando se aplican a temporalidades de 4h en activos específicos con tendencia activa como ZEC o NEAR.
+- Cómo probarla: Desplegar la estrategia de momentum con lookback moderado en temporalidad de 4h y evaluar el factor de beneficio en un ciclo de 7 días.
+
+### Reversión basada en RSI extremo en marcos rápidos
+- Fecha: 2026-11-04 15:46 UTC · Estado: pendiente
+- Por qué: El régimen actual de la mayoría de los activos es de rango con alta volatilidad, lo que favorece rebotes desde niveles de sobreventa.
+- Cómo probarla: Probar la familia de reversión en 1h con umbrales estrictos de RSI bajo y control de stop loss por ATR.
+
+### Filtro de tendencia con medias móviles rápidas
+- Fecha: 2026-11-04 15:46 UTC · Estado: pendiente
+- Por qué: Las medias lentas fallan en capturar giros rápidos; periodos más cortos se adaptan mejor a la rotación de capital actual.
+- Cómo probarla: Implementar ema_rsi con parámetros rápidos en 1h para capturar impulsos iniciales evitando falsos rompimientos.

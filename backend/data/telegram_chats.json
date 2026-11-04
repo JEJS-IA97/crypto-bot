@@ -1,22 +1,8 @@
 [
  {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
   "id": -1001753318356,
   "title": "Cupones Udemy - Aprende Todo GRATIS",
   "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1002063753004,
-  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
-  "kind": "grupo",
   "silenciado": null,
   "configurado": false
  },
@@ -35,6 +21,20 @@
   "configurado": false
  },
  {
+  "id": -1003704030679,
+  "title": "Lafiebredelpick",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1001410368992,
   "title": "Gainblers",
   "kind": "canal",
@@ -42,9 +42,9 @@
   "configurado": false
  },
  {
-  "id": -1003704030679,
-  "title": "Lafiebredelpick",
-  "kind": "canal",
+  "id": -1002063753004,
+  "title": "📈 Grupo Trading for Everyone (Futuros y Criptos)",
+  "kind": "grupo",
   "silenciado": null,
   "configurado": false
  },
