@@ -512,12 +512,13 @@ ALL_STRATEGIES: list[Strategy] = [
 ]
 # Torneo en vivo: solo las fijas que no perdieron en vivo (2026-10-24, ~240 trades).
 # Las demás quedan en ALL_STRATEGIES para backtest y en el cerebro como "retirada".
-STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "momentum_48h_corto", "reversion_4h_futuros", "reversion_2h_futuros", "sesion_16utc_futuros")]
+STRATEGIES: list[Strategy] = [s for s in ALL_STRATEGIES if s.name in ("ema_rsi_4h", "bollinger_trend_1h", "ruptura_7d_1h", "momentum_48h_1h", "reversion_4h_futuros", "reversion_2h_futuros", "sesion_16utc_futuros")]
 RETIRED = {
     "orb_ny": "PF 0.60 en 10 trades", "orb_ny_trend": "PF 0.95 en 12 trades, comisiones > ganancia",
     "impulse_pullback": "PF 0.60 en 11 trades", "ema_cross": "PF 0.46 en 10 trades",
     "rsi_reversion": "5m: las comisiones se comen la reversión", "bollinger_squeeze": "PF 0.21 en 9 trades",
     "vwap_reversion": "PF 0.38 en 15 trades", "donchian_breakout": "PF 0.03 en 8 trades",
     "trend_daily": "0 de 3, la cubre la familia tendencia del cerebro",
+    "momentum_48h_corto": "0 de 4 en vivo, −6,12 USD (5-nov)",
 }
 BY_NAME = {s.name: s for s in ALL_STRATEGIES}

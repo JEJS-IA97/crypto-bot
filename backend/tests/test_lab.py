@@ -259,7 +259,7 @@ class LabApiTests(unittest.TestCase):
             body = self.client.get("/api/lab/live").json()
         self.assertFalse(body["feed"]["connected"])
         self.assertEqual(body["rows"], [])
-        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "reversion_2h_futuros", "momentum_48h_corto", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
+        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "reversion_2h_futuros", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
 
 
 if __name__ == "__main__":
@@ -291,3 +291,36 @@ class Reversal2hTests(unittest.TestCase):
         sig = Reversal2hFutures().signals(bars)
         self.assertEqual(sig[-1].side, "SHORT")
         self.assertIsNone(sig[-3])
+
+
+class NoEntryTests(unittest.TestCase):
+    def test_gold_and_brent_do_not_open(self):
+        self.assertIn("GOLDUSDT", live.NO_ENTRY)
+        self.assertIn("BRENTUSDT", live.NO_ENTRY)
+
+
+class LeverageTests(unittest.TestCase):
+    def test_three_x_triples_size_and_pnl(self):
+        from app.lab.engine import Account
+
+        one, three = Account("a", D("40")), Account("b", D("40"), leverage=D("3"))
+        for acc in (one, three):
+            acc.fee_rate = D("0")
+            acc.open(symbol="X", side="LONG", price=D("100"), stop=None, take_profit=None, ts=1, regime="r")
+        self.assertAlmostEqual(float(three.positions["X"].notional / one.positions["X"].notional), 3, places=2)
+        t1, t3 = one.close("X", D("101"), 2, "tp"), three.close("X", D("101"), 2, "tp")
+        self.assertAlmostEqual(float(t3.pnl / t1.pnl), 3, places=1)
+        self.assertAlmostEqual(float(three.equity()), 40 + float(t3.pnl), places=6)
+
+
+class LosersTests(unittest.TestCase):
+    def test_benches_strategies_that_lose_live(self):
+        from app.lab.engine import Trade
+
+        def t(name, pnl, i):
+            return Trade(name, D("100"), "BTCUSDT", "LONG", D("1"), D("1"), D("1"), i, i + 1, D(str(pnl)), D("0"), None, "r", "x")
+
+        bad = [t("bad", -1, i) for i in range(3)] + [t("bad", 0.5, 9)]
+        good = [t("good", 1, i) for i in range(4)]
+        few = [t("few", -1, i) for i in range(3)]
+        self.assertEqual(live.losers(bad + good + few), {"bad"})

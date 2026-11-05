@@ -510,11 +510,16 @@ def evolve_once(db: Session, history: History, ideas: list[dict] | None = None,
     return {"tested": tested, "promoted": promoted, "notes": notes}
 
 
+# Retiradas a mano (5-nov, pedido de José: fuera lo que pierde en vivo).
+FORCE_RETIRED = {"evo_tendencia_1d_85_168", "evo_tendencia_1d_59_162"}  # 0 de 2 cada una
+
+
 def live_strategies(db: Session) -> tuple[list[Strategy], set[str]]:
     """Lo que el torneo en vivo debe correr: evolucionadas vivas y nombres en banca."""
     rows = db.scalars(select(BrainGenome)).all()
-    evolved = [Evolved(r.name, r.family, r.params) for r in rows if r.status == "live" and r.origin != "fija"]
-    benched = {r.name for r in rows if r.status in ("banca", "retirada")}
+    evolved = [Evolved(r.name, r.family, r.params) for r in rows
+               if r.status == "live" and r.origin != "fija" and r.name not in FORCE_RETIRED]
+    benched = {r.name for r in rows if r.status in ("banca", "retirada")} | FORCE_RETIRED
     benched |= {p for r in rows for p in (r.metrics or {}).get("banca_pares", [])}
     return evolved, benched
 

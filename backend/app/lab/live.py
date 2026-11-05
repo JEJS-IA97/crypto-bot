@@ -38,8 +38,11 @@ HISTORY = 1000  # velas por par y timeframe (máximo de Binance por petición)
 LIVE_CAPITAL = Decimal("100")  # una cuenta por estrategia (antes 20/50/100: mismos trades x3)
 PRINCIPAL = "principal"  # tu cuenta de 40 USD: copia solo lo que ya ganó en vivo
 PRINCIPAL_MAX_OPEN = 3
+PRINCIPAL_LEVERAGE = Decimal(3)
+# Se siguen sus precios para cerrar lo abierto, pero no abren más: mercados que cierran el fin de semana.
+NO_ENTRY = {"GOLDUSDT", "BRENTUSDT"}
 CHAMPION_MIN_TRADES = 5
-CHAMPION_MIN_PF = Decimal("1.3")
+CHAMPION_MIN_PF = Decimal("1.1")  # 5-nov: copiar lo que gana en vivo (antes 1.3 dejaba fuera a ema_rsi_4h)
 STREAK_WINDOW, STREAK_LOSSES, STREAK_PAUSE_MS = 10, 5, 48 * 3_600_000  # video "win rate": 5 de 10 → parar
 
 
@@ -48,6 +51,24 @@ def two_sided(name: str) -> bool:
     filtro de BTC propio (cada estrategia ya aplica el suyo). Pedido de José, 4-nov: copiar lo que
     funciona en el torneo, no solo los largos."""
     return True
+
+
+def losers(trades) -> set[str]:
+    """Aprende sola qué sacar: ≥4 cierres en vivo, PnL neto < 0 y gana menos de 0,8 veces lo que pierde."""
+    seen, by = set(), {}
+    for t in trades:
+        key = (t.strategy, t.symbol, t.opened_ts)
+        if t.strategy == PRINCIPAL or key in seen:
+            continue
+        seen.add(key)
+        by.setdefault(t.strategy, []).append(t.pnl)
+    out = set()
+    for name, pnls in by.items():
+        wins = sum((p for p in pnls if p > 0), Decimal(0))
+        losses = -sum((p for p in pnls if p < 0), Decimal(0))
+        if len(pnls) >= 4 and wins - losses < 0 and wins < losses * Decimal("0.8"):
+            out.add(name)
+    return out
 
 
 def champions(trades, benched: set[str]) -> set[str]:
@@ -110,6 +131,9 @@ class LabRunner:
                 if strategy.fee_rate is not None and (strategy.name, LIVE_CAPITAL) in self.accounts:
                     self.accounts[(strategy.name, LIVE_CAPITAL)].fee_rate = strategy.fee_rate
             self.accounts.update(store.load_accounts(db, [PRINCIPAL], (self.principal_capital,)))
+            copy = self.accounts.get((PRINCIPAL, self.principal_capital))
+            if copy is not None:  # 5-nov, José: 3x como su copy trading de BingX (paper, futuros maker)
+                copy.leverage, copy.fee_rate = PRINCIPAL_LEVERAGE, Decimal("0.0002")
         self.sync_brain()
 
     def sync_brain(self) -> None:
@@ -121,6 +145,10 @@ class LabRunner:
             if evolved:
                 self.accounts.update(store.load_accounts(db, [s.name for s in evolved], (Decimal(EVOLVED_CAPITAL),)))
             trades = store.closed_trades(db)
+            fresh = losers(trades) - self.benched
+            if fresh:
+                self.note("aprende", f"Saca del torneo por perder en vivo: {', '.join(sorted(fresh))}.")
+            self.benched |= losers(trades)
             self.champions = champions(trades, self.benched)
         if not self.streak:  # al arrancar: reconstruye rachas y pausas con el historial
             seen = set()
@@ -302,7 +330,7 @@ class LabRunner:
                     self._checked["bloqueadas"] += 1
                     self.note("bloqueada", f"{strategy.name} quería {signal.side} en {symbol}, pero está en pausa (perdió 5 de 10).", symbol)
                     continue
-                if (signal is None or not running or strategy.name in self.benched
+                if (signal is None or not running or strategy.name in self.benched or symbol in NO_ENTRY
                         or f"{strategy.name}|{symbol}" in self.benched or (allowed and symbol not in allowed)):
                     continue
                 opened = account.open(

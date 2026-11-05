@@ -471,3 +471,43 @@ Ideas a probar en el torneo. Estado inicial: pendiente.
 - Fecha: 2026-11-03 15:50 UTC · Estado: pendiente
 - Por qué: Los activos en rango con baja volatilidad ofrecen mejores puntos de entrada para impulsos de corto plazo sin incurrir en deslizamientos excesivos.
 - Cómo probarla: Evaluar la familia de momentum en marcos de 4h enfocándose en activos específicos con retornos mínimos positivos.
+
+### Optimización de cruce de medias con filtro RSI en 4h
+- Fecha: 2026-11-04 19:46 UTC · Estado: pendiente
+- Por qué: La estrategia actual EMA 21/89 + RSI en 4h es la única rentable, lo que indica que combinar marcos temporales intermedios con filtros de sobrecompra/sobreventa funciona en el régimen actual.
+- Cómo probarla: Validar variantes de ema_rsi en 4h ajustando las medias rápidas entre 15 y 30 y las lentas entre 80 y 150 con stops basados en ATR.
+
+### Filtro de tendencia extendida en marcos diarios
+- Fecha: 2026-11-04 19:46 UTC · Estado: pendiente
+- Por qué: Las tendencias diarias puras sufren por whipsaws, pero adaptar los periodos rápidos y lentos a ventanas más amplias podría filtrar el ruido de la alta volatilidad.
+- Cómo probarla: Probar la familia tendencia en 1d con parámetros rápidos superiores a 50 y lentos superiores a 200 para capturar impulsos macro.
+
+### Momento direccional de mediano plazo en activos en tendencia
+- Fecha: 2026-11-04 19:46 UTC · Estado: pendiente
+- Por qué: Activos como BTC, ETH y BNB muestran regímenes de tendencia clara donde el impulso previo suele continuarse si se exige un retorno mínimo estricto.
+- Cómo probarla: Implementar la familia momentum en marco de 4h con un lookback de 24 a 48 periodos y exigencia de retorno mínimo positivo.
+
+### Filtrado por EMA rápida/lenta con RSI en 4h mitiga falsas entradas en rango
+- Fecha: 2026-11-04 23:46 UTC · Estado: pendiente
+- Por qué: La estrategia EMA 21/89 + RSI en 4h es la de mejor desempeño vivo (PF 3.42), evitando compras en zonas sobreextendidas.
+- Cómo probarla: Evaluar la combinación EMA (21, 89) en 4h con salidas dinámicas por ATR en un entorno sin posiciones cortas.
+
+### Momentum de corto alcance con umbral de retorno más exigente filtra el ruido
+- Fecha: 2026-11-04 23:46 UTC · Estado: pendiente
+- Por qué: Las configuraciones de momentum con lookback de 24 barras fallaron (PF < 0.66); reducir el lookback a 12 barras y exigir min_ret mayor a 0.05 captura movimientos explosivos reales.
+- Cómo probarla: Correr pruebas de backtest para momentum 4h con lookback=12 y min_ret=0.06.
+
+### Reversión rápida en marcos cortos de alta volatilidad
+- Fecha: 2026-11-05 11:40 UTC · Estado: pendiente
+- Por qué: Los activos en rango con alta volatilidad reaccionan fuertemente tras desviaciones extremas, beneficiando a la familia de reversión.
+- Cómo probarla: Validar en paper trading con la familia reversion utilizando un RSI bajo de 20 y un stop ATR ajustado a 1.5 en temporalidad de 1h.
+
+### Filtro de rupturas Donchian amplias
+- Fecha: 2026-11-05 11:40 UTC · Estado: pendiente
+- Por qué: Las rupturas con periodos cortos fallan; se requiere un periodo mayor para filtrar falsos breakout en mercados mixtos.
+- Cómo probarla: Probar la familia donchian con n=100 en temporalidad de 4h para capturar tendencias verdaderas evitando el ruido de rango.
+
+### Optimización de cruce EMA con filtros de volatilidad
+- Fecha: 2026-11-05 11:40 UTC · Estado: pendiente
+- Por qué: Los cruces simples de EMA sufren de whipsaw; incorporar ATR para salidas dinámicas protege el capital.
+- Cómo probarla: Ejecutar la familia ema_rsi en temporalidad de 4h con medias rápidas de 20 y lentas de 100 para evaluar reducción de drawdown.

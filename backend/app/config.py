@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     # por WebSocket de Binance; 20/50/100 USD virtuales por estrategia.
     lab_enabled: bool = False
     # Pares que solo están en BingX (API pública): "símbolo BingX:nombre interno".
-    # Oro y Brent fuera (4-nov): mercado cerrado el fin de semana; el salto del lunes disparaba la reversión (2 pérdidas).
-    lab_bingx_symbols: str = "HYPE-USDT:HYPEUSDT"
+    # Oro y Brent sin entradas nuevas (4-nov, ver NO_ENTRY en lab/live.py): solo se siguen para cerrar lo abierto.
+    lab_bingx_symbols: str = "HYPE-USDT:HYPEUSDT,NCCOGOLD2USD-USDT:GOLDUSDT,NCCO1OILBRENT2USD-USDT:BRENTUSDT"
     lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT,ZECUSDT,NEARUSDT,SUIUSDT,TRXUSDT,ENAUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
     # Cerebro: cada brain_interval_hours lee el torneo, consulta a Gemini,

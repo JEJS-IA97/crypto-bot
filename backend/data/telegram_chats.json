@@ -1,28 +1,7 @@
 [
  {
-  "id": -1001227529558,
-  "title": "Cupones y Cursos Gratis",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1001753318356,
-  "title": "Cupones Udemy - Aprende Todo GRATIS",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1002076646063,
-  "title": "Nelson - Opero en Vivo GRATIS 🎁",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": true
- },
- {
-  "id": -1001377218448,
-  "title": "Trabajo en Remoto",
+  "id": -1001300618474,
+  "title": "Ofertas para Devs en Colombia",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
@@ -35,8 +14,50 @@
   "configurado": false
  },
  {
+  "id": -1001753318356,
+  "title": "Cupones Udemy - Aprende Todo GRATIS",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001227529558,
+  "title": "Cupones y Cursos Gratis",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001377218448,
+  "title": "Trabajo en Remoto",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
   "id": -1003704030679,
   "title": "Lafiebredelpick",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1002076646063,
+  "title": "Nelson - Opero en Vivo GRATIS 🎁",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": true
+ },
+ {
+  "id": -1003694841301,
+  "title": "Trabajo Remoto - Empleoverse 🌎",
+  "kind": "canal",
+  "silenciado": null,
+  "configurado": false
+ },
+ {
+  "id": -1001745057910,
+  "title": "Vacantes Remotas | Trabajos Remotos",
   "kind": "canal",
   "silenciado": null,
   "configurado": false
@@ -63,30 +84,9 @@
   "configurado": false
  },
  {
-  "id": -1001300618474,
-  "title": "Ofertas para Devs en Colombia",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1003694841301,
-  "title": "Trabajo Remoto - Empleoverse 🌎",
-  "kind": "canal",
-  "silenciado": null,
-  "configurado": false
- },
- {
   "id": -1004380156934,
   "title": "Remote Jobs TI+",
   "kind": "grupo",
-  "silenciado": null,
-  "configurado": false
- },
- {
-  "id": -1001745057910,
-  "title": "Vacantes Remotas | Trabajos Remotos",
-  "kind": "canal",
   "silenciado": null,
   "configurado": false
  },

@@ -437,3 +437,52 @@ Lo que el bot probó y aprendió. Se le pasa a Gemini en cada ciclo.
 - Mine13 (386 días, copiadores +495,169 USD): acierto 74.1 %, payoff 6.1, 33 % largos, 241.9 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.
 - BestMax (854 días, copiadores +106,048 USD): acierto 76.0 %, payoff 1.39, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.
 - 01pp (247 días, copiadores +68,871 USD): acierto 61.0 %, payoff 0.97, 79 % largos, 10.5 h, 10.0x, opera CRCL, ETH, ZEC, BTC, MSTR.
+
+## 2026-11-04 19:46 UTC
+- Idea de Gemini rechazada, momentum 4h · 24 / 0.03: no gana en entrenamiento (PF 0.63).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-11-04 23:46 UTC
+- Idea de Gemini rechazada, momentum 4h · 12 / 0.06: no gana en entrenamiento (PF 1.06).
+- Idea de Gemini rechazada, donchian 4h · 40 / 2.5 / 6.0: no gana en entrenamiento (PF 0.42).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 2%, momentum 5%, reversion 2%.
+
+## 2026-11-05 11:41 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.25, largos 56 %, duración mediana 36.1 h, apalancamiento mediano 20x.
+- Mine13 (387 días, copiadores +510,232 USD): acierto 75.0 %, payoff 6.08, 36 % largos, 239.2 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.
+- BestMax (855 días, copiadores +105,986 USD): acierto 75.0 %, payoff 1.42, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.
+- 01pp (248 días, copiadores +74,190 USD): acierto 61.0 %, payoff 0.98, 78 % largos, 10.5 h, 10.0x, opera ETH, CRCL, ZEC, BTC, MSTR.
+
+## 2026-11-05 11:40 UTC
+- Idea de Gemini rechazada, reversion 1h · 20 / 1.5 / 2.5: pocas operaciones en entrenamiento (2).
+- Idea de Gemini rechazada, donchian 4h · 100 / 3.0 / 6.0: no gana en entrenamiento (PF 0.56).
+- Idea de Gemini rechazada, ema_rsi 4h · 20 / 120 / 2.0 / 4.0: no gana en entrenamiento (PF 0.73).
+- Probé 10 estrategias nuevas, aprobaron 0. Probabilidad de aprobar por familia: tendencia 5%, donchian 2%, ema_rsi 1%, momentum 5%, reversion 2%.
+
+## 2026-11-05 12:38 UTC
+- Observatorio OKX: 8 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.25, largos 56 %, duración mediana 36.1 h, apalancamiento mediano 20x.
+- Mine13 (387 días, copiadores +510,232 USD): acierto 75.0 %, payoff 6.08, 36 % largos, 239.2 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.
+- BestMax (855 días, copiadores +105,981 USD): acierto 75.0 %, payoff 1.42, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.
+- 01pp (248 días, copiadores +74,176 USD): acierto 61.0 %, payoff 0.98, 78 % largos, 10.5 h, 10.0x, opera ETH, CRCL, ZEC, BTC, MSTR.
+
+## 2026-11-05 12:48 UTC
+- Observatorio OKX: 7 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.31, largos 59 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (387 días, copiadores +510,232 USD): acierto 75.0 %, payoff 6.08, 36 % largos, 239.2 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.
+- BestMax (855 días, copiadores +105,981 USD): acierto 75.0 %, payoff 1.42, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.
+- 01pp (248 días, copiadores +74,176 USD): acierto 61.0 %, payoff 0.98, 78 % largos, 10.5 h, 10.0x, opera ETH, CRCL, ZEC, BTC, MSTR.
+
+## 2026-11-05 · Lección: cómo opera Quantumxx (BingX, copiado por José)
+- Historial real de José, 25-oct a 5-nov: 36 entradas y 28 cierres, todos en ZEC-USDT. 28 de 28 ganadas, +3,68 USDT con ~20 USDT de margen (≈ +18 % en 11 días), apalancamiento 15x.
+- Entra casi siempre a las 12:00 hora de Venezuela (16:00 UTC), con varias órdenes seguidas: promedia a la baja o al alza si el precio va en contra (estilo DCA o martingala) y cierra con una ganancia chica cuando el precio rebota (en 15–60 min).
+- Backtest de ese estilo en ZEC, con 1 año de velas de 5 m (16:00 UTC, hasta 4 entradas, objetivo +0,2–0,4 %): acierta 90–97 % de los días, pero el promedio es negativo (−0,19 % a −0,62 % por día en entreno). El peor día pierde −26 % a −55 % de lo expuesto; a 15x eso es una liquidación.
+- Conclusión: el 28 de 28 es el perfil típico de la martingala (muchas ganancias chicas y una pérdida enorme rara). No se copia en el torneo. Si José sigue copiándolo, que limite el monto en BingX.
+
+## 2026-11-05 12:53 UTC
+- Observatorio OKX: 7 traders con ≥180 días cuyos copiadores ganan.
+- Acierto mediano 75 %, payoff mediano 2.31, largos 59 %, duración mediana 40.9 h, apalancamiento mediano 20x.
+- Mine13 (387 días, copiadores +510,232 USD): acierto 75.0 %, payoff 6.08, 36 % largos, 239.2 h, 10.0x, opera BTC, NBIS, CL, CRCL, MSTR.
+- BestMax (855 días, copiadores +105,981 USD): acierto 75.0 %, payoff 1.42, 100 % largos, 3.1 h, 20.0x, opera PUMP, HYPE, SOL, XRP.
+- 01pp (248 días, copiadores +74,176 USD): acierto 61.0 %, payoff 0.98, 78 % largos, 10.5 h, 10.0x, opera ETH, CRCL, ZEC, BTC, MSTR.

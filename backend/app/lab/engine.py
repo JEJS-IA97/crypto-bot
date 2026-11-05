@@ -90,6 +90,7 @@ class Account:
     trades: list[Trade] = field(default_factory=list)
     skipped: int = 0
     fee_rate: Decimal = FEE_RATE  # spot 0,10 %; las de futuros simulan maker 0,02 %
+    leverage: Decimal = Decimal(1)  # >1: futuros paper (el efectivo puede quedar negativo = préstamo)
 
     def __post_init__(self) -> None:
         if not self.cash:
@@ -121,14 +122,19 @@ class Account:
             per_unit = abs(entry - stop)
             if per_unit <= 0 or (side == "LONG") != (stop < entry):
                 return None
-            qty = self.equity(prices) * RISK_PCT / per_unit
+            qty = self.equity(prices) * RISK_PCT * self.leverage / per_unit
         else:
             per_unit = None
             # Sin stop: 25 % del equity, pero nunca menos del mínimo de
             # Binance (con 20 USD el 25 % no llega a 5 USD).
-            budget = max(self.equity(prices) * STOPLESS_ALLOCATION, MIN_NOTIONAL * Decimal("1.01"))
+            budget = max(self.equity(prices) * STOPLESS_ALLOCATION * self.leverage, MIN_NOTIONAL * Decimal("1.01"))
             qty = budget / entry
-        max_qty = self.cash / (entry * (1 + self.fee_rate))
+        if self.leverage > 1:
+            used = sum((p.notional for p in self.positions.values()), Decimal(0))
+            room = max(self.equity(prices) * self.leverage - used, Decimal(0))
+            max_qty = room / (entry * (1 + self.fee_rate))
+        else:
+            max_qty = self.cash / (entry * (1 + self.fee_rate))
         qty = min(qty, max_qty).quantize(QTY_PLACES, rounding=ROUND_DOWN)
         notional = qty * entry
         if notional < MIN_NOTIONAL:
