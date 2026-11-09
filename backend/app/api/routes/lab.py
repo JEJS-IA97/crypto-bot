@@ -264,6 +264,19 @@ def activity(limit: int = 80) -> dict[str, Any]:
     return {"eventos": list(runner.activity)[:limit] if runner else []}
 
 
+@router.get("/real")
+def real_positions() -> dict[str, Any]:
+    """Lo que opera con dinero real en Binance Spot (solo compras de reversion_4h)."""
+    from app.lab import real
+
+    state = real.load()
+    pnl = sum(float(c["pnl"]) for c in state["cerradas"])
+    return {"activo": real.enabled(), "estrategia": real.SOURCE, "usd_por_operacion": float(real.REAL_USD),
+            "max_abiertas": real.REAL_MAX_OPEN, "tope_perdida_dia": float(real.REAL_DAILY_LOSS),
+            "abiertas": state["abiertas"], "cerradas": state["cerradas"][-20:][::-1],
+            "pnl_total": round(pnl, 4), "operaciones": len(state["cerradas"])}
+
+
 @router.get("/binance_check")
 def binance_check() -> dict[str, Any]:
     """Verifica la clave de Binance de José SIN operar: permisos, saldos y una orden de prueba

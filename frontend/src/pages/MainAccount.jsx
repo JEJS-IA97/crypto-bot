@@ -4,6 +4,31 @@ import { clock, coin, money, price, signed, tone } from "../components/room/fmt"
 import usePoll from "../components/room/usePoll";
 import { Badge, Card, Empty, PageHead, Skeleton, Stat } from "../components/ui";
 
+async function getReal() {
+    return (await api.get("/lab/real")).data;
+}
+
+function RealAccount() {
+    const { data } = usePoll(getReal, 30000);
+    if (!data) return <Card title="Dinero real en Binance"><Skeleton lines={3} /></Card>;
+    const open = Object.entries(data.abiertas || {});
+    return (
+        <Card title={`Dinero real en Binance ${data.activo ? "· activo" : "· apagado"}`}>
+            <div className="meta">Solo compras de {data.estrategia}, {data.usd_por_operacion} USD por operación, máximo {data.max_abiertas} abiertas; deja de comprar si pierde {data.tope_perdida_dia} USD en el día.</div>
+            <div className="meta num">{data.operaciones} cerradas · resultado <span className={tone(data.pnl_total)}>{signed(data.pnl_total)} USDT</span></div>
+            <div className="rows">
+                {open.map(([par, p]) => (
+                    <div className="row" key={par}><div><strong>Compra {coin(par)}</strong><div className="meta">{clock(p.abre)}</div></div><span className="right num">{money(p.costo)} USDT</span></div>
+                ))}
+                {data.cerradas.map((c) => (
+                    <div className="row" key={c.cierra}><div><strong>{coin(c.par)}</strong><div className="meta">{c.motivo} · {clock(c.cierra)}</div></div><span className={`right num ${tone(c.pnl)}`}>{signed(c.pnl)} USDT</span></div>
+                ))}
+                {!open.length && !data.cerradas.length && <Empty title="Esperando la próxima señal de compra" />}
+            </div>
+        </Card>
+    );
+}
+
 async function getCopyTraders() {
     return (await api.get("/lab/copytraders")).data;
 }
@@ -96,6 +121,7 @@ function MainAccount({ board }) {
                 title="Tu cuenta"
                 subtitle="40 USD que copian solo a las estrategias que ya ganaron en vivo (≥5 operaciones con ganancia), en largo y en corto, a 3x."
             />
+            <RealAccount />
             <CopyAccount board={board} />
             <CopyTraders />
             <div className="hero">

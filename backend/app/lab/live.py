@@ -27,7 +27,7 @@ from app.lab import store
 from app.lab.bars import TF_MINUTES, Bar
 from app.lab.engine import dec
 from app.lab.regime import RegimeLookup
-from app.lab import context
+from app.lab import context, real
 from app.lab.strategies import STRATEGIES
 from app.signals import alerts
 from app.services.binance_market_data_client import BinanceMarketDataClient
@@ -298,6 +298,8 @@ class LabRunner:
         del series[:-HISTORY]
         if tf == "1h":
             self.regimes[symbol] = RegimeLookup(series)
+            if symbol == "BTCUSDT":
+                real.in_background(real.close_stale, note=self.note)
         tf_ms = TF_MINUTES[tf] * 60_000
         close_ts = bar.ts + tf_ms
         price = self.prices.get(symbol, dec(bar.c))
@@ -354,6 +356,8 @@ class LabRunner:
                         store.save_open(db, account, opened)
                     self.note("abre", f"{strategy.name} abrió {signal.side} en {symbol} a {price} "
                                       f"({float(opened.notional):.2f} USD).", symbol)
+                    if strategy.name == real.SOURCE and signal.side == "LONG":
+                        real.in_background(real.open_long, symbol, note=self.note)
                     copied = self.mirror(strategy.name, symbol, signal.side, opened.stop, opened.take_profit, close_ts)
                     if copied:
                         self.note("copia", f"La cuenta de copia siguió a {strategy.name}: {signal.side} en {symbol}.", symbol)
@@ -369,6 +373,8 @@ class LabRunner:
         alerts.on_close(account.strategy, "Cuenta principal", symbol, trade)
         if trade is not None:
             self._record(account.strategy, trade.pnl > 0, trade.closed_ts)
+            if account.strategy == real.SOURCE and trade.side == "LONG":
+                real.in_background(real.close_long, symbol, reason, note=self.note)
         mirrored = self.principal.positions.get(symbol) if self.principal and account.strategy != PRINCIPAL else None
         if mirrored is not None and mirrored.regime == account.strategy[:40]:
             self._close(self.principal, symbol, price, reason)
