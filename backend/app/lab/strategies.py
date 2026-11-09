@@ -409,6 +409,10 @@ class Reversal4hFutures(Strategy):
 
     name = "reversion_4h_futuros"
     label = "Reversión tras movimiento extremo de 4 h (futuros, paper)"
+    # 9-nov: probada en 38 monedas, 250 días, 2.050 operaciones (PF 1,12 maker). Solo las que ganaron
+    # en las dos mitades (PF > 1,1 en ambas); ZEC, NEAR, UNI, AAVE, INJ, TIA, ARB perdían.
+    symbols = frozenset({"BTCUSDT", "SOLUSDT", "PEPEUSDT", "DOGEUSDT", "AVAXUSDT", "SUIUSDT", "LINKUSDT", "LTCUSDT",
+                         "APTUSDT", "FILUSDT", "ATOMUSDT", "ETCUSDT", "ONDOUSDT", "WIFUSDT"})
     timeframe = "1h"
     warmup = 200
     max_hold = 4

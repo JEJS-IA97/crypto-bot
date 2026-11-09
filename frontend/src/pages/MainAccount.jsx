@@ -80,33 +80,16 @@ function CopyAccount({ board }) {
 }
 
 function MainAccount({ board }) {
-    const { data: trend } = usePoll(getTrend, 30000);
-    const { data: trades } = usePoll(getMainTrades, 60000);
-    const m = board?.balances?.main;
     const feed = board?.feed;
     const fg = feed?.contexto?.fear_greed;
     return (
         <>
             <PageHead
                 title="Tu cuenta"
-                subtitle="40 USD que copian solo a las estrategias que ya ganaron en vivo (≥5 operaciones con ganancia), en largo y en corto. Debajo, el núcleo de tendencia BTC+ETH, que opera aparte."
+                subtitle="40 USD que copian solo a las estrategias que ya ganaron en vivo (≥5 operaciones con ganancia), en largo y en corto, a 3x."
             />
             <CopyAccount board={board} />
-            <PageHead
-                title="Núcleo de tendencia BTC + ETH"
-                subtitle="Compra el 50 % del saldo por par cuando el precio cierra sobre su SMA50 y su SMA200; vuelve a USDT cuando cae debajo. Decide una vez al día, por eso pasa semanas quieto."
-            />
             <div className="hero">
-                <Card>
-                    {!m ? <Skeleton lines={3} height={20} /> : (
-                        <div className="ui-stats">
-                            <Stat label="Saldo" value={`${money(m.balance)} USD`} tone={tone(m.balance - m.initial)}
-                                sub={`${signed(m.balance - m.initial)} USD desde ${money(m.initial)}`} />
-                            <Stat label="En USDT" value={money(m.available)} sub={`${m.open_positions} posiciones abiertas`} />
-                            <Stat label="Próxima compra por par" value={`${money(m.balance * 0.5)} USD`} sub="50 % del saldo" />
-                        </div>
-                    )}
-                </Card>
                 <Card title="Contexto del mercado">
                     {!feed ? <Skeleton lines={3} /> : (
                         <div className="ctx">
@@ -114,46 +97,10 @@ function MainAccount({ board }) {
                             {feed.macro?.bloqueo ? <Badge tone="down">Pausa macro: {feed.macro.bloqueo}</Badge>
                                 : feed.macro?.proximo && <Badge>{feed.macro.proximo.evento} en {Math.round(feed.macro.proximo.horas)} h</Badge>}
                             <Badge tone={feed.btc_ok ? "up" : "down"}>BTC {feed.btc_ok ? "sobre" : "bajo"} su SMA20</Badge>
-                            {trend?.next_decision_utc && (
-                                <Badge><CalendarClock size={12} aria-hidden="true" /> Decide {new Date(`${trend.next_decision_utc}Z`).toLocaleString("es-VE", { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false })}</Badge>
-                            )}
                         </div>
                     )}
                 </Card>
             </div>
-            <div className="pair-trend">
-                {!trend ? [0, 1].map((i) => <div className="pt" key={i}><Skeleton lines={4} /></div>) : trend.pairs.map((p) => (
-                    <article className="pt" key={p.symbol}>
-                        <div className="pt-top">
-                            <strong>{coin(p.symbol)}</strong>
-                            <Badge tone={p.signal === "DENTRO" ? "up" : "down"}>{p.signal === "DENTRO" ? "Comprado" : "En USDT"}</Badge>
-                        </div>
-                        <span className="num" style={{ fontSize: 22, fontWeight: 600 }}>{price(feed?.prices?.[p.symbol] ?? p.close)}</span>
-                        <Track dist50={p.dist_fast_pct} dist200={p.dist_slow_pct} />
-                        <div className="ui-stat-sub">
-                            <span className={tone(Number(p.dist_fast_pct))}>{signed(Number(p.dist_fast_pct), " %")}</span> vs SMA50 ·{" "}
-                            <span className={tone(Number(p.dist_slow_pct))}>{signed(Number(p.dist_slow_pct), " %")}</span> vs SMA200
-                        </div>
-                        <p style={{ margin: 0 }}>{p.signal === "DENTRO" ? "Tendencia a favor: mantiene la compra." : `Para comprar, el precio debe subir ${Math.abs(Number(p.dist_fast_pct)).toFixed(1)} % y cerrar el día sobre su SMA50.`}</p>
-                    </article>
-                ))}
-            </div>
-            <Card title="Historial de operaciones">
-                {!trades ? <Skeleton lines={5} /> : !trades.length ? <Empty icon={Wallet} title="Sin operaciones todavía" /> : (
-                    <div className="rows">
-                        {trades.slice(0, 30).map((t) => (
-                            <div className="row" key={t.id}>
-                                <span className={`side-ico ${t.side === "BUY" ? "up" : "down"}`}>{t.side === "BUY" ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}</span>
-                                <div>
-                                    <strong>{t.side === "BUY" ? "Compra" : "Venta"} {coin(t.symbol)}</strong>
-                                    <div className="meta num">{money(t.total_usd)} USD a {price(t.price)} · {clock(Date.parse(`${t.executed_at}Z`))}</div>
-                                </div>
-                                <span className={`right num ${tone(Number(t.realized_pnl_usd))}`}>{Number(t.realized_pnl_usd) ? `${signed(Number(t.realized_pnl_usd))} USD` : "—"}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Card>
         </>
     );
 }

@@ -45,6 +45,19 @@ def load_accounts(db: Session, strategies: list[str], capitals) -> dict[tuple[st
     return accounts
 
 
+def reset_account(db: Session, account: Account, tag: str) -> int:
+    """Empieza la cuenta de 0 (pedido de José, 9-nov): las operaciones cerradas pasan a `tag`
+    (no se borran) y la caja recupera lo que perdieron. Las posiciones abiertas siguen."""
+    rows = list(db.scalars(select(LabTrade).where(LabTrade.strategy == account.strategy,
+                                                  LabTrade.capital == account.capital, LabTrade.status == "CLOSED")))
+    account.cash -= sum((Decimal(r.pnl or 0) for r in rows), Decimal(0))
+    for r in rows:
+        r.strategy = tag
+    _save_cash(db, account)
+    db.commit()
+    return len(rows)
+
+
 def _save_cash(db: Session, account: Account) -> None:
     state = db.scalars(
         select(LabAccountState).where(

@@ -324,3 +324,20 @@ class LosersTests(unittest.TestCase):
         good = [t("good", 1, i) for i in range(4)]
         few = [t("few", -1, i) for i in range(3)]
         self.assertEqual(live.losers(bad + good + few), {"bad"})
+
+
+class ResetAccountTests(unittest.TestCase):
+    def test_reset_archives_closed_and_restores_cash(self):
+        from app.lab import store
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        Base.metadata.create_all(engine)
+        factory = sessionmaker(bind=engine)
+        with factory() as db:
+            (acc,) = store.load_accounts(db, ["principal"], [D("40")]).values()
+            db.add(LabTrade(strategy="principal", capital=D("40"), symbol="BTCUSDT", side="LONG", qty=D("1"), entry=D("10"),
+                            notional=D("10"), entry_fee=D("0"), opened_ts=1, regime="x", status="CLOSED", pnl=D("-1.5")))
+            db.commit()
+            acc.cash = D("38.5")
+            self.assertEqual(store.reset_account(db, acc, "principal_hasta_x"), 1)
+            self.assertEqual(acc.cash, D("40"))
+            self.assertEqual(db.scalars(select(LabTrade)).one().strategy, "principal_hasta_x")

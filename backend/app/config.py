@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # Pares que solo están en BingX (API pública): "símbolo BingX:nombre interno".
     # Oro y Brent sin entradas nuevas (4-nov, ver NO_ENTRY en lab/live.py): solo se siguen para cerrar lo abierto.
     lab_bingx_symbols: str = "HYPE-USDT:HYPEUSDT,NCCOGOLD2USD-USDT:GOLDUSDT,NCCO1OILBRENT2USD-USDT:BRENTUSDT"
-    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT,ZECUSDT,NEARUSDT,SUIUSDT,TRXUSDT,ENAUSDT"
+    lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT,ZECUSDT,NEARUSDT,SUIUSDT,TRXUSDT,ENAUSDT,PEPEUSDT,APTUSDT,FILUSDT,ATOMUSDT,ETCUSDT,ONDOUSDT,WIFUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"
     # Cerebro: cada brain_interval_hours lee el torneo, consulta a Gemini,
     # examina estrategias nuevas y escribe diario/memoria en brain_dir.

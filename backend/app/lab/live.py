@@ -17,6 +17,7 @@ import logging
 import time
 from datetime import timezone
 from decimal import Decimal
+from pathlib import Path
 
 import websockets
 
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 HISTORY = 1000  # velas por par y timeframe (máximo de Binance por petición)
 LIVE_CAPITAL = Decimal("100")  # una cuenta por estrategia (antes 20/50/100: mismos trades x3)
 PRINCIPAL = "principal"  # tu cuenta de 40 USD: copia solo lo que ya ganó en vivo
-PRINCIPAL_MAX_OPEN = 3
+PRINCIPAL_MAX_OPEN = 5  # 9-nov: más pares en reversion_4h → más señales
 PRINCIPAL_LEVERAGE = Decimal(3)
 # Se siguen sus precios para cerrar lo abierto, pero no abren más: mercados que cierran el fin de semana.
 NO_ENTRY = {"GOLDUSDT", "BRENTUSDT"}
@@ -134,6 +135,11 @@ class LabRunner:
             copy = self.accounts.get((PRINCIPAL, self.principal_capital))
             if copy is not None:  # 5-nov, José: 3x como su copy trading de BingX (paper, futuros maker)
                 copy.leverage, copy.fee_rate = PRINCIPAL_LEVERAGE, Decimal("0.0002")
+                flag = Path("data/reset_principal.flag")
+                if flag.exists():  # empezar "Tu cuenta" de 0 sin borrar el historial
+                    n = store.reset_account(db, copy, f"{PRINCIPAL}_hasta_{time.strftime('%Y%m%d')}")
+                    flag.rename(flag.with_suffix(".done"))
+                    self.note("aprende", f"Tu cuenta empieza de 0: {n} operaciones viejas archivadas")
         self.sync_brain()
 
     def sync_brain(self) -> None:
