@@ -1,27 +1,35 @@
-import { ArrowDownRight, ArrowUpRight, CalendarClock, Wallet } from "lucide-react";
-
-import { getTrend } from "../api/bot";
 import api from "../api/client";
 import { getLabTrades } from "../api/lab";
 import { clock, coin, money, price, signed, tone } from "../components/room/fmt";
 import usePoll from "../components/room/usePoll";
 import { Badge, Card, Empty, PageHead, Skeleton, Stat } from "../components/ui";
 
-async function getMainTrades() {
-    const accounts = (await api.get("/simulation/accounts")).data;
-    if (!accounts?.length) return [];
-    return (await api.get(`/simulation/accounts/${accounts[0].id}/trades`)).data;
+async function getCopyTraders() {
+    return (await api.get("/lab/copytraders")).data;
 }
 
-function Track({ dist50, dist200 }) {
-    // posición del precio entre −15 % y +15 % de cada media
-    const at = (d) => `${Math.max(0, Math.min(100, 50 + Number(d) * (50 / 15)))}%`;
+function CopyTraders() {
+    const { data } = usePoll(getCopyTraders, 60000);
+    const list = data?.traders || [];
     return (
-        <div className="track" aria-hidden="true">
-            <b style={{ left: "50%" }}>media</b>
-            <i style={{ left: at(dist50), background: "var(--r-accent)" }} title="vs SMA50" />
-            <i style={{ left: at(dist200), background: "#64748b" }} title="vs SMA200" />
-        </div>
+        <Card title="Traders de Binance copiados en papel">
+            {!data ? <Skeleton lines={5} /> : !list.length ? <Empty title="Esperando su primera operación cerrada desde hoy" /> : (
+                <div className="rows">
+                    {list.map((t) => (
+                        <div className="row" key={t.id}>
+                            <div>
+                                <strong>{t.nombre}</strong> {t.banca && <Badge tone="down">en la banca</Badge>}
+                                <div className="meta num">
+                                    {t.copias} copias{t.acierto != null ? ` · acierto ${t.acierto} %` : ""}
+                                    {t.ultimas?.[0] ? ` · última: ${t.ultimas[0].lado} ${coin(t.ultimas[0].par)} ${signed(t.ultimas[0].pnl)} USD` : ""}
+                                </div>
+                            </div>
+                            <span className={`right num ${tone(t.saldo - data.capital)}`}>{money(t.saldo)} USD</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </Card>
     );
 }
 
@@ -89,6 +97,7 @@ function MainAccount({ board }) {
                 subtitle="40 USD que copian solo a las estrategias que ya ganaron en vivo (≥5 operaciones con ganancia), en largo y en corto, a 3x."
             />
             <CopyAccount board={board} />
+            <CopyTraders />
             <div className="hero">
                 <Card title="Contexto del mercado">
                     {!feed ? <Skeleton lines={3} /> : (

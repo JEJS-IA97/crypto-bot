@@ -57,13 +57,16 @@ def channel_bets(rows: list[dict]) -> dict:
     won = [r for r in picks if r.get("resultado") == "ganada"]
     lost = [r for r in picks if r.get("resultado") == "perdida"]
     settled = len(won) + len(lost)
-    units = sum(r["cuota"] - 1 for r in won) - len(lost)
+    # picks sin cuota (p. ej. imágenes que no la muestran) cuentan para el acierto, no para las unidades
+    priced = [r for r in won + lost if r.get("cuota")]
+    units = sum(r["cuota"] - 1 for r in won if r.get("cuota")) - sum(1 for r in lost if r.get("cuota"))
+    quoted = [r["cuota"] for r in picks if r.get("cuota")]
     return {
         "picks": len(picks),
         "con_resultado": settled,
         "sin_reportar": len(picks) - settled - sum(1 for r in picks if r.get("resultado") == "nula"),
         "acierto": round(len(won) / settled * 100, 1) if settled else None,
-        "cuota_media": round(sum(r["cuota"] for r in picks) / len(picks), 2) if picks else None,
+        "cuota_media": round(sum(quoted) / len(quoted), 2) if quoted else None,
         "unidades": round(units, 2),
-        "roi": round(units / settled * 100, 1) if settled else None,
+        "roi": round(units / len(priced) * 100, 1) if priced else None,
     }

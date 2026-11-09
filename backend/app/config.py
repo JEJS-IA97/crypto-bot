@@ -57,6 +57,17 @@ class Settings(BaseSettings):
     lab_enabled: bool = False
     # Pares que solo están en BingX (API pública): "símbolo BingX:nombre interno".
     # Oro y Brent sin entradas nuevas (4-nov, ver NO_ENTRY en lab/live.py): solo se siguen para cerrar lo abierto.
+    # Traders líderes de Binance que el bot copia en papel ("nombre|portfolioId"), 9-nov: los 13 sólidos
+    # de 180 días (caída <15 %, copiadores en ganancia) y 8 con racha de 30 días (caída <8 %).
+    copy_traders: str = (
+        "NotForEveryone|4885616028810285312,iiTrader|4916453009605013505,MoneyBoxTM|4235245655188894209,"
+        "Diamond-Hamsters|4300516091842181632,Xingchen|4788776444236355328,DAmorne|5219911688676500225,"
+        "CryptosMX|5064581361618552064,Leo-Hamsters|5076854789130646529,DuanxianKing|5241753281755337728,"
+        "Fomo|5078808125094578945,Quandora|5227495141992063744,Quandora II|5234435492374749441,"
+        "Quandora III|5163765388787071488,Heishi|5283137603594326273,Ula Frances|5290963363117518337,"
+        "Zhujuhua|5298370496239203073,Islaice|5301145301812740608,Justdoing|5290969233304281856,"
+        "Fanmai|5301261709795208449,Huangzong|5300290679711617024,Houde|5289011342380453376"
+    )
     lab_bingx_symbols: str = "HYPE-USDT:HYPEUSDT,NCCOGOLD2USD-USDT:GOLDUSDT,NCCO1OILBRENT2USD-USDT:BRENTUSDT"
     lab_symbols: str = "BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT,ADAUSDT,DOGEUSDT,LINKUSDT,AVAXUSDT,LTCUSDT,ZECUSDT,NEARUSDT,SUIUSDT,TRXUSDT,ENAUSDT,PEPEUSDT,APTUSDT,FILUSDT,ATOMUSDT,ETCUSDT,ONDOUSDT,WIFUSDT"
     lab_ws_url: str = "wss://data-stream.binance.vision/stream"

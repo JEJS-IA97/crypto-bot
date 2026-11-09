@@ -207,7 +207,7 @@ def telegram_signals(limit: int = 30, db: Session = Depends(get_db)) -> dict[str
         if (parsed or {}).get("kind") == "apuesta_img":  # cada pick de la imagen cuenta como uno
             for p in parsed.get("picks", []):
                 res = p.get("resultado")
-                tips.setdefault(title, []).append({"kind": "apuesta", "cuota": float(p.get("cuota") or 1.0),
+                tips.setdefault(title, []).append({"kind": "apuesta", "cuota": float(p["cuota"]) if p.get("cuota") else None,
                                                    "resultado": res if res in ("ganada", "perdida") else None})
         if (parsed or {}).get("verificada"):
             verified.setdefault(title, []).append(parsed["verificada"])
@@ -262,6 +262,15 @@ def activity(limit: int = 80) -> dict[str, Any]:
     """Lo último que hizo o decidió el torneo, en frases."""
     runner = live.runner
     return {"eventos": list(runner.activity)[:limit] if runner else []}
+
+
+@router.get("/copytraders")
+def copytraders() -> dict[str, Any]:
+    """Traders de Binance copiados en papel desde que el bot empezó a mirarlos."""
+    from app.signals import binance_copy
+
+    state = binance_copy.load()
+    return {"inicio": state["inicio"], "capital": binance_copy.CAPITAL, "traders": binance_copy.board(state)}
 
 
 @router.get("/market")

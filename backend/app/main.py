@@ -170,6 +170,9 @@ async def lifespan(app: FastAPI):
 
     okx_task = asyncio.create_task(okx_loop(stop_event)) if settings.lab_enabled else None
     bingx_task = asyncio.create_task(bingx_loop(stop_event)) if settings.lab_enabled else None
+    from app.signals.binance_copy import copy_loop
+
+    copy_task = asyncio.create_task(copy_loop(stop_event)) if settings.lab_enabled else None  # noqa: F841
     context_task = asyncio.create_task(context_loop(stop_event)) if settings.lab_enabled else None
     from app.bets.engine import bets_loop
 
