@@ -264,6 +264,49 @@ def activity(limit: int = 80) -> dict[str, Any]:
     return {"eventos": list(runner.activity)[:limit] if runner else []}
 
 
+@router.get("/binance_check")
+def binance_check() -> dict[str, Any]:
+    """Verifica la clave de Binance de José SIN operar: permisos, saldos y una orden de prueba
+    (/order/test, Binance la valida pero no la ejecuta). Nunca devuelve la clave."""
+    import hashlib
+    import hmac
+    import time as _time
+    from urllib.parse import urlencode
+
+    import httpx
+
+    from app.config import settings
+    from app.services.binance_spot_client import BinanceSpotClient
+
+    if not (settings.binance_api_key and settings.binance_api_secret):
+        return {"ok": False, "error": "falta BINANCE_API_KEY / BINANCE_API_SECRET en .env"}
+    client = BinanceSpotClient(settings.binance_api_key, settings.binance_api_secret, base_url="https://api.binance.com")
+    out: dict[str, Any] = {"allow_live_trading": settings.allow_live_trading}
+    try:
+        acc = client.get_account()
+        out["puede_operar"] = acc.get("canTrade")
+        out["permisos"] = acc.get("permissions")
+        out["saldos"] = {b["asset"]: b["free"] for b in acc.get("balances", []) if float(b["free"]) + float(b["locked"]) > 0}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc)[:300]}
+    try:
+        q = urlencode({"timestamp": int(_time.time() * 1000)})
+        sig = hmac.new(settings.binance_api_secret.encode(), q.encode(), hashlib.sha256).hexdigest()
+        r = httpx.get(f"https://api.binance.com/sapi/v1/account/apiRestrictions?{q}&signature={sig}",
+                      headers={"X-MBX-APIKEY": settings.binance_api_key}, timeout=10).json()
+        out["restricciones"] = {k: r.get(k) for k in ("ipRestrict", "enableSpotAndMarginTrading", "enableWithdrawals",
+                                                      "enableFutures", "enableReading")}
+    except Exception as exc:  # noqa: BLE001
+        out["restricciones"] = str(exc)[:200]
+    try:
+        client.test_order("BTCUSDT", "BUY", "MARKET", quote_order_qty="6")
+        out["orden_de_prueba"] = "aceptada (no se ejecutó)"
+    except Exception as exc:  # noqa: BLE001
+        out["orden_de_prueba"] = str(exc)[:300]
+    out["ok"] = True
+    return out
+
+
 @router.get("/copytraders")
 def copytraders() -> dict[str, Any]:
     """Traders de Binance copiados en papel desde que el bot empezó a mirarlos."""
