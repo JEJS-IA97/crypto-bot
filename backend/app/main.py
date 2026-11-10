@@ -292,4 +292,13 @@ app.include_router(
 # http://127.0.0.1:8000/ y no hace falta Vite ni Render.
 _PANEL = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 if _PANEL.is_dir():
-    app.mount("/", StaticFiles(directory=_PANEL, html=True), name="panel")
+    class _Panel(StaticFiles):
+        """index.html sin caché: así el navegador siempre carga la versión nueva del panel."""
+
+        async def get_response(self, path, scope):
+            response = await super().get_response(path, scope)
+            if not path.startswith("assets/"):
+                response.headers["Cache-Control"] = "no-cache"
+            return response
+
+    app.mount("/", _Panel(directory=_PANEL, html=True), name="panel")
