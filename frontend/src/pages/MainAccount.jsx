@@ -1,3 +1,5 @@
+import { ArrowDownRight, ArrowUpRight, Wallet } from "lucide-react";
+
 import api from "../api/client";
 import { getLabTrades } from "../api/lab";
 import { clock, coin, money, price, signed, tone } from "../components/room/fmt";
@@ -5,7 +7,7 @@ import usePoll from "../components/room/usePoll";
 import { Badge, Card, Empty, PageHead, Skeleton, Stat } from "../components/ui";
 
 async function getReal() {
-    return (await api.get("/lab/real")).data;
+    return (await api.get("/api/lab/real")).data;
 }
 
 function RealAccount() {
@@ -30,7 +32,7 @@ function RealAccount() {
 }
 
 async function getCopyTraders() {
-    return (await api.get("/lab/copytraders")).data;
+    return (await api.get("/api/lab/copytraders")).data;
 }
 
 function CopyTraders() {

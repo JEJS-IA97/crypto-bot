@@ -59,7 +59,7 @@ def losers(trades) -> set[str]:
     seen, by = set(), {}
     for t in trades:
         key = (t.strategy, t.symbol, t.opened_ts)
-        if t.strategy == PRINCIPAL or key in seen:
+        if t.strategy.startswith(PRINCIPAL) or key in seen:
             continue
         seen.add(key)
         by.setdefault(t.strategy, []).append(t.pnl)
@@ -81,7 +81,7 @@ def champions(trades, benched: set[str]) -> set[str]:
     seen, by = set(), {}
     for t in trades:
         key = (t.strategy, t.symbol, t.opened_ts)
-        if (t.side != "LONG" and not two_sided(t.strategy)) or t.strategy == PRINCIPAL or key in seen:
+        if (t.side != "LONG" and not two_sided(t.strategy)) or t.strategy.startswith(PRINCIPAL) or key in seen:
             continue
         seen.add(key)
         by.setdefault(t.strategy, []).append(t.pnl)
