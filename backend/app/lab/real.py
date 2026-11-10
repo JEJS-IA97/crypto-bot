@@ -158,7 +158,19 @@ def balance(prices: dict | None = None, ttl: float = 30) -> dict:
         rows = [b for b in client.get_account()["balances"] if Decimal(b["free"]) + Decimal(b["locked"]) > 0]
         tickers = {t["symbol"]: Decimal(t["price"]) for t in client._request("GET", "/v3/ticker/price")}
     except Exception as exc:  # noqa: BLE001
-        return {"error": str(exc)[:200]}
+        msg = str(exc)
+        if "-2015" in msg:  # la clave está restringida por IP y la PC cambió de internet/VPN
+            try:
+                import httpx
+
+                ip = httpx.get("https://api.ipify.org", timeout=5).text.strip()
+            except Exception:  # noqa: BLE001
+                ip = "desconocida"
+            out = {"error": f"Binance rechaza la IP actual de la PC ({ip}). Agrégala a la clave API o vuelve a la red/VPN de antes.",
+                   "bloqueo_ip": ip}
+            _balance_cache["v"] = (time.time(), out)
+            return out
+        return {"error": msg[:200]}
     assets, total = [], Decimal(0)
     for b in rows:
         asset, qty = b["asset"], Decimal(b["free"]) + Decimal(b["locked"])

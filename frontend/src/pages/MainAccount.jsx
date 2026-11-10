@@ -18,9 +18,9 @@ function RealAccount() {
     return (
         <>
             <div className="real-head">
-                <span className={`real-dot ${data?.activo ? "on" : ""}`} />
+                <span className={`real-dot ${data?.activo && !bal?.bloqueo_ip ? "on" : ""}`} />
                 <h2>Dinero real · Binance Spot</h2>
-                <Badge tone={data?.activo ? "up" : "down"}>{!data ? "…" : data.activo ? "operando" : "apagado"}</Badge>
+                <Badge tone={data?.activo && !bal?.bloqueo_ip ? "up" : "down"}>{!data ? "…" : !data.activo ? "apagado" : bal?.bloqueo_ip ? "bloqueado por IP" : "operando"}</Badge>
             </div>
             <Card className="real-card">
                 {!data ? <Skeleton lines={3} height={20} /> : (
