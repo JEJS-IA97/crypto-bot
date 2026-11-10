@@ -143,6 +143,39 @@ def close_long(symbol: str, reason: str, note=print, client=None) -> dict | None
     return closed
 
 
+_balance_cache: dict = {}
+
+
+def balance(prices: dict | None = None, ttl: float = 30) -> dict:
+    """Saldo REAL de la cuenta Spot de Binance en USDT (lo que el bot puede usar), cacheado `ttl` s."""
+    if not (settings.binance_api_key and settings.binance_api_secret):
+        return {"error": "sin clave de Binance"}
+    hit = _balance_cache.get("v")
+    if hit and time.time() - hit[0] < ttl:
+        return hit[1]
+    try:
+        client = _client()
+        rows = [b for b in client.get_account()["balances"] if Decimal(b["free"]) + Decimal(b["locked"]) > 0]
+        tickers = {t["symbol"]: Decimal(t["price"]) for t in client._request("GET", "/v3/ticker/price")}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc)[:200]}
+    assets, total = [], Decimal(0)
+    for b in rows:
+        asset, qty = b["asset"], Decimal(b["free"]) + Decimal(b["locked"])
+        name = asset[2:] if asset.startswith("LD") else asset  # LDxxx = el mismo activo en Simple Earn
+        px = Decimal(1) if name in ("USDT", "USDC", "FDUSD") else tickers.get(f"{name}USDT")
+        value = qty * px if px is not None else None
+        if value is not None:
+            total += value
+        assets.append({"activo": asset, "cantidad": str(qty), "usdt": float(round(value, 2)) if value is not None else None,
+                       "earn": asset.startswith("LD")})
+    usdt = next((Decimal(b["free"]) for b in rows if b["asset"] == "USDT"), Decimal(0))
+    out = {"total_usdt": float(round(total, 2)), "usdt_libre": float(round(usdt, 2)),
+           "activos": sorted(assets, key=lambda a: -(a["usdt"] or 0)), "ts": int(time.time() * 1000)}
+    _balance_cache["v"] = (time.time(), out)
+    return out
+
+
 def in_background(fn, *args, **kwargs) -> None:
     """Las órdenes salen en otro hilo para no frenar el feed de precios."""
     threading.Thread(target=fn, args=args, kwargs=kwargs, daemon=True).start()

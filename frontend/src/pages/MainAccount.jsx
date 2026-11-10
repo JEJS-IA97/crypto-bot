@@ -12,22 +12,66 @@ async function getReal() {
 
 function RealAccount() {
     const { data } = usePoll(getReal, 30000);
-    if (!data) return <Card title="Dinero real en Binance"><Skeleton lines={3} /></Card>;
-    const open = Object.entries(data.abiertas || {});
+    const bal = data?.saldo;
+    const open = Object.entries(data?.abiertas || {});
+    const ok = bal && !bal.error;
     return (
-        <Card title={`Dinero real en Binance ${data.activo ? "· activo" : "· apagado"}`}>
-            <div className="meta">Solo compras de {data.estrategia}, {data.usd_por_operacion} USD por operación, máximo {data.max_abiertas} abiertas; deja de comprar si pierde {data.tope_perdida_dia} USD en el día.</div>
-            <div className="meta num">{data.operaciones} cerradas · resultado <span className={tone(data.pnl_total)}>{signed(data.pnl_total)} USDT</span></div>
-            <div className="rows">
-                {open.map(([par, p]) => (
-                    <div className="row" key={par}><div><strong>Compra {coin(par)}</strong><div className="meta">{clock(p.abre)}</div></div><span className="right num">{money(p.costo)} USDT</span></div>
-                ))}
-                {data.cerradas.map((c) => (
-                    <div className="row" key={c.cierra}><div><strong>{coin(c.par)}</strong><div className="meta">{c.motivo} · {clock(c.cierra)}</div></div><span className={`right num ${tone(c.pnl)}`}>{signed(c.pnl)} USDT</span></div>
-                ))}
-                {!open.length && !data.cerradas.length && <Empty title="Esperando la próxima señal de compra" />}
+        <>
+            <div className="real-head">
+                <span className={`real-dot ${data?.activo ? "on" : ""}`} />
+                <h2>Dinero real · Binance Spot</h2>
+                <Badge tone={data?.activo ? "up" : "down"}>{!data ? "…" : data.activo ? "operando" : "apagado"}</Badge>
             </div>
-        </Card>
+            <Card className="real-card">
+                {!data ? <Skeleton lines={3} height={20} /> : (
+                    <div className="ui-stats">
+                        <Stat big label="Saldo en Binance" value={ok ? `${money(bal.total_usdt)} USDT` : "—"}
+                            sub={ok ? `${money(bal.usdt_libre)} USDT libres para operar` : bal?.error || "sin datos"} />
+                        <Stat label="Resultado del bot" value={`${signed(data.pnl_total)} USDT`} tone={tone(data.pnl_total)}
+                            sub={`${data.operaciones} operaciones · ${data.ganadas || 0} ganadas`} />
+                        <Stat label="Abiertas" value={`${open.length} / ${data.max_abiertas}`}
+                            sub={`${data.usd_por_operacion} USDT por compra · tope de pérdida ${data.tope_perdida_dia} USDT/día`} />
+                    </div>
+                )}
+            </Card>
+            <div className="cols-2">
+                <Card title="Compras abiertas y cerradas (reales)">
+                    {!data ? <Skeleton lines={3} /> : !open.length && !data.cerradas.length ? (
+                        <Empty icon={Wallet} title="Esperando la próxima señal de compra">Solo compra cuando {data.estrategia} da una señal de compra en sus 14 monedas.</Empty>
+                    ) : (
+                        <div className="rows scroll-y">
+                            {open.map(([par, p]) => (
+                                <div className="row" key={par}>
+                                    <span className="side-ico up"><ArrowUpRight size={18} /></span>
+                                    <div><strong>Compra {coin(par)}</strong><div className="meta">abierta · {clock(p.abre)}</div></div>
+                                    <span className="right num"><Badge>{money(p.costo)} USDT</Badge></span>
+                                </div>
+                            ))}
+                            {data.cerradas.map((c) => (
+                                <div className="row" key={c.cierra}>
+                                    <span className={`side-ico ${Number(c.pnl) >= 0 ? "up" : "down"}`}><ArrowUpRight size={18} /></span>
+                                    <div><strong>{coin(c.par)}</strong><div className="meta">{c.motivo} · {clock(c.cierra)}</div></div>
+                                    <span className={`right num ${tone(c.pnl)}`}>{signed(c.pnl)} USDT</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Card>
+                <Card title="Tus activos en Binance">
+                    {!ok ? <Skeleton lines={3} /> : (
+                        <div className="rows">
+                            {bal.activos.map((a) => (
+                                <div className="row" key={a.activo}>
+                                    <div><strong>{a.earn ? a.activo.slice(2) : a.activo}</strong>{a.earn && <span className="meta"> · en Earn</span>}<div className="meta num">{a.cantidad}</div></div>
+                                    <span className="right num">{a.usdt != null ? `${money(a.usdt)} USDT` : "—"}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Card>
+            </div>
+            <div className="real-head paper"><h2>Simulación (papel)</h2><span className="meta">no usa dinero real</span></div>
+        </>
     );
 }
 
@@ -119,10 +163,7 @@ function MainAccount({ board }) {
     const fg = feed?.contexto?.fear_greed;
     return (
         <>
-            <PageHead
-                title="Tu cuenta"
-                subtitle="40 USD que copian solo a las estrategias que ya ganaron en vivo (≥5 operaciones con ganancia), en largo y en corto, a 3x."
-            />
+            <PageHead title="Tu cuenta" subtitle="Arriba, lo que el bot hace con tu dinero real en Binance. Abajo, la cuenta de práctica de 40 USD (3x, largo y corto) y los traders copiados en papel." />
             <RealAccount />
             <CopyAccount board={board} />
             <CopyTraders />

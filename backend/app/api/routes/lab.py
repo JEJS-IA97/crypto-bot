@@ -274,7 +274,8 @@ def real_positions() -> dict[str, Any]:
     return {"activo": real.enabled(), "estrategia": real.SOURCE, "usd_por_operacion": float(real.REAL_USD),
             "max_abiertas": real.REAL_MAX_OPEN, "tope_perdida_dia": float(real.REAL_DAILY_LOSS),
             "abiertas": state["abiertas"], "cerradas": state["cerradas"][-20:][::-1],
-            "pnl_total": round(pnl, 4), "operaciones": len(state["cerradas"])}
+            "pnl_total": round(pnl, 4), "operaciones": len(state["cerradas"]),
+            "ganadas": sum(1 for c in state["cerradas"] if float(c["pnl"]) > 0), "saldo": real.balance()}
 
 
 @router.get("/binance_check")

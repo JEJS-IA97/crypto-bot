@@ -169,3 +169,14 @@
     .main { padding: 16px; }
     .mk { grid-template-columns: 1fr; } .mk-list { position: static; max-height: 300px; }
 }
+
+/* --- dinero real (Binance) vs papel --- */
+.real-head { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.real-head h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+.real-head.paper { margin-top: 16px; padding-top: 18px; border-top: 1px dashed var(--r-line); }
+.real-head.paper h2 { color: var(--r-dim); }
+.real-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--r-down); }
+.real-dot.on { background: var(--r-up); box-shadow: 0 0 0 5px #22c55e26; animation: real-pulse 2s var(--ui-ease) infinite; }
+@keyframes real-pulse { 50% { box-shadow: 0 0 0 9px #22c55e00; } }
+.ui-card.real-card { border: 1px solid #f59e0b55; background: linear-gradient(135deg, #f59e0b14, var(--r-panel) 55%); }
+@media (prefers-reduced-motion: reduce) { .real-dot.on { animation: none; } }
