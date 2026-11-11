@@ -170,6 +170,14 @@ async def lifespan(app: FastAPI):
 
     okx_task = asyncio.create_task(okx_loop(stop_event)) if settings.lab_enabled else None
     bingx_task = asyncio.create_task(bingx_loop(stop_event)) if settings.lab_enabled else None
+    async def _real_check() -> None:  # deja en el log si Binance acepta la clave (IP/VPN) al arrancar
+        from app.lab import real
+
+        await asyncio.sleep(20)
+        bal = await asyncio.to_thread(real.balance, None, 0)
+        logger.warning("real: binance %s", bal.get("error") or f"ok, saldo {bal.get('total_usdt')} USDT, libres {bal.get('usdt_libre')}")
+
+    real_check_task = asyncio.create_task(_real_check()) if settings.lab_enabled else None  # noqa: F841
     from app.signals.binance_copy import copy_loop
 
     copy_task = asyncio.create_task(copy_loop(stop_event)) if settings.lab_enabled else None  # noqa: F841
