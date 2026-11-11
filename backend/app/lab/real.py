@@ -1,7 +1,7 @@
 """Dinero real en Binance Spot, solo con lo comprobado (decisión de José, 9-nov-2026).
 
-Únicamente las COMPRAS de `reversion_4h_futuros` en sus 14 monedas (backtest Spot, 250 días,
-344 operaciones, PF 2,1 con comisión 0,1 %). Todo lo demás (torneo, Tu cuenta, traders copiados,
+Únicamente las COMPRAS de `reversion_spot_compras` (caída extrema de 2, 4 u 8 h) en 14 monedas (backtest Spot, 250 días,
+637 operaciones, PF 1,79 con comisión 0,1 %). Todo lo demás (torneo, Tu cuenta, traders copiados,
 apuestas) sigue en papel. Cuando la estrategia del torneo abre un LONG, aquí se compra REAL_USD
 a mercado; cuando la cierra (4 h, stop u objetivo), aquí se vende lo comprado.
 
@@ -24,7 +24,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-SOURCE = "reversion_4h_futuros"
+SOURCE = "reversion_spot_compras"
 REAL_USD = Decimal("6")
 REAL_MAX_OPEN = 3
 REAL_DAILY_LOSS = Decimal("3")

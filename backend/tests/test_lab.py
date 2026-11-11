@@ -259,7 +259,7 @@ class LabApiTests(unittest.TestCase):
             body = self.client.get("/api/lab/live").json()
         self.assertFalse(body["feed"]["connected"])
         self.assertEqual(body["rows"], [])
-        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "reversion_2h_futuros", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
+        self.assertEqual([s["name"] for s in self.client.get("/api/lab/strategies").json()], ["bollinger_trend_1h", "sesion_16utc_futuros", "reversion_4h_futuros", "reversion_spot_compras", "reversion_2h_futuros", "ruptura_7d_1h", "momentum_48h_1h", "ema_rsi_4h"])
 
 
 if __name__ == "__main__":
@@ -341,3 +341,19 @@ class ResetAccountTests(unittest.TestCase):
             self.assertEqual(store.reset_account(db, acc, "principal_hasta_x"), 1)
             self.assertEqual(acc.cash, D("40"))
             self.assertEqual(db.scalars(select(LabTrade)).one().strategy, "principal_hasta_x")
+
+
+class ReversionSpotBuysTests(unittest.TestCase):
+    def test_buys_only_after_extreme_drop(self):
+        from app.lab.bars import Bar
+        from app.lab.strategies import ReversionSpotBuys
+
+        import math
+        closes = [100 + math.sin(i / 3) * 0.5 for i in range(300)]
+        closes[-1] = closes[-2] * 0.9  # caída de 10 % en 1 h
+        bars = [Bar(i * 3_600_000, c, c * 1.001, c * 0.999, c, 1.0) for i, c in enumerate(closes)]
+        sig = ReversionSpotBuys().signals(bars)
+        self.assertEqual(sig[-1].side, "LONG")
+        self.assertTrue(all(s is None or s.side == "LONG" for s in sig))
+        up = closes[:-1] + [closes[-2] * 1.1]
+        self.assertIsNone(ReversionSpotBuys().signals([Bar(i * 3_600_000, c, c * 1.001, c * 0.999, c, 1.0) for i, c in enumerate(up)])[-1])
